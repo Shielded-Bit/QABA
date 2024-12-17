@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Add responsive padding to the container */
+body {
+  @apply px-2 sm:px-0 md:px-6 lg:px-8 xl:px-10;
+}
+/* Custom styles for pagination dots */
+.swiper-pagination {
+  position: relative;
+  margin-top: 40px; /* Adjust this value to move the dots further down */
+  display: flex;
+  justify-content: center;
+}
+
+.swiper-pagination-bullet {
+  background-color: #666; /* Dot color */
+  opacity: 1; /* Ensure the dots are fully visible */
+  transition: background-color 0.3s;
+}
+
+.swiper-pagination-bullet-active {
+  background-color: #333; /* Active dot color */
+}
+
+.custom-pagination {
+  /* Ensure it's outside and below the Swiper */
+  margin-top: 40px; /* Customize this margin for the position */
+  display: flex;
+  justify-content: center;
+}   .footer-content {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.subscription {
+  order: 2; /* Default for larger screens */
+}
+
+@media (max-width: 768px) {
+  .subscription {
+    order: -1; /* Move to the top on mobile */
+    width: 100%; /* Full width for better layout */
+  }
+}
+@keyframes scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-30%);
+  }
+}
+
+.animate-scroll {
+  display: flex;
+  gap: 2rem; /* Adjust spacing between logos */
+  animation: scroll 20s linear infinite; /* Smooth infinite scrolling */
+  width: calc(350%); /* Ensure enough space for duplicated content */
+}
+/* Smooth fade-in animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px); /* Slight movement from below */
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 1s ease-in-out; /* 1s animation duration with easing */
+}
+
+
+
+
+
+
+
+
