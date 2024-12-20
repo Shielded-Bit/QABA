@@ -5,7 +5,7 @@ export default function Page() {
     <div>
       {/* Hero Section */}
       <div
-        className="hero bg-cover bg-center h-[50vh] md:h-screen flex flex-col justify-center items-center text-center relative px-4 md:px-12 lg:px-20 pt-28"
+        className="hero bg-cover bg-center h-[60vh] md:h-screen flex flex-col justify-center items-center text-center relative px-4 md:px-12 lg:px-20 pt-8"
         style={{
           backgroundImage:
             "url('https://res.cloudinary.com/dqbbm0guw/image/upload/v1734019847/Group_17_xusaes.png')",
