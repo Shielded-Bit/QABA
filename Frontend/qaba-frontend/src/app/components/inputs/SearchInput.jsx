@@ -11,7 +11,7 @@ const SearchInput = ({ onSearch, placeholder = "e.g Abakiliki" }) => {
   };
 
   return (
-    <div className="bg-white bg-opacity-70 rounded-lg shadow-md p-4 sm:p-6 w-full max-w-md md:max-w-xl lg:max-w-2xl mx-auto">
+    <div className="bg-white bg-opacity-45 rounded-lg shadow-md p-4 sm:p-6 w-full max-w-md md:max-w-xl lg:max-w-2xl mx-auto">
       {/* Tabs Section */}
       <div className="flex justify-center mb-4">
         <button
@@ -54,7 +54,7 @@ const SearchInput = ({ onSearch, placeholder = "e.g Abakiliki" }) => {
             id="search"
             type="text"
             placeholder={placeholder}
-            className="flex-grow bg-transparent outline-none text-gray-900 px-2 py-2 w-full text-sm sm:text-base"
+            className="flex-grow bg-transparent outline-none text-gray-900 px-2 py-2 w-full text-sm sm:text-base placeholder:text-gray-600" // Darker placeholder color
           />
           <Button
             label={
