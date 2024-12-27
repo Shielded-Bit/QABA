@@ -1,4 +1,4 @@
-import SearchInput from "../components/static/inputs/SearchInput";
+import SearchInput from "../components/inputs/SearchInput";
 
 export default function Page() {
     return (
