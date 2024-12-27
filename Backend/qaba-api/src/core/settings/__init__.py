@@ -1,0 +1,1 @@
+# The file /django-real-estate-api/django-real-estate-api/src/core/settings/__init__.py is intentionally left blank.
