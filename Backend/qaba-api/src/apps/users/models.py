@@ -1,4 +1,4 @@
-from django.contrib.auth.models import AbstractUser, Group, Permission
+from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 
@@ -8,34 +8,9 @@ class User(AbstractUser):
         CLIENT = "CLIENT", "Client"
         AGENT = "AGENT", "Agent"
 
-    groups = models.ManyToManyField(
-        Group,
-        verbose_name="groups",
-        blank=True,
-        related_name="custom_users",
-        related_query_name="custom_user",
-    )
-
-    user_permissions = models.ManyToManyField(
-        Permission,
-        verbose_name="user permissions",
-        blank=True,
-        related_name="custom_users",
-        related_query_name="custom_user",
-    )
-
     user_type = models.CharField(
         max_length=10, choices=UserType.choices, default=UserType.CLIENT
     )
-    phone_number = models.CharField(max_length=15, blank=True, null=True)
-    profile_photo = models.ImageField(upload_to="profiles/", blank=True, null=True)
-    bio = models.TextField(blank=True, null=True)
-    address = models.CharField(max_length=255, blank=True, null=True)
-
-    # Agent specific fields
-    license_number = models.CharField(max_length=50, blank=True, null=True)
-    company_name = models.CharField(max_length=100, blank=True, null=True)
-    years_of_experience = models.PositiveIntegerField(default=0)
 
     class Meta:
         verbose_name = "User"
@@ -55,3 +30,27 @@ class User(AbstractUser):
     @property
     def is_agent(self):
         return self.user_type == self.UserType.AGENT
+
+
+class Profile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    phone_number = models.CharField(max_length=15, blank=True, null=True)
+    profile_photo = models.ImageField(upload_to="profiles/", blank=True, null=True)
+    bio = models.TextField(blank=True, null=True)
+    address = models.CharField(max_length=255, blank=True, null=True)
+
+    class Meta:
+        abstract = True
+
+
+class ClientProfile(Profile):
+    # Add client-specific fields here
+    preferred_location = models.CharField(max_length=255, blank=True, null=True)
+    budget_range = models.CharField(max_length=50, blank=True, null=True)
+
+
+class AgentProfile(Profile):
+    license_number = models.CharField(max_length=50, blank=True, null=True)
+    company_name = models.CharField(max_length=100, blank=True, null=True)
+    years_of_experience = models.PositiveIntegerField(default=0)
+    specializations = models.CharField(max_length=255, blank=True, null=True)
