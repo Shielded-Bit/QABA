@@ -3,6 +3,8 @@ from drf_spectacular.utils import extend_schema
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
+from drf_spectacular.utils import extend_schema, extend_schema_view
+from rest_framework_simplejwt.views import TokenRefreshView
 from .models import User, ClientProfile, AgentProfile
 from .serializers import (
     UserSerializer,
@@ -16,6 +18,7 @@ from .serializers import (
 )
 
 
+@extend_schema(tags=["Authentication"])
 class LoginView(APIView):
     permission_classes = (permissions.AllowAny,)
 
@@ -39,6 +42,7 @@ class LoginView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@extend_schema(tags=["Authentication"])
 class ClientRegistrationView(generics.CreateAPIView):
     permission_classes = (permissions.AllowAny,)
     serializer_class = ClientRegistrationSerializer
@@ -58,6 +62,7 @@ class ClientRegistrationView(generics.CreateAPIView):
         )
 
 
+@extend_schema(tags=["Authentication"])
 class AgentRegistrationView(generics.CreateAPIView):
     permission_classes = (permissions.AllowAny,)
     serializer_class = AgentRegistrationSerializer
@@ -77,6 +82,7 @@ class AgentRegistrationView(generics.CreateAPIView):
         )
 
 
+@extend_schema_view(post=extend_schema(tags=["Authentication"]))
 class AdminRegistrationView(generics.CreateAPIView):
     permission_classes = (permissions.IsAdminUser,)
     serializer_class = AdminRegistrationSerializer
@@ -96,6 +102,7 @@ class AdminRegistrationView(generics.CreateAPIView):
         )
 
 
+@extend_schema(tags=["Profiles"])
 class ClientProfileCreateView(generics.CreateAPIView):
     permission_classes = (permissions.IsAuthenticated,)
     serializer_class = ClientProfileCreateSerializer
@@ -106,6 +113,7 @@ class ClientProfileCreateView(generics.CreateAPIView):
         serializer.save()
 
 
+@extend_schema(tags=["Profiles"])
 class AgentProfileCreateView(generics.CreateAPIView):
     permission_classes = (permissions.IsAuthenticated,)
     serializer_class = AgentProfileCreateSerializer
@@ -116,6 +124,7 @@ class AgentProfileCreateView(generics.CreateAPIView):
         serializer.save()
 
 
+@extend_schema(tags=["Profiles"])
 class ClientProfileView(generics.RetrieveUpdateAPIView):
     serializer_class = ClientProfileCreateSerializer
     permission_classes = (permissions.IsAuthenticated,)
@@ -124,6 +133,7 @@ class ClientProfileView(generics.RetrieveUpdateAPIView):
         return ClientProfile.objects.get(user=self.request.user)
 
 
+@extend_schema(tags=["Profiles"])
 class AgentProfileView(generics.RetrieveUpdateAPIView):
     serializer_class = AgentProfileCreateSerializer
     permission_classes = (permissions.IsAuthenticated,)
@@ -132,12 +142,14 @@ class AgentProfileView(generics.RetrieveUpdateAPIView):
         return AgentProfile.objects.get(user=self.request.user)
 
 
+@extend_schema(tags=["Users"])
 class UserList(generics.ListAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = (permissions.IsAdminUser,)
 
 
+@extend_schema(tags=["Users"])
 class UserDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -149,9 +161,14 @@ class UserDetail(generics.RetrieveUpdateDestroyAPIView):
         return self.request.user
 
 
+@extend_schema(tags=["Authentication"])
 class PasswordChangeView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
+    @extend_schema(
+        request=PasswordChangeSerializer,
+        responses={200: {"message": "Password changed successfully"}},
+    )
     def post(self, request):
         serializer = PasswordChangeSerializer(
             data=request.data, context={"request": request}
@@ -161,3 +178,8 @@ class PasswordChangeView(APIView):
             request.user.save()
             return Response({"message": "Password changed successfully"})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(tags=["Authentication"])
+class RefreshTokenView(TokenRefreshView):
+    pass
