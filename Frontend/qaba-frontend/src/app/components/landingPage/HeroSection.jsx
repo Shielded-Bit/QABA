@@ -5,14 +5,14 @@ export default function Page() {
     <div>
       {/* Hero Section */}
       <div
-        className="hero bg-cover bg-center h-[50vh] md:h-screen flex flex-col justify-center items-center text-center relative px-4 md:px-12 lg:px-20 pt-28"
+        className="hero bg-cover bg-center h-[60vh] md:h-screen flex flex-col justify-center items-center text-center relative px-4 md:px-12 lg:px-20 pt-36"
         style={{
           backgroundImage:
             "url('https://res.cloudinary.com/dqbbm0guw/image/upload/v1734019847/Group_17_xusaes.png')",
         }}
       >
         {/* Main Heading */}
-        <h1 className="text-[2.2rem] md:text-[3.3rem] font-semibold text-transparent bg-clip-text bg-gradient-to-r from-[#014d98] to-[#3ab7b1] mt-2 md:mt-4 text-left md:text-center">
+        <h1 className="text-[1.9rem] md:text-[3.3rem] font-semibold text-transparent bg-clip-text bg-gradient-to-r from-[#014d98] to-[#3ab7b1] mt-2 md:mt-4 text-left md:text-center">
           Discover the best <span className="text-[#3ab7b1]">Properties</span>
         </h1>
 

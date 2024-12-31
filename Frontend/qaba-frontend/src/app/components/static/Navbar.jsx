@@ -1,13 +1,17 @@
 "use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { AiOutlineClose } from 'react-icons/ai';
+import { useState } from "react";
+import { usePathname } from "next/navigation";
+import Link from "next/link";
+import { AiOutlineClose } from "react-icons/ai";
 import { TbMenu4 } from "react-icons/tb";
-import Button from '../shared/Button';
+import Button from "../shared/Button";
 
 const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const pathname = usePathname(); // To get the current route
+
+  const isActive = (path) => pathname === path;
 
   return (
     <nav className="sticky top-0 left-0 w-full z-50 bg-[rgb(246,246,246)]">
@@ -19,36 +23,27 @@ const Navbar = () => {
 
         {/* Desktop Navigation Links */}
         <ul className="hidden md:flex space-x-6 text-gray-800">
-          <li>
-            <Link href="/buy" className="hover:text-teal-700">
-              Buy
-            </Link>
-          </li>
-          <li>
-            <Link href="/rent" className="hover:text-teal-700">
-              Rent
-            </Link>
-          </li>
-          <li>
-            <Link href="/add-listing" className="hover:text-teal-700">
-              Add Listing
-            </Link>
-          </li>
-          <li>
-            <Link href="/landlord-agent" className="hover:text-teal-700">
-              Landlord / Agent
-            </Link>
-          </li>
-          <li>
-            <Link href="/about-us" className="hover:text-teal-700">
-              About Us
-            </Link>
-          </li>
-          <li>
-            <Link href="/blog" className="hover:text-teal-700">
-              Blog
-            </Link>
-          </li>
+          {[
+            { name: "Buy", path: "/buy" },
+            { name: "Rent", path: "/rent" },
+            { name: "Add Listing", path: "/add-listing" },
+            { name: "Landlord / Agent", path: "/landlord-agent" },
+            { name: "About Us", path: "/about-us" },
+            { name: "Blog", path: "/blog" },
+          ].map(({ name, path }) => (
+            <li key={path}>
+              <Link
+                href={path}
+                className={`${
+                  isActive(path)
+                    ? "text-transparent bg-clip-text bg-gradient-to-r from-[#014d98] to-[#3ab7b1]"
+                    : "hover:text-transparent hover:bg-clip-text hover:bg-gradient-to-r hover:from-[#014d98] hover:to-[#3ab7b1]"
+                } transition-all duration-300`}
+              >
+                {name}
+              </Link>
+            </li>
+          ))}
         </ul>
 
         {/* Right Actions */}
@@ -68,86 +63,51 @@ const Navbar = () => {
         </div>
       </div>
 
-     
-    {/* Mobile Dropdown Menu */}
-<div
-  className={`md:hidden pl-3 bg-gradient-to-b from-[rgb(246,246,246)] to-[rgb(203,228,221)] h-auto overflow-hidden transform transition-all duration-500 ${
-    menuOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-5"
-  }`}
->
-  <ul
-    className={`grid grid-cols-2 gap-4 p-4 text-gray-800 text-left transform transition-all duration-500 ${
-      menuOpen ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0"
-    }`}
-  >
-    <li className="transition-transform duration-300 ease-in-out hover:scale-105">
-      <Link
-        href="/buy"
-        className="hover:text-teal-700"
-        onClick={() => setMenuOpen(false)}
+      {/* Mobile Dropdown Menu */}
+      <div
+        className={`md:hidden pl-3 bg-gradient-to-b from-[rgb(246,246,246)] to-[rgb(203,228,221)] h-auto overflow-hidden transform transition-all duration-500 ${
+          menuOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-5"
+        }`}
       >
-        Buy
-      </Link>
-    </li>
-    <li className="transition-transform duration-300 ease-in-out hover:scale-105">
-      <Link
-        href="/rent"
-        className="hover:text-teal-700"
-        onClick={() => setMenuOpen(false)}
-      >
-        Rent
-      </Link>
-    </li>
-    <li className="transition-transform duration-300 ease-in-out hover:scale-105">
-      <Link
-        href="/add-listing"
-        className="hover:text-teal-700"
-        onClick={() => setMenuOpen(false)}
-      >
-        Add Listing
-      </Link>
-    </li>
-    <li className="transition-transform duration-300 ease-in-out hover:scale-105">
-      <Link
-        href="/landlord-agent"
-        className="hover:text-teal-700"
-        onClick={() => setMenuOpen(false)}
-      >
-        Landlord / Agent
-      </Link>
-    </li>
-    <li className="transition-transform duration-300 ease-in-out hover:scale-105">
-      <Link
-        href="/about-us"
-        className="hover:text-teal-700"
-        onClick={() => setMenuOpen(false)}
-      >
-        About Us
-      </Link>
-    </li>
-    <li className="transition-transform duration-300 ease-in-out hover:scale-105">
-      <Link
-        href="/blog"
-        className="hover:text-teal-700"
-        onClick={() => setMenuOpen(false)}
-      >
-        Blog
-      </Link>
-    </li>
-  </ul>
+        <ul
+          className={`grid grid-cols-2 gap-4 p-4 text-gray-800 text-left transform transition-all duration-500 ${
+            menuOpen ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0"
+          }`}
+        >
+          {[
+            { name: "Buy", path: "/buy" },
+            { name: "Rent", path: "/rent" },
+            { name: "Add Listing", path: "/add-listing" },
+            { name: "Landlord / Agent", path: "/landlord-agent" },
+            { name: "About Us", path: "/about-us" },
+            { name: "Blog", path: "/blog" },
+          ].map(({ name, path }) => (
+            <li key={path} className="transition-transform duration-300 ease-in-out hover:scale-105">
+              <Link
+                href={path}
+                className={`${
+                  isActive(path)
+                    ? "text-transparent bg-clip-text bg-gradient-to-r from-[#014d98] to-[#3ab7b1]"
+                    : "hover:text-transparent hover:bg-clip-text hover:bg-gradient-to-r hover:from-[#014d98] hover:to-[#3ab7b1]"
+                }`}
+                onClick={() => setMenuOpen(false)}
+              >
+                {name}
+              </Link>
+            </li>
+          ))}
+        </ul>
 
-  <div className="flex flex-col items-start space-y-2 p-4">
-  <Link
-    href="/sign-in"
-    className="bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white px-4 py-2 rounded-md hover:from-[#3ab7b1] hover:to-[#014d98]"
-    onClick={() => setMenuOpen(false)}
-  >
-    Sign In
-  </Link>
-</div>
-
-</div>
-
+        <div className="flex flex-col items-start space-y-2 p-4">
+          <Link
+            href="/sign-in"
+            className="bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white px-4 py-2 rounded-md hover:from-[#3ab7b1] hover:to-[#014d98]"
+            onClick={() => setMenuOpen(false)}
+          >
+            Sign In
+          </Link>
+        </div>
+      </div>
     </nav>
   );
 };
