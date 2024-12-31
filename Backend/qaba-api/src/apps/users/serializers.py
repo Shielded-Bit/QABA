@@ -1,6 +1,10 @@
+from django.conf import settings
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from .models import User, ClientProfile, AgentProfile
+from .utils.token import email_verification_token_generator
 
 
 class LoginSerializer(serializers.Serializer):
@@ -71,7 +75,26 @@ class BaseUserRegistrationSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user = User(**validated_data)
         user.set_password(validated_data["password"])
+        user.is_active = False  # Inactive until email verified
         user.save()
+
+        # Generate verification token
+        token = email_verification_token_generator.make_token(user)
+        user.email_verification_token = token
+        user.save()
+
+        # Send verification email
+        verification_url = f"{settings.FRONTEND_URL}/verify-email/{token}"
+        send_mail(
+            subject="Verify your email",
+            message=render_to_string(
+                "email/verification.html",
+                {"verification_url": verification_url, "user": user},
+            ),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            html_message=True,
+        )
         return user
 
 
@@ -138,3 +161,16 @@ class PasswordChangeSerializer(serializers.Serializer):
         if not user.check_password(value):
             raise serializers.ValidationError("Old password is incorrect")
         return value
+
+
+class EmailVerificationSerializer(serializers.Serializer):
+    token = serializers.CharField()
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    token = serializers.CharField()
+    new_password = serializers.CharField(write_only=True)
