@@ -14,9 +14,7 @@ body {
 }
 
 /* Add responsive padding to the container */
-body {
-  @apply px-2 sm:px-0 md:px-6 lg:px-8 xl:px-10;
-}
+
 /* Custom styles for pagination dots */
 .swiper-pagination {
   position: relative;
@@ -84,6 +82,17 @@ body {
 
 .animate-fadeIn {
   animation: fadeIn 1s ease-in-out; /* 1s animation duration with easing */
+}
+@media (max-width: 320px) {
+  .hero h1 {
+    font-size: 1.8rem; /* Adjust font size for smaller screens */
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+  }
+  .hero {
+    height: 90vh !important; /* Increase height to 100vh on screens below 320px */
+  }
 }
 
 

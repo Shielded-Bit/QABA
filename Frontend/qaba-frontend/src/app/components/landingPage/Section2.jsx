@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination, Autoplay } from 'swiper/modules'; // Import Swiper modules
 import 'swiper/css';
@@ -8,7 +8,7 @@ import 'swiper/css/pagination';
 import Card from '../shared/Card';
 
 const Section2 = () => {
-  const cardData = [
+  const cardData = useMemo(() => [
     {
       logo: 'https://res.cloudinary.com/dqbbm0guw/image/upload/v1734095772/Vector_3_eaqfs5.png',
       title: 'Buying and Renting of Homes',
@@ -33,7 +33,7 @@ const Section2 = () => {
       logoWidth: 30,
       logoHeight: 30,
     },
-  ];
+  ], []);
 
   const [visibleSlides, setVisibleSlides] = useState(0);
 
@@ -43,7 +43,7 @@ const Section2 = () => {
       setVisibleSlides((prev) => (prev < cardData.length ? prev + 1 : prev));
     }, 500); // Adjust the delay for the reveal effect
     return () => clearInterval(interval);
-  }, []);
+  }, [cardData.length]); // Include cardData.length as a dependency
 
   return (
     <section className="py-12 bg-gray-50 px-4 sm:px-6 lg:px-10">

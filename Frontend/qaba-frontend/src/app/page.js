@@ -1,10 +1,10 @@
-import Section6 from './components/landingPsge/Section6';
-import HeroSection from './components/landingPsge/HeroSection';
-import Section1 from './components/landingPsge/Section1';
-import Section2 from './components/landingPsge/Section2';
-import Section3 from './components/landingPsge/Section3';
-import Section4 from './components/landingPsge/Section4';
-import Section5 from './components/landingPsge/Section5';
+import Section6 from './components/landingPage/Section6';
+import HeroSection from './components/landingPage/HeroSection';
+import Section1 from './components/landingPage/Section1';
+import Section2 from './components/landingPage/Section2';
+import Section3 from './components/landingPage/Section3';
+import Section4 from './components/landingPage/Section4';
+import Section5 from './components/landingPage/Section5';
 
 export default function Home() {
   return (
