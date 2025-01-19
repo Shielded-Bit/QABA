@@ -3,3 +3,5 @@ __pycache__/
 src/apps/*/migrations/*
 
 Backend/qaba-api/src/db.sqlite3
+
+.env

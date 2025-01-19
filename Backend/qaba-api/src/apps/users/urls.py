@@ -7,6 +7,8 @@ from .views import (
     UserDetail,
     ClientProfileView,
     AgentProfileView,
+    ClientProfileCreateView,
+    AgentProfileCreateView,
     PasswordChangeView,
     AdminRegistrationView,
     RefreshTokenView,
@@ -32,6 +34,8 @@ urlpatterns = [
     *auth_patterns,
     path("users/", UserList.as_view(), name="user-list"),
     path("users/<int:pk>/", UserDetail.as_view(), name="user-detail"),
+    path("profile/client/", ClientProfileCreateView.as_view(), name="create-client-profile"),
+    path("profile/agent/", AgentProfileCreateView.as_view(), name="create-agent-profile"),
     path("profile/client/", ClientProfileView.as_view(), name="client-profile"),
     path("profile/agent/", AgentProfileView.as_view(), name="agent-profile"),
 ]

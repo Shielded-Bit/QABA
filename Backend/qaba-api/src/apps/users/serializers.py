@@ -4,19 +4,21 @@ from django.template.loader import render_to_string
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from .models import User, ClientProfile, AgentProfile
-from .utils.token import email_verification_token_generator
+from core.utils.token import email_verification_token_generator
+from core.utils.response import APIResponse
 
 
 class LoginSerializer(serializers.Serializer):
-    username = serializers.CharField()
+    email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
 
     def validate(self, data):
         user = authenticate(**data)
-        print(user)
-        if user:
-            return user
-        raise serializers.ValidationError("Incorrect credentials")
+        if not user:
+            APIResponse.unauthorized("Invalid credentials")
+        if not user.is_active:
+            APIResponse.forbidden("Account is not activated")
+        return user
 
 
 class ClientProfileSerializer(serializers.ModelSerializer):
@@ -81,7 +83,6 @@ class BaseUserRegistrationSerializer(serializers.ModelSerializer):
         # Generate verification token
         token = email_verification_token_generator.make_token(user)
         user.email_verification_token = token
-        user.save()
 
         # Send verification email
         verification_url = f"{settings.FRONTEND_URL}/verify-email/{token}"
@@ -93,8 +94,12 @@ class BaseUserRegistrationSerializer(serializers.ModelSerializer):
             ),
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[user.email],
-            html_message=True,
+            html_message=render_to_string(
+                "email/verification.html",
+                {"verification_url": verification_url, "user": user},
+            ),
         )
+        user.save()
         return user
 
 

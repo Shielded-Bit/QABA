@@ -3,12 +3,12 @@ from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.conf import settings
 from drf_spectacular.utils import extend_schema
-from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
 from .models import User, ClientProfile, AgentProfile
-from .utils.token import email_verification_token_generator
+from core.utils.response import APIResponse
+from core.utils.token import email_verification_token_generator
 from .serializers import (
     UserSerializer,
     LoginSerializer,
@@ -37,14 +37,13 @@ class LoginView(APIView):
         if serializer.is_valid():
             user = serializer.validated_data
             refresh = RefreshToken.for_user(user)
-            return Response(
-                {
-                    "refresh": str(refresh),
-                    "access": str(refresh.access_token),
-                    "user": UserSerializer(user).data,
-                }
-            )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            data = {
+                "refresh": str(refresh),
+                "access": str(refresh.access_token),
+                "user": UserSerializer(user).data,
+            }
+            return APIResponse.success(data=data, message="Login successful")
+        APIResponse.unauthorized(message=serializer.errors)
 
 
 @extend_schema(tags=["Authentication"])
@@ -56,12 +55,10 @@ class ClientRegistrationView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-        return Response(
-            {
-                "message": "Registration successful. Please check your email to verify your account.",
-                "user": UserSerializer(user).data,
-            },
-            status=status.HTTP_201_CREATED,
+        return APIResponse.success(
+            data={"user": UserSerializer(user).data},
+            message="Registration successful. Please check your email to verify your account.",
+            status_code=status.HTTP_201_CREATED,
         )
 
 
@@ -74,12 +71,10 @@ class AgentRegistrationView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-        return Response(
-            {
-                "message": "Registration successful. Please check your email to verify your account.",
-                "user": UserSerializer(user).data,
-            },
-            status=status.HTTP_201_CREATED,
+        return APIResponse.success(
+            data={"user": UserSerializer(user).data},
+            message="Registration successful. Please check your email to verify your account.",
+            status_code=status.HTTP_201_CREATED,
         )
 
 
@@ -92,12 +87,10 @@ class AdminRegistrationView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-        return Response(
-            {
-                "message": "Registration successful. Please check your email to verify your account.",
-                "user": UserSerializer(user).data,
-            },
-            status=status.HTTP_201_CREATED,
+        return APIResponse.success(
+            data={"user": UserSerializer(user).data},
+            message="Registration successful.",
+            status_code=status.HTTP_201_CREATED,
         )
 
 
@@ -108,8 +101,13 @@ class ClientProfileCreateView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         if not self.request.user.is_client:
-            raise PermissionError("Only clients can create client profiles")
+            return APIResponse.forbidden("Only clients can create client profiles")
         serializer.save()
+        return APIResponse.success(
+            data=serializer.data,
+            message="Profile created",
+            status_code=status.HTTP_201_CREATED,
+        )
 
 
 @extend_schema(tags=["Profiles"])
@@ -119,8 +117,13 @@ class AgentProfileCreateView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         if not self.request.user.is_agent:
-            raise PermissionError("Only agents can create agent profiles")
+            return APIResponse.forbidden("Only agents can create agent profiles")
         serializer.save()
+        return APIResponse.success(
+            data=serializer.data,
+            message="Profile created",
+            status_code=status.HTTP_201_CREATED,
+        )
 
 
 @extend_schema(tags=["Profiles"])
@@ -130,8 +133,11 @@ class ClientProfileView(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         if not self.request.user.is_client:
-            raise PermissionError("Only clients can view client profiles")
-        return ClientProfile.objects.get(user=self.request.user)
+            APIResponse.forbidden("Only clients can view client profiles")
+        return APIResponse.success(
+            data=ClientProfile.objects.get(user=self.request.user),
+            message="Profile retrieved",
+        )
 
 
 @extend_schema(tags=["Profiles"])
@@ -141,8 +147,15 @@ class AgentProfileView(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         if not self.request.user.is_agent:
-            raise PermissionError("Only agents can view agent profiles")
-        return AgentProfile.objects.get(user=self.request.user)
+            APIResponse.forbidden("Only agents can view agent profiles")
+        # check if the user has an agent profile
+        if not hasattr(self.request.user, "agent_profile"):
+            APIResponse.not_found("Agent profile not found")
+
+        return APIResponse.success(
+            data=AgentProfile.objects.get(user=self.request.user),
+            message="Profile retrieved",
+        )
 
 
 @extend_schema(tags=["Users"])
@@ -160,8 +173,10 @@ class UserDetail(generics.RetrieveUpdateDestroyAPIView):
 
     def get_object(self):
         if self.request.user.is_admin:
-            return super().get_object()
-        return self.request.user
+            return APIResponse.success(
+                data=super().get_object(), message="User retrieved"
+            )
+        return APIResponse.success(data=self.request.user, message="User retrieved")
 
 
 @extend_schema(tags=["Authentication"])
@@ -170,7 +185,7 @@ class PasswordChangeView(APIView):
 
     @extend_schema(
         request=PasswordChangeSerializer,
-        responses={200: {"message": "Password changed successfully"}},
+        responses=APIResponse.success(message="Password changed successfully"),
     )
     def post(self, request):
         serializer = PasswordChangeSerializer(
@@ -179,8 +194,8 @@ class PasswordChangeView(APIView):
         if serializer.is_valid():
             request.user.set_password(serializer.validated_data["new_password"])
             request.user.save()
-            return Response({"message": "Password changed successfully"})
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return APIResponse.success(message="Password changed successfully")
+        APIResponse.bad_request(message=serializer.errors)
 
 
 @extend_schema(tags=["Authentication"])
@@ -204,13 +219,12 @@ class EmailVerificationView(APIView):
                 user = User.objects.get(email_verification_token=token)
                 user.is_email_verified = True
                 user.email_verification_token = ""
+                user.is_active = True
                 user.save()
-                return Response({"message": "Email verified successfully"})
+                return APIResponse.success(message="Email verified successfully")
             except User.DoesNotExist:
-                return Response(
-                    {"error": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST
-                )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                APIResponse.bad_request("User not found")
+        APIResponse.bad_request(message=serializer.errors)
 
 
 @extend_schema(tags=["Authentication"])
@@ -219,7 +233,7 @@ class PasswordResetRequestView(APIView):
 
     @extend_schema(
         request=PasswordResetRequestSerializer,
-        responses={200: {"message": "Password reset email sent"}},
+        responses=APIResponse.success(message="Password reset email sent"),
     )
     def post(self, request):
         serializer = PasswordResetRequestSerializer(data=request.data)
@@ -238,15 +252,13 @@ class PasswordResetRequestView(APIView):
                     [email],
                     html_message=True,
                 )
-                return Response({"message": "Password reset email sent"})
+                return APIResponse.success(
+                    message="a password reset email has been sent"
+                )
             except User.DoesNotExist:
-                pass
-            return Response(
-                {
-                    "message": "If an account exists, a password reset email has been sent"
-                }
-            )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                APIResponse.not_found("User not found")
+
+        APIResponse.bad_request(message=serializer.errors)
 
 
 @extend_schema(tags=["Authentication"])
@@ -255,7 +267,7 @@ class PasswordResetConfirmView(APIView):
 
     @extend_schema(
         request=PasswordResetConfirmSerializer,
-        responses={200: {"message": "Password reset successful"}},
+        responses=APIResponse.success(message="Password reset successful"),
     )
     def post(self, request):
         serializer = PasswordResetConfirmSerializer(data=request.data)
@@ -266,9 +278,7 @@ class PasswordResetConfirmView(APIView):
                 user.set_password(serializer.validated_data["new_password"])
                 user.password_reset_token = ""
                 user.save()
-                return Response({"message": "Password reset successful"})
+                return APIResponse.success(message="Password reset successful")
             except User.DoesNotExist:
-                return Response(
-                    {"error": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST
-                )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                APIResponse.not_found("User not found")
+        APIResponse.bad_request(message=serializer.errors)
