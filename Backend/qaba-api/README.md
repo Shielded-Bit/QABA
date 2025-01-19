@@ -1,6 +1,6 @@
 # README.md
 
-# Django Real Estate API
+# QABA Real Estate API
 
 This project is a backend API for a real estate platform built using Django and Django REST Framework. It provides endpoints for managing users and properties.
 
