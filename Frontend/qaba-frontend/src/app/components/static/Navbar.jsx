@@ -48,7 +48,7 @@ const Navbar = () => {
 
         {/* Right Actions */}
         <div className="hidden md:flex items-center space-x-4">
-          <Button label="Sign In" variant="primary" href="/sign-in" />
+          <Button label="Sign In" variant="primary" href="/signin" />
         </div>
 
         {/* Mobile Menu Icon */}
@@ -81,6 +81,8 @@ const Navbar = () => {
             { name: "Landlord / Agent", path: "/landlord-agent" },
             { name: "About Us", path: "/about-us" },
             { name: "Blog", path: "/blog" },
+           
+            
           ].map(({ name, path }) => (
             <li key={path} className="transition-transform duration-300 ease-in-out hover:scale-105">
               <Link
@@ -100,7 +102,7 @@ const Navbar = () => {
 
         <div className="flex flex-col items-start space-y-2 p-4">
           <Link
-            href="/sign-in"
+            href="/signin"
             className="bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white px-4 py-2 rounded-md hover:from-[#3ab7b1] hover:to-[#014d98]"
             onClick={() => setMenuOpen(false)}
           >
