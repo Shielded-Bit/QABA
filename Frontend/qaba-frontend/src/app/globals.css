@@ -12,7 +12,18 @@ body {
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
 }
-
+.text-gradient {
+  background: linear-gradient(to right, #014d98, #3ab7b1);
+  -webkit-background-clip: text;
+  color: transparent;
+}
+.custom-rounded {
+  border-top-right-radius: 3.5rem; 
+  border-bottom-right-radius: 3.5rem; 
+}
+.gradient-border {
+  border-bottom: linear-gradient(to right, #014d98, #3ab7b1); 
+}
 /* Add responsive padding to the container */
 
 /* Custom styles for pagination dots */
