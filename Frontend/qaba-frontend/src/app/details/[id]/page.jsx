@@ -284,7 +284,7 @@ const PropertyDetails = ({ params }) => {
     </div>
     <div>
       <h4 className="font-semibold text-gray-900">Property is verified by us</h4>
-      <p className="text-sm text-gray-500">If reported as fake, we'll investigate to confirm if this listing isn't real.</p>
+      <p className="text-sm text-gray-500">If reported as fake, we&apos;ll investigate to confirm if this listing isn&apos;t real.</p>
     </div>
   </div>
   <button className="mt-4 w-full bg-gradient-to-r from-blue-700 to-teal-500 text-white py-2 px-4 rounded-lg font-medium shadow-md hover:opacity-90">
