@@ -10,6 +10,7 @@ djangorestframework==3.12.4
 djangorestframework-simplejwt==5.3.1
 drf-spectacular==0.28.0
 flake8==3.9.2
+gunicorn==23.0.0
 inflection==0.5.1
 iniconfig==2.0.0
 jsonschema==4.23.0
@@ -27,6 +28,7 @@ pyflakes==2.3.1
 PyJWT==2.10.1
 pytest==6.2.4
 pytest-django==4.5.2
+python-dotenv==1.0.1
 pytz==2024.2
 PyYAML==6.0.2
 referencing==0.35.1

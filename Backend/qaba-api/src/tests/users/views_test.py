@@ -2,7 +2,7 @@ import pytest
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
-from apps.users.models import User, ClientProfile, AgentProfile
+from apps.users.models import User
 from core.utils.token import email_verification_token_generator
 from unittest.mock import patch
 
