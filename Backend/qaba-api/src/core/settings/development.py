@@ -3,8 +3,6 @@ from .base import *
 # Development settings
 DEBUG = True
 
-ALLOWED_HOSTS = []
-
 # Database configuration for development
 DATABASES = {
     "default": {
