@@ -14,6 +14,15 @@ SECRET_KEY = os.getenv("SECRET_KEY", "your-default-secret-key")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "False") == "True"
 
+# Static files (CSS, JavaScript, Images)
+STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_DIRS = [BASE_DIR / "static"]
+
+# Media files
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
