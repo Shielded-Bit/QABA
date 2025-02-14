@@ -1,11 +1,12 @@
+from core.utils.response import APIResponse
+from core.utils.token import email_verification_token_generator
 from django.conf import settings
+from django.contrib.auth import authenticate
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from rest_framework import serializers
-from django.contrib.auth import authenticate
-from .models import User, ClientProfile, AgentProfile
-from core.utils.token import email_verification_token_generator
-from core.utils.response import APIResponse
+
+from .models import AgentProfile, ClientProfile, User
 
 
 class LoginSerializer(serializers.Serializer):
@@ -73,6 +74,11 @@ class BaseUserRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["username", "email", "password", "first_name", "last_name"]
+
+    def validate_email(self, value):
+        if User.objects.filter(email=value).exists():
+            APIResponse.bad_request("User with this email already exists")
+        return value
 
     def create(self, validated_data):
         user = User(**validated_data)
@@ -179,3 +185,34 @@ class PasswordResetRequestSerializer(serializers.Serializer):
 class PasswordResetConfirmSerializer(serializers.Serializer):
     token = serializers.CharField()
     new_password = serializers.CharField(write_only=True)
+
+
+class SendEmailVerificationSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def validate_email(self, value):
+        if not User.objects.filter(email=value).exists():
+            APIResponse.bad_request("User with this email does not exist")
+        return value
+
+    def send_verification_email(self, email):
+        user = User.objects.get(email=email)
+        token = email_verification_token_generator.make_token(user)
+        user.email_verification_token = token
+        user.save()
+
+        verification_url = f"{settings.FRONTEND_URL}/verify-email/{token}"
+        send_mail(
+            subject="Verify your email",
+            message=render_to_string(
+                "email/verification.html",
+                {"verification_url": verification_url, "user": user},
+            ),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            html_message=render_to_string(
+                "email/verification.html",
+                {"verification_url": verification_url, "user": user},
+            ),
+        )
+        return user

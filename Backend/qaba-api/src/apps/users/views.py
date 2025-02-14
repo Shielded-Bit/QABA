@@ -1,26 +1,28 @@
-from rest_framework import generics, status, permissions
+from core.utils.response import APIResponse
+from core.utils.token import email_verification_token_generator
+from django.conf import settings
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
-from django.conf import settings
 from drf_spectacular.utils import extend_schema
+from rest_framework import generics, permissions, status
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
-from .models import User, ClientProfile, AgentProfile
-from core.utils.response import APIResponse
-from core.utils.token import email_verification_token_generator
+
+from .models import AgentProfile, ClientProfile, User
 from .serializers import (
-    UserSerializer,
-    LoginSerializer,
-    ClientRegistrationSerializer,
+    AdminRegistrationSerializer,
+    AgentProfileCreateSerializer,
     AgentRegistrationSerializer,
     ClientProfileCreateSerializer,
-    AgentProfileCreateSerializer,
-    PasswordChangeSerializer,
-    AdminRegistrationSerializer,
+    ClientRegistrationSerializer,
     EmailVerificationSerializer,
-    PasswordResetRequestSerializer,
+    LoginSerializer,
+    PasswordChangeSerializer,
     PasswordResetConfirmSerializer,
+    PasswordResetRequestSerializer,
+    SendEmailVerificationSerializer,
+    UserSerializer,
 )
 
 
@@ -134,9 +136,21 @@ class ClientProfileView(generics.RetrieveUpdateAPIView):
     def get_object(self):
         if not self.request.user.is_client:
             APIResponse.forbidden("Only clients can view client profiles")
+
+        # check if the user has a client profile
+        if not hasattr(self.request.user, "clientprofile"):
+            APIResponse.not_found("Client profile not found")
+
         return APIResponse.success(
             data=ClientProfile.objects.get(user=self.request.user),
             message="Profile retrieved",
+        )
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return APIResponse.success(
+            data=serializer.data, message="Client profile retrieved"
         )
 
 
@@ -149,12 +163,16 @@ class AgentProfileView(generics.RetrieveUpdateAPIView):
         if not self.request.user.is_agent:
             APIResponse.forbidden("Only agents can view agent profiles")
         # check if the user has an agent profile
-        if not hasattr(self.request.user, "agent_profile"):
+        if not hasattr(self.request.user, "agentprofile"):
             APIResponse.not_found("Agent profile not found")
 
+        return AgentProfile.objects.get(user=self.request.user)
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
         return APIResponse.success(
-            data=AgentProfile.objects.get(user=self.request.user),
-            message="Profile retrieved",
+            data=serializer.data, message="Agent profile retrieved"
         )
 
 
@@ -173,20 +191,20 @@ class UserDetail(generics.RetrieveUpdateDestroyAPIView):
 
     def get_object(self):
         if self.request.user.is_admin:
-            return APIResponse.success(
-                data=super().get_object(), message="User retrieved"
-            )
-        return APIResponse.success(data=self.request.user, message="User retrieved")
+            return super().get_object()
+        return self.request.user  # Return user instance, not a response
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return APIResponse.success(data=serializer.data, message="User retrieved")
 
 
 @extend_schema(tags=["Authentication"])
 class PasswordChangeView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
+    serializer_class = PasswordChangeSerializer
 
-    @extend_schema(
-        request=PasswordChangeSerializer,
-        responses=APIResponse.success(message="Password changed successfully"),
-    )
     def post(self, request):
         serializer = PasswordChangeSerializer(
             data=request.data, context={"request": request}
@@ -206,35 +224,54 @@ class RefreshTokenView(TokenRefreshView):
 @extend_schema(tags=["Authentication"])
 class EmailVerificationView(APIView):
     permission_classes = (permissions.AllowAny,)
+    serializer_class = EmailVerificationSerializer
 
-    @extend_schema(
-        request=EmailVerificationSerializer,
-        responses={200: {"message": "Email verified successfully"}},
-    )
     def post(self, request):
         serializer = EmailVerificationSerializer(data=request.data)
         if serializer.is_valid():
             token = serializer.validated_data["token"]
             try:
                 user = User.objects.get(email_verification_token=token)
+
+                # Check if token is valid and not expired
+                if not email_verification_token_generator.check_token(user, token):
+                    return APIResponse.bad_request("Invalid or expired token")
+
+                # Verify and invalidate token
                 user.is_email_verified = True
-                user.email_verification_token = ""
+                user.email_verification_token = ""  # Invalidate token
                 user.is_active = True
                 user.save()
+
                 return APIResponse.success(message="Email verified successfully")
             except User.DoesNotExist:
-                APIResponse.bad_request("User not found")
-        APIResponse.bad_request(message=serializer.errors)
+                return APIResponse.bad_request("Invalid token")
+
+
+@extend_schema(tags=["Authentication"])
+class SendEmailVerificationView(APIView):
+    permission_classes = (permissions.AllowAny,)
+    serializer_class = SendEmailVerificationSerializer
+
+    def post(self, request):
+        serializer = SendEmailVerificationSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data["email"]
+            try:
+                User.objects.get(email=email)
+                serializer.send_verification_email(email)
+                return APIResponse.success(
+                    message="Email verification email sent to your email"
+                )
+            except User.DoesNotExist:
+                return APIResponse.not_found("User not found")
 
 
 @extend_schema(tags=["Authentication"])
 class PasswordResetRequestView(APIView):
     permission_classes = (permissions.AllowAny,)
+    serializer_class = PasswordResetRequestSerializer
 
-    @extend_schema(
-        request=PasswordResetRequestSerializer,
-        responses=APIResponse.success(message="Password reset email sent"),
-    )
     def post(self, request):
         serializer = PasswordResetRequestSerializer(data=request.data)
         if serializer.is_valid():
@@ -264,11 +301,8 @@ class PasswordResetRequestView(APIView):
 @extend_schema(tags=["Authentication"])
 class PasswordResetConfirmView(APIView):
     permission_classes = (permissions.AllowAny,)
+    serializer_class = PasswordResetConfirmSerializer
 
-    @extend_schema(
-        request=PasswordResetConfirmSerializer,
-        responses=APIResponse.success(message="Password reset successful"),
-    )
     def post(self, request):
         serializer = PasswordResetConfirmSerializer(data=request.data)
         if serializer.is_valid():
