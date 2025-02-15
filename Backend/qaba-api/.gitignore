@@ -36,6 +36,7 @@ staticfiles/
 
 # Environment
 .env
+.env.prod
 .venv
 env/
 venv/
@@ -64,3 +65,5 @@ coverage.xml
 # Unit test / coverage reports
 .pytest_cache/
 pytest.ini
+
+./src/db.sqlite3

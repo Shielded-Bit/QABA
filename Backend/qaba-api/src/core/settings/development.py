@@ -3,15 +3,13 @@ from .base import *
 # Development settings
 DEBUG = True
 
-# Database configuration for development
+# Allow all origins in development
+CORS_ALLOW_ALL_ORIGINS = True
+
+# Database
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "db.sqlite3",
     }
 }
-
-# Static files (CSS, JavaScript, Images)
-STATIC_URL = "/static/"
-
-# Additional development-specific settings can be added here

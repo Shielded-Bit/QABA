@@ -1,7 +1,7 @@
-import logging
-import os
 from datetime import timedelta
+from os import getenv
 from pathlib import Path
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -10,10 +10,10 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv("SECRET_KEY", "your-default-secret-key")
+SECRET_KEY = getenv("SECRET_KEY", "your-default-secret-key")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv("DEBUG", "False") == "True"
+DEBUG = getenv("DEBUG", "False") == "True"
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = "/static/"
@@ -24,7 +24,7 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "127.0.0.1").split(",")
+ALLOWED_HOSTS = getenv("ALLOWED_HOSTS", "127.0.0.1").split(",")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     # Third-party apps
+    "corsheaders",  # Add this line
     "rest_framework",  # Django REST framework
     "rest_framework_simplejwt",  # Django REST framework JWT
     "drf_spectacular",  # drf-spectacular
@@ -48,6 +49,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "corsheaders.middleware.CorsMiddleware",  # Add this line
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -75,14 +77,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "core.wsgi.application"
-
-# Database
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
-}
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -118,9 +112,6 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "core.utils.exception_handler.custom_exception_handler",
 }
 
-# Static files (CSS, JavaScript, Images)
-STATIC_URL = "/static/"
-
 # drf-spectacular settings
 SPECTACULAR_SETTINGS = {
     "TITLE": "QABA API",
@@ -137,8 +128,8 @@ SPECTACULAR_SETTINGS = {
 
 # JWT Settings
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=getenv("ACCESS_TOKEN_LIFETIME", 15)),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=getenv("REFRESH_TOKEN_LIFETIME", 30)),
     "ROTATE_REFRESH_TOKENS": False,
     "BLACKLIST_AFTER_ROTATION": True,
     "AUTH_HEADER_TYPES": ("Bearer",),
@@ -154,8 +145,31 @@ EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
-EMAIL_VERIFICATION_TIMEOUT = os.getenv("EMAIL_VERIFICATION_TIMEOUT", 3600)
+EMAIL_HOST_USER = getenv("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = getenv("EMAIL_HOST_PASSWORD")
+DEFAULT_FROM_EMAIL = getenv("DEFAULT_FROM_EMAIL")
+FRONTEND_URL = getenv("FRONTEND_URL", "http://localhost:3000")
+EMAIL_VERIFICATION_TIMEOUT = getenv("EMAIL_VERIFICATION_TIMEOUT", 3600)
+
+CORS_ALLOW_CREDENTIALS = True
+# Security Headers
+CORS_ALLOW_METHODS = [
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
+]
+
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+]
