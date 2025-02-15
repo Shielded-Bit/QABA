@@ -128,8 +128,8 @@ SPECTACULAR_SETTINGS = {
 
 # JWT Settings
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=getenv("ACCESS_TOKEN_LIFETIME", 15)),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=getenv("REFRESH_TOKEN_LIFETIME", 30)),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=int(getenv("ACCESS_TOKEN_LIFETIME"), 15)),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=int(getenv("REFRESH_TOKEN_LIFETIME"), 30)),
     "ROTATE_REFRESH_TOKENS": False,
     "BLACKLIST_AFTER_ROTATION": True,
     "AUTH_HEADER_TYPES": ("Bearer",),
