@@ -3,7 +3,8 @@ asgiref==3.8.1
 attrs==24.3.0
 black==21.7b0
 click==8.1.8
-Django==3.2
+Django==5.1.6
+django-cors-headers==4.7.0
 django-debug-toolbar==3.2.1
 django-extensions==3.1.5
 djangorestframework==3.12.4
