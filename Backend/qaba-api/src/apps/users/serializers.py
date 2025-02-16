@@ -1,3 +1,5 @@
+import smtplib
+
 from core.utils.response import APIResponse
 from core.utils.token import email_verification_token_generator
 from django.conf import settings
@@ -91,20 +93,31 @@ class BaseUserRegistrationSerializer(serializers.ModelSerializer):
         user.email_verification_token = token
 
         # Send verification email
-        verification_url = f"{settings.FRONTEND_URL}/verify-email/{token}"
-        send_mail(
-            subject="Verify your email",
-            message=render_to_string(
-                "email/verification.html",
-                {"verification_url": verification_url, "user": user},
-            ),
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            html_message=render_to_string(
-                "email/verification.html",
-                {"verification_url": verification_url, "user": user},
-            ),
+        verification_url = (
+            f"{settings.BACKEND_URL}/api/v1/auth/verify-email?token={token}"
         )
+
+        try:
+            send_mail(
+                subject="Verify your email",
+                message=render_to_string(
+                    "email/verification.html",
+                    {"verification_url": verification_url, "user": user},
+                ),
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[user.email],
+                html_message=render_to_string(
+                    "email/verification.html",
+                    {"verification_url": verification_url, "user": user},
+                ),
+            )
+
+        except smtplib.SMTPException as e:
+            APIResponse.bad_request(str(e))
+
+        except Exception as e:
+            APIResponse.bad_request(str(e))
+
         user.save()
         return user
 

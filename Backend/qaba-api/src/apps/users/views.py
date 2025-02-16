@@ -1,9 +1,12 @@
+from urllib.parse import urlencode
+
 from core.utils.response import APIResponse
 from core.utils.token import email_verification_token_generator
 from django.conf import settings
 from django.core.mail import send_mail
+from django.http import HttpResponseRedirect
 from django.template.loader import render_to_string
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import generics, permissions, status
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -16,7 +19,6 @@ from .serializers import (
     AgentRegistrationSerializer,
     ClientProfileCreateSerializer,
     ClientRegistrationSerializer,
-    EmailVerificationSerializer,
     LoginSerializer,
     PasswordChangeSerializer,
     PasswordResetConfirmSerializer,
@@ -221,31 +223,53 @@ class RefreshTokenView(TokenRefreshView):
     pass
 
 
-@extend_schema(tags=["Authentication"])
+@extend_schema(
+    tags=["Authentication"],
+    parameters=[
+        OpenApiParameter(
+            name="token",
+            type=str,
+            location=OpenApiParameter.QUERY,
+            description="Email verification token",
+        )
+    ],
+    responses={
+        302: None,  # Redirect response
+        400: OpenApiResponse(description="Invalid token"),
+    },
+)
 class EmailVerificationView(APIView):
     permission_classes = (permissions.AllowAny,)
-    serializer_class = EmailVerificationSerializer
 
-    def post(self, request):
-        serializer = EmailVerificationSerializer(data=request.data)
-        if serializer.is_valid():
-            token = serializer.validated_data["token"]
-            try:
-                user = User.objects.get(email_verification_token=token)
+    def get(self, request):
+        token = request.GET.get("token")
+        if not token:
+            return HttpResponseRedirect(
+                f"{settings.FRONTEND_URL}/verify-email/error?{urlencode({'message': 'Token is required'})}"
+            )
 
-                # Check if token is valid and not expired
-                if not email_verification_token_generator.check_token(user, token):
-                    return APIResponse.bad_request("Invalid or expired token")
+        try:
+            user = User.objects.get(email_verification_token=token)
 
-                # Verify and invalidate token
-                user.is_email_verified = True
-                user.email_verification_token = ""  # Invalidate token
-                user.is_active = True
-                user.save()
+            # Check if token is valid and not expired
+            if not email_verification_token_generator.check_token(user, token):
+                return HttpResponseRedirect(
+                    f"{settings.FRONTEND_URL}/verify-email/error?{urlencode({'message': 'Invalid or expired token'})}"
+                )
 
-                return APIResponse.success(message="Email verified successfully")
-            except User.DoesNotExist:
-                return APIResponse.bad_request("Invalid token")
+            # Verify and invalidate token
+            user.is_email_verified = True
+            user.email_verification_token = ""  # Invalidate token
+            user.is_active = True
+            user.save()
+
+            # Redirect to frontend success page
+            return HttpResponseRedirect(f"{settings.FRONTEND_URL}/verify-email/success")
+
+        except User.DoesNotExist:
+            return HttpResponseRedirect(
+                f"{settings.FRONTEND_URL}/verify-email/error?{urlencode({'message': 'Invalid token'})}"
+            )
 
 
 @extend_schema(tags=["Authentication"])

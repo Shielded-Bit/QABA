@@ -11,6 +11,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = getenv("SECRET_KEY", "your-default-secret-key")
+SECRET_KEY_FALLBACKS = getenv("SECRET_KEY_FALLBACKS", "").split(",")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = getenv("DEBUG", "False") == "True"
@@ -78,6 +79,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "core.wsgi.application"
 
+PASSWORD_RESET_TIMEOUT = getenv("PASSWORD_RESET_TIMEOUT", 3600)
+
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -142,14 +145,16 @@ AUTHENTICATION_BACKENDS = [
 
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = "smtp.gmail.com"
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
+EMAIL_HOST = getenv("EMAIL_HOST", "smtp.gmail.com")
+EMAIL_PORT = getenv('EMAIL_PORT', 465)
+EMAIL_USE_TLS = getenv('EMAIL_USE_TLS', False)
+EMAIL_USE_SSL = getenv('EMAIL_USE_SSL', True)
 EMAIL_HOST_USER = getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = getenv("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = getenv("DEFAULT_FROM_EMAIL")
+
 FRONTEND_URL = getenv("FRONTEND_URL", "http://localhost:3000")
-EMAIL_VERIFICATION_TIMEOUT = getenv("EMAIL_VERIFICATION_TIMEOUT", 3600)
+BACKEND_URL = getenv("BACKEND_URL", "http://localhost:8000")
 
 CORS_ALLOW_CREDENTIALS = True
 # Security Headers
