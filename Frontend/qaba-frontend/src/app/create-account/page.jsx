@@ -1,6 +1,8 @@
 'use client';
 import React, { useState } from 'react';
 import Image from 'next/image';
+import { registerClient, registerAgent } from '../../app/utils/auth/api.js';
+import EmailVerificationModal from '../components/modal/ EmailVerificationModal.jsx';
 
 const bgpict = [
   {
@@ -19,14 +21,70 @@ const bgpict = [
     src: 'https://res.cloudinary.com/ddzaww11y/image/upload/v1737901695/view_qioayd.png',
     alt: 'view password',
   },
-
 ];
 
-const SignIn = () => {
+const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [formData, setFormData] = useState({
+    firstname: '',
+    lastname: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    role: 'agent', // default role
+  });
+  const [error, setError] = useState('');
+  const [showModal, setShowModal] = useState(false);
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
+  };
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.id]: e.target.value,
+    });
+  };
+
+  const handleRoleChange = (e) => {
+    setFormData({
+      ...formData,
+      role: e.target.value,
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    const requestData = {
+      username: formData.email.split('@')[0], // Generate a username from the email
+      email: formData.email,
+      password: formData.password,
+      first_name: formData.firstname,
+      last_name: formData.lastname,
+    };
+
+    console.log('Request Data:', requestData); // Log the request data
+
+    try {
+      let response;
+      if (formData.role === 'client') {
+        response = await registerClient(requestData);
+      } else {
+        response = await registerAgent(requestData);
+      }
+      console.log('Response:', response); // Log the response
+      setShowModal(true); // Show the modal on successful registration
+    } catch (error) {
+      console.error('Registration failed', error);
+      setError(error.response?.data?.message || 'Registration failed');
+    }
   };
 
   return (
@@ -48,7 +106,7 @@ const SignIn = () => {
           {/* Right Form Section */}
           <div className="w-full lg:w-1/2 p-8 sm:p-12 bg-white ml-16">
             <h2 className="text-4xl font-bold text-transparent bg-clip-text text-gradient py-2">
-              Create a account
+              Create an account
             </h2>
             <p className="mt-2 text-sm font-bold text-gray-900">
               Register with us so that you can buy and rent with
@@ -56,7 +114,8 @@ const SignIn = () => {
                us at your convenience
             </p>
 
-            <form className="mt-9">
+            <form className="mt-9" onSubmit={handleSubmit}>
+              {error && <p className="text-red-500">{error}</p>}
               <div className="mb-5 pt-1 flex space-x-4">
                 <input
                   type="text"
@@ -64,6 +123,8 @@ const SignIn = () => {
                   className="px-2 peer w-full border-b-2 border-gradient-to-r from-[#014d98] to-[#3ab7b1] bg-transparent text-gray-900 text-sm pb-1 focus:outline-none focus:border-blue-600"
                   placeholder="First Name"
                   required
+                  value={formData.firstname}
+                  onChange={handleChange}
                 />
                 <input
                   type="text"
@@ -71,6 +132,8 @@ const SignIn = () => {
                   className="px-2 peer w-full border-b-2 border-gradient-to-r from-[#014d98] to-[#3ab7b1] bg-transparent text-gray-900 text-sm pb-1 focus:outline-none focus:border-blue-600"
                   placeholder="Last Name"
                   required
+                  value={formData.lastname}
+                  onChange={handleChange}
                 />
               </div>
               <div className="mt-1 pt-1">
@@ -80,6 +143,8 @@ const SignIn = () => {
                   className="px-2 peer w-full border-b-2 border-gradient-to-r from-[#014d98] to-[#3ab7b1] bg-transparent text-gray-900 text-sm pb-1 focus:outline-none focus:border-blue-600"
                   placeholder="Email Address"
                   required
+                  value={formData.email}
+                  onChange={handleChange}
                 />
               </div>
 
@@ -90,6 +155,8 @@ const SignIn = () => {
                   className="px-2 peer w-full border-b-2 border-gradient-to-r from-[#014d98] to-[#3ab7b1] bg-transparent text-gray-900 text-sm pb-1 focus:outline-none focus:border-blue-600"
                   placeholder="Password"
                   required
+                  value={formData.password}
+                  onChange={handleChange}
                 />
                 <button
                   type="button"
@@ -108,10 +175,12 @@ const SignIn = () => {
               <div className="relative mt-5">
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  id="password"
+                  id="confirmPassword"
                   className="w-full px-2 py- peer  border-b-2 border-gradient-to-r from-[#014d98] to-[#3ab7b1] bg-transparent text-gray-900 text-sm pb-1 focus:outline-none focus:border-blue-600"
                   placeholder="Confirm Password"
                   required
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
                 />
                 <button
                   type="button"
@@ -137,6 +206,8 @@ const SignIn = () => {
                       name="role"
                       value="client"
                       className="w-4 h-4 text-gradient "
+                      checked={formData.role === 'client'}
+                      onChange={handleRoleChange}
                     />
                     <span className="text-[16px] font-medium text-gray-900">Client:</span>
                     <span className="text-sm text-gray-500">Choose this if you’re looking to access services</span>
@@ -149,7 +220,8 @@ const SignIn = () => {
                       name="role"
                       value="agent"
                       className="w-4 h-4 text-gradient border-gray-300"
-                      defaultChecked
+                      checked={formData.role === 'agent'}
+                      onChange={handleRoleChange}
                     />
                     <span className="text-[16px] font-medium text-gray-900">Agent:</span>
                     <span className="text-sm text-gray-500">Choose this if you’re offering services</span>
@@ -224,7 +296,8 @@ const SignIn = () => {
               Sign in so that you can buy and rent with us conveniently.
             </p>
 
-            <form className="mt-5">
+            <form className="mt-5" onSubmit={handleSubmit}>
+              {error && <p className="text-red-500">{error}</p>}
               <div className="mb-6 pt-1 flex space-x-3">
                   <input
                     type="text"
@@ -232,6 +305,8 @@ const SignIn = () => {
                     className="px-2 peer w-full border-b-2 border-gradient-to-r from-[#014d98] to-[#3ab7b1] bg-transparent text-gray-900 text-sm pb-1 focus:outline-none focus:border-blue-600"
                     placeholder="First Name"
                     required
+                    value={formData.firstname}
+                    onChange={handleChange}
                   />
                   <input
                     type="text"
@@ -239,6 +314,8 @@ const SignIn = () => {
                     className="px-2 peer w-full border-b-2 border-gradient-to-r from-[#014d98] to-[#3ab7b1] bg-transparent text-gray-900 text-sm pb-1 focus:outline-none focus:border-blue-600"
                     placeholder="Last Name"
                     required
+                    value={formData.lastname}
+                    onChange={handleChange}
                   />
                 </div>
               <div className="mt-4">
@@ -248,6 +325,8 @@ const SignIn = () => {
                   className="w-full px-2 py- peer  border-b-2 border-gradient-to-r from-[#014d98] to-[#3ab7b1] bg-transparent text-gray-900 text-sm pb-1 focus:outline-none focus:border-blue-600"
                   placeholder="Email Address"
                   required
+                  value={formData.email}
+                  onChange={handleChange}
                 />
               </div>
 
@@ -258,6 +337,8 @@ const SignIn = () => {
                   className="w-full px-2 py- peer  border-b-2 border-gradient-to-r from-[#014d98] to-[#3ab7b1] bg-transparent text-gray-900 text-sm pb-1 focus:outline-none focus:border-blue-600"
                   placeholder="Password"
                   required
+                  value={formData.password}
+                  onChange={handleChange}
                 />
                 <button
                   type="button"
@@ -276,10 +357,12 @@ const SignIn = () => {
               <div className="relative mt-6">
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  id="password"
+                  id="confirmPassword"
                   className="w-full px-2 py- peer  border-b-2 border-gradient-to-r from-[#014d98] to-[#3ab7b1] bg-transparent text-gray-900 text-sm pb-1 focus:outline-none focus:border-blue-600"
-                  placeholder="Password"
+                  placeholder="Confirm Password"
                   required
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
                 />
                 <button
                   type="button"
@@ -346,15 +429,12 @@ const SignIn = () => {
             </p>
           </div>
         </div>
-
-
-
-
-
-
       </div>
+
+      <EmailVerificationModal showModal={showModal} setShowModal={setShowModal} email={formData.email} />
+
     </div>
   );
 };
 
-export default SignIn;
+export default Register;
