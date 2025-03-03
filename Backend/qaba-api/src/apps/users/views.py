@@ -1,10 +1,7 @@
-from urllib.parse import urlencode
-
 from core.utils.response import APIResponse
 from core.utils.token import email_verification_token_generator
 from django.conf import settings
 from django.core.mail import send_mail
-from django.http import HttpResponseRedirect
 from django.template.loader import render_to_string
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import generics, permissions, status
@@ -244,18 +241,14 @@ class EmailVerificationView(APIView):
     def get(self, request):
         token = request.GET.get("token")
         if not token:
-            return HttpResponseRedirect(
-                f"{settings.FRONTEND_URL}/verify-email/error?{urlencode({'message': 'Token is required'})}"
-            )
+            return APIResponse.bad_request("Token is required")
 
         try:
             user = User.objects.get(email_verification_token=token)
 
             # Check if token is valid and not expired
             if not email_verification_token_generator.check_token(user, token):
-                return HttpResponseRedirect(
-                    f"{settings.FRONTEND_URL}/verify-email/error?{urlencode({'message': 'Invalid or expired token'})}"
-                )
+                return APIResponse.bad_request("Invalid token")
 
             # Verify and invalidate token
             user.is_email_verified = True
@@ -264,12 +257,9 @@ class EmailVerificationView(APIView):
             user.save()
 
             # Redirect to frontend success page
-            return HttpResponseRedirect(f"{settings.FRONTEND_URL}/verify-email/success")
-
+            return APIResponse.success("Email verified")
         except User.DoesNotExist:
-            return HttpResponseRedirect(
-                f"{settings.FRONTEND_URL}/verify-email/error?{urlencode({'message': 'Invalid token'})}"
-            )
+            return APIResponse.not_found("User not found")
 
 
 @extend_schema(tags=["Authentication"])

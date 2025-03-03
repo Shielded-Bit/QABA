@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "drf_spectacular",  # drf-spectacular
     # Local apps
     "apps.users",  # Custom user app
+    "apps.properties",  # Properties app
 ]
 
 MIDDLEWARE = [

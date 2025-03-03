@@ -1,6 +1,4 @@
-from unittest.mock import patch
 import pytest
-from django.contrib.auth import authenticate
 from rest_framework.test import APIRequestFactory
 from apps.users.serializers import (
     UserSerializer,

@@ -94,7 +94,7 @@ class BaseUserRegistrationSerializer(serializers.ModelSerializer):
 
         # Send verification email
         verification_url = (
-            f"{settings.BACKEND_URL}/api/v1/auth/verify-email?token={token}"
+            f"{settings.FRONTEND_URL}/verify-email?token={token}"
         )
 
         try:
