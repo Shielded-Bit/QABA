@@ -257,7 +257,7 @@ class EmailVerificationView(APIView):
             user.save()
 
             # Redirect to frontend success page
-            return APIResponse.success("Email verified")
+            return APIResponse.success(data="Email verified")
         except User.DoesNotExist:
             return APIResponse.not_found("User not found")
 
