@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import Image from 'next/image';
+import { signIn } from '../../app/utils/auth/api.js';
 
 const bgpict = [
   {
@@ -19,14 +20,47 @@ const bgpict = [
     src: 'https://res.cloudinary.com/ddzaww11y/image/upload/v1737901695/view_qioayd.png',
     alt: 'view password',
   },
-
 ];
+
 
 const SignIn = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+  });
+  const [error, setError] = useState('');
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
+  };
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.id]: e.target.value,
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    const requestData = {
+      email: formData.email,
+      password: formData.password,
+    };
+
+    console.log('Request Data:', requestData); // Log the request data
+
+    try {
+      const response = await signIn(requestData);
+      console.log('Response:', response); // Log the response
+      alert('Sign-in successful');
+    } catch (error) {
+      console.error('Sign-in failed', error);
+      setError(error.response?.data?.message || 'Sign-in failed');
+    }
   };
 
   return (
@@ -56,7 +90,8 @@ const SignIn = () => {
               your convenience
             </p>
 
-            <form className="mt-6">
+            <form className="mt-6" onSubmit={handleSubmit}>
+              {error && <p className="text-red-500">{error}</p>}
               <div className="mt-1 pt-1">
                 <input
                   type="email"
@@ -64,6 +99,8 @@ const SignIn = () => {
                   className="px-2 peer w-full border-b-2 border-gradient-to-r from-[#014d98] to-[#3ab7b1] bg-transparent text-gray-900 text-sm pb-1 focus:outline-none focus:border-blue-600"
                   placeholder="Email Address"
                   required
+                  value={formData.email}
+                  onChange={handleChange}
                 />
               </div>
 
@@ -74,6 +111,8 @@ const SignIn = () => {
                   className="px-2 peer w-full border-b-2 border-gradient-to-r from-[#014d98] to-[#3ab7b1] bg-transparent text-gray-900 text-sm pb-1 focus:outline-none focus:border-blue-600"
                   placeholder="Password"
                   required
+                  value={formData.password}
+                  onChange={handleChange}
                 />
                 <button
                   type="button"
@@ -162,7 +201,8 @@ const SignIn = () => {
               Sign in so that you can buy and rent with us conveniently.
             </p>
 
-            <form className="mt-6">
+            <form className="mt-6" onSubmit={handleSubmit}>
+              {error && <p className="text-red-500">{error}</p>}
               <div className="mt-4">
                 <input
                   type="email"
@@ -170,6 +210,8 @@ const SignIn = () => {
                   className="w-full px-2 py- peer  border-b-2 border-gradient-to-r from-[#014d98] to-[#3ab7b1] bg-transparent text-gray-900 text-sm pb-1 focus:outline-none focus:border-blue-600"
                   placeholder="Email Address"
                   required
+                  value={formData.email}
+                  onChange={handleChange}
                 />
               </div>
 
@@ -180,6 +222,8 @@ const SignIn = () => {
                   className="w-full px-2 py- peer  border-b-2 border-gradient-to-r from-[#014d98] to-[#3ab7b1] bg-transparent text-gray-900 text-sm pb-1 focus:outline-none focus:border-blue-600"
                   placeholder="Password"
                   required
+                  value={formData.password}
+                  onChange={handleChange}
                 />
                 <button
                   type="button"
@@ -246,12 +290,6 @@ const SignIn = () => {
             </p>
           </div>
         </div>
-
-
-
-
-
-
       </div>
     </div>
   );
