@@ -2,6 +2,8 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { signIn } from '../../app/utils/auth/api.js';
+import TextInput from '../components/shared/TextInput.jsx';
+import PasswordInput from '../components/shared/PasswordInput.jsx';
 
 const bgpict = [
   {
@@ -93,39 +95,14 @@ const SignIn = () => {
             <form className="mt-6" onSubmit={handleSubmit}>
               {error && <p className="text-red-500">{error}</p>}
               <div className="mt-1 pt-1">
-                <input
-                  type="email"
-                  id="email"
-                  className="px-2 peer w-full border-b-2 border-gradient-to-r from-[#014d98] to-[#3ab7b1] bg-transparent text-gray-900 text-sm pb-1 focus:outline-none focus:border-blue-600"
-                  placeholder="Email Address"
-                  required
-                  value={formData.email}
-                  onChange={handleChange}
-                />
+              <TextInput type="text" id="firstname" placeholder="First Name" value={formData.firstname} handleChange={handleChange} />
+
               </div>
 
               <div className="relative mt-1 pt-7">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  id="password"
-                  className="px-2 peer w-full border-b-2 border-gradient-to-r from-[#014d98] to-[#3ab7b1] bg-transparent text-gray-900 text-sm pb-1 focus:outline-none focus:border-blue-600"
-                  placeholder="Password"
-                  required
-                  value={formData.password}
-                  onChange={handleChange}
-                />
-                <button
-                  type="button"
-                  onClick={togglePasswordVisibility}
-                  className="absolute right-0 top-[39px]  transform -translate-y-1/2 px-2"
-                >
-                  <Image
-                    src={showPassword ? bgpict[3].src : bgpict[2].src}
-                    alt={showPassword ? bgpict[3].alt : bgpict[2].alt}
-                    width={20}
-                    height={20}
-                  />
-                </button>
+              <PasswordInput id="password" showPassword={showPassword} togglePasswordVisibility={togglePasswordVisibility} value={formData.password} handleChange={handleChange} bgpict={bgpict} />
+
+              
               </div>
 
               <div className="mt-2 text-left">
@@ -204,39 +181,13 @@ const SignIn = () => {
             <form className="mt-6" onSubmit={handleSubmit}>
               {error && <p className="text-red-500">{error}</p>}
               <div className="mt-4">
-                <input
-                  type="email"
-                  id="email"
-                  className="w-full px-2 py- peer  border-b-2 border-gradient-to-r from-[#014d98] to-[#3ab7b1] bg-transparent text-gray-900 text-sm pb-1 focus:outline-none focus:border-blue-600"
-                  placeholder="Email Address"
-                  required
-                  value={formData.email}
-                  onChange={handleChange}
-                />
+              <TextInput type="text" id="firstname" placeholder="First Name" value={formData.firstname} handleChange={handleChange} />
+
               </div>
 
               <div className="relative mt-9">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  id="password"
-                  className="w-full px-2 py- peer  border-b-2 border-gradient-to-r from-[#014d98] to-[#3ab7b1] bg-transparent text-gray-900 text-sm pb-1 focus:outline-none focus:border-blue-600"
-                  placeholder="Password"
-                  required
-                  value={formData.password}
-                  onChange={handleChange}
-                />
-                <button
-                  type="button"
-                  onClick={togglePasswordVisibility}
-                  className="absolute right-0 top-1/2 transform -translate-y-1/2 px-2"
-                >
-                  <Image
-                    src={showPassword ? bgpict[3].src : bgpict[2].src}
-                    alt={showPassword ? bgpict[3].alt : bgpict[2].alt}
-                    width={20}
-                    height={20}
-                  />
-                </button>
+              <PasswordInput id="password" showPassword={showPassword} togglePasswordVisibility={togglePasswordVisibility} value={formData.password} handleChange={handleChange} bgpict={bgpict} />
+
               </div>
 
               <div className="mt-3 text-left">
@@ -255,7 +206,7 @@ const SignIn = () => {
 
             <p className="mt-7 text-left text-sm text-gray-600">
               Don&apos;t have an account yet?{' '}
-              <a href="signin/page2.jsx" className="text-gradient hover:underline">
+              <a href="create-account" className="text-gradient hover:underline">
                 Register
               </a>
             </p>
