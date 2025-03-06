@@ -1,8 +1,9 @@
 from os import getenv
+from webbrowser import get
 from .base import *
 
 # Production settings
-DEBUG = False
+DEBUG = getenv("DEBUG", "False") == "True"
 
 # Database configuration
 DATABASES = {
