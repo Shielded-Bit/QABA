@@ -49,9 +49,6 @@ ENV/
 *.swo
 .DS_Store
 
-# Project specific
-src/apps/*/migrations/*
-!src/apps/*/migrations/__init__.py
 
 # Coverage reports
 htmlcov/
