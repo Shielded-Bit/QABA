@@ -1,45 +1,43 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import EmailFailedModal from "../components/modal/EmailFailedModal";
 import EmailSuccessModal from "../components/modal/EmailSuccessModal";
 import axios from "axios";
 
-const VerifyEmail = () => {
+const VerifyEmailContent = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showFailedModal, setShowFailedModal] = useState(false);
   const router = useRouter();
   const params = useSearchParams();
-  const token = String(params.get("token"));
+  const token = params.get("token");
 
-  console.log("Token:", token); // Log the token
+  console.log("Token:", token); // Debugging
 
   useEffect(() => {
-
-    // console.log("Verifying emails")
+    if (!token) return; // Ensure token exists before running
 
     const verifyEmail = async () => {
-      if (token) {
-        try {
-          const response = await axios.get(`https://qaba.onrender.com/api/v1/auth/verify-email/?token=${token}`);
-          console.log("Verify Email Response:", response); // Log the response
+      try {
+        const response = await axios.get(
+          `https://qaba.onrender.com/api/v1/auth/verify-email/?token=${token}`
+        );
+        console.log("Verify Email Response:", response.status, response.data); // Debugging
 
-          if (response.status === 200) {
-            setShowSuccessModal(true);
-          } else {
-            setShowFailedModal(true);
-          }
-        } catch (error) {
-          console.error("Verification Error:", error); // Log the error
+        if (response.status === 200) {
+          setShowSuccessModal(true);
+        } else {
           setShowFailedModal(true);
         }
+      } catch (error) {
+        console.error("Verification Error:", error);
+        setShowFailedModal(true);
       }
-    }
+    };
 
     verifyEmail();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [token]);
 
   const closeModal = () => {
     setShowSuccessModal(false);
@@ -64,6 +62,14 @@ const VerifyEmail = () => {
         />
       )}
     </>
+  );
+};
+
+const VerifyEmail = () => {
+  return (
+    <Suspense fallback={<p>Loading...</p>}>
+      <VerifyEmailContent />
+    </Suspense>
   );
 };
 
