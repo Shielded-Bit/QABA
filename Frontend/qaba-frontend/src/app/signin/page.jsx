@@ -27,43 +27,48 @@ const bgpict = [
 
 const SignIn = () => {
   const [showPassword, setShowPassword] = useState(false);
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
+const [formData, setFormData] = useState({
+  email: '',
+  password: '',
+});
+const [error, setError] = useState('');
+const [loading, setLoading] = useState(false); // Add loading state
+
+const togglePasswordVisibility = () => {
+  setShowPassword(!showPassword);
+};
+
+const handleChange = (e) => {
+  setFormData({
+    ...formData,
+    [e.target.id]: e.target.value,
   });
-  const [error, setError] = useState('');
+};
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setError('');
+  setLoading(true); // Start loading
+
+  const requestData = {
+    email: formData.email,
+    password: formData.password,
   };
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.id]: e.target.value,
-    });
-  };
+  console.log('Request Data:', requestData); // Log the request data
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
+  try {
+    const response = await signIn(requestData);
+    console.log('Response:', response); // Log the response
+    alert('Sign-in successful');
+  } catch (error) {
+    console.error('Sign-in failed', error);
+    setError(error.response?.data?.message || 'Sign-in failed');
+  } finally {
+    setLoading(false); // Stop loading
+  }
+};
 
-    const requestData = {
-      email: formData.email,
-      password: formData.password,
-    };
-
-    console.log('Request Data:', requestData); // Log the request data
-
-    try {
-      const response = await signIn(requestData);
-      console.log('Response:', response); // Log the response
-      alert('Sign-in successful');
-    } catch (error) {
-      console.error('Sign-in failed', error);
-      setError(error.response?.data?.message || 'Sign-in failed');
-    }
-  };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-800 py-10">
@@ -95,7 +100,7 @@ const SignIn = () => {
             <form className="mt-6" onSubmit={handleSubmit}>
               {error && <p className="text-red-500">{error}</p>}
               <div className="mt-1 pt-1">
-              <TextInput type="text" id="firstname" placeholder="First Name" value={formData.firstname} handleChange={handleChange} />
+              <TextInput type="email" id="email" placeholder="Email Address" value={formData.email} handleChange={handleChange} />
 
               </div>
 
@@ -112,11 +117,13 @@ const SignIn = () => {
               </div>
 
               <button
-                type="submit"
-                className="mt-10 w-full rounded-md bg-gradient-to-r from-[#014d98] to-[#3ab7b1] px-4 py-2 text-white transition-all duration-300 hover:from-[#3ab7b1] hover:to-[#014d98]"
-              >
-                Sign In
-              </button>
+  type="submit"
+  className="mt-10 w-full rounded-md bg-gradient-to-r from-[#014d98] to-[#3ab7b1] px-4 py-2 text-white transition-all duration-300 hover:from-[#3ab7b1] hover:to-[#014d98] disabled:opacity-50 disabled:cursor-not-allowed"
+  disabled={loading}
+>
+  {loading ? "Signing In..." : "Sign In"}
+</button>
+
             </form>
 
             <p className="mt-9 text-left text-sm text-gray-600">
@@ -196,12 +203,15 @@ const SignIn = () => {
                 </a>
               </div>
 
+           
               <button
-                type="submit"
-                className="mt-6 w-full py-2 px-4 bg-gradient-to-r from-blue-600 to-teal-500 text-white rounded-md hover:opacity-90"
-              >
-                Sign In
-              </button>
+  type="submit"
+  className="mt-6 w-full rounded-md bg-gradient-to-r from-[#014d98] to-[#3ab7b1] px-4 py-2 text-white transition-all duration-300 hover:from-[#3ab7b1] hover:to-[#014d98] disabled:opacity-50 disabled:cursor-not-allowed"
+  disabled={loading}
+>
+  {loading ? "Signing In..." : "Sign In"}
+</button>
+
             </form>
 
             <p className="mt-7 text-left text-sm text-gray-600">
