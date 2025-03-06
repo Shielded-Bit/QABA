@@ -71,3 +71,16 @@ export const verifyEmail = async (token) => {
     throw new Error('Failed to verify email');
   }
 };
+// Reset password
+export const resetPassword = async (email) => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/password-reset/`, { email }, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    throw new Error('Failed to reset password');
+  }
+};

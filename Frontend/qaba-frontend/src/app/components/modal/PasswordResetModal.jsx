@@ -1,7 +1,7 @@
 import React from "react";
 import Image from "next/image";
 
-const EmailVerificationModal = ({ showModal, setShowModal, email }) => {
+const PasswordResetModal = ({ showModal, setShowModal, email }) => {
   if (!showModal) return null;
 
   return (
@@ -20,7 +20,7 @@ const EmailVerificationModal = ({ showModal, setShowModal, email }) => {
           <div className="bg-green-600 p-4 rounded-full animate-pulse">
             <Image
               src="https://res.cloudinary.com/dqbbm0guw/image/upload/v1739654980/mdi_check-thick_g4z6nq.png"
-              alt="Email Verification Icon"
+              alt="Password Reset Icon"
               width={32}
               height={32}
               className="h-8 w-8"
@@ -30,7 +30,7 @@ const EmailVerificationModal = ({ showModal, setShowModal, email }) => {
 
         {/* Title with Gradient */}
         <h1 className="text-center text-2xl font-bold bg-gradient-to-r from-[#014D98] to-[#3AB7B1] text-transparent bg-clip-text mt-4">
-          Email Verification
+          Password Reset Verification
         </h1>
 
         {/* Description */}
@@ -38,11 +38,11 @@ const EmailVerificationModal = ({ showModal, setShowModal, email }) => {
           We have sent an email to{" "}
           <span className="text-blue-500">{email}</span> to confirm the validity
           of your email address. After receiving the email, follow the link
-          provided to complete the verification.
+          provided to reset your password.
         </p>
       </div>
     </div>
   );
 };
 
-export default EmailVerificationModal;
+export default PasswordResetModal;
