@@ -1,5 +1,4 @@
 from os import getenv
-from webbrowser import get
 from .base import *
 
 # Production settings
