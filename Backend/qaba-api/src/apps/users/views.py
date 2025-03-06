@@ -1,3 +1,5 @@
+import smtplib
+
 from core.utils.response import APIResponse
 from core.utils.token import email_verification_token_generator
 from django.conf import settings
@@ -295,17 +297,24 @@ class PasswordResetRequestView(APIView):
                 token = email_verification_token_generator.make_token(user)
                 reset_url = f"{settings.FRONTEND_URL}/reset-password/{token}"
                 send_mail(
-                    "Reset your password",
-                    render_to_string(
-                        "email/password_reset.html", {"reset_url": reset_url}
+                    subject="Reset your password",
+                    message=render_to_string(
+                        "email/password_reset.html",
+                        {"reset_url": reset_url, "user": user},
                     ),
-                    settings.DEFAULT_FROM_EMAIL,
-                    [email],
-                    html_message=True,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[user.email],
+                    html_message=render_to_string(
+                        "email/password_reset.html",
+                        {"reset_url": reset_url, "user": user},
+                    ),
                 )
+
                 return APIResponse.success(
                     message="a password reset email has been sent"
                 )
+            except smtplib.SMTPException as e:
+                APIResponse.bad_request(str(e))
             except User.DoesNotExist:
                 APIResponse.not_found("User not found")
 

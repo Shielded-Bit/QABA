@@ -21,7 +21,22 @@ class Property(models.Model):
         SALE = "SALE", "Sale"
         RENT = "RENT", "Rent"
 
-    title = models.CharField(max_length=255)
+    class FeatureAmenity(models.TextChoices):
+        PARKING = "PARKING", "Parking"
+        POOL = "POOL", "Swimming Pool"
+        GYM = "GYM", "Gym"
+        SECURITY = "SECURITY", "24/7 Security"
+        WIFI = "WIFI", "WiFi"
+        AIR_CONDITIONING = "AC", "Air Conditioning"
+        FURNISHED = "FURNISHED", "Furnished"
+        PET_FRIENDLY = "PET_FRIENDLY", "Pet Friendly"
+        BALCONY = "BALCONY", "Balcony"
+        GARDEN = "GARDEN", "Garden"
+        ELEVATOR = "ELEVATOR", "Elevator"
+        WASHER = "WASHER", "Washer/Dryer"
+
+    # Basic property fields
+    property_name = models.CharField(max_length=255)
     description = models.TextField()
     price = models.DecimalField(max_digits=12, decimal_places=2)
     property_type = models.CharField(max_length=20, choices=PropertyType.choices)
@@ -43,8 +58,31 @@ class Property(models.Model):
         limit_choices_to={"user_type__in": ["ADMIN", "AGENT"]},
     )
 
+    # Features and amenities as JSON field
+    features_amenities = models.JSONField(default=dict, blank=True)
+
+    # Rent specific fields
+    class RentFrequency(models.TextChoices):
+        MONTHLY = "MONTHLY", "Monthly"
+        YEARLY = "YEARLY", "Yearly"
+
+    rent_frequency = models.CharField(
+        max_length=10,
+        choices=RentFrequency.choices,
+        null=True,
+        blank=True,
+        help_text="Frequency of rent payment (applicable for rental listings)",
+    )
+    rent_price = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Rent price (applicable for rental listings)",
+    )
+
     def __str__(self):
-        return f"{self.title} - {self.location} ({self.get_property_type_display()})"
+        return f"{self.property_name} - {self.location} ({self.get_property_type_display()})"
 
 
 class PropertyImage(models.Model):

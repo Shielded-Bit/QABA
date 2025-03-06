@@ -31,8 +31,8 @@ class PropertyViewSet(viewsets.ModelViewSet):
         "bedrooms",
         "bathrooms",
     ]
-    search_fields = ["title", "description", "location"]
-    ordering_fields = ["price", "listed_date", "bedrooms", "area_sqft"]
+    search_fields = ["property_name", "description", "location"]
+    ordering_fields = ["price", "listed_date", "bedrooms", "area_sqft", "rent_price"]
     ordering = ["-listed_date"]
 
     def get_permissions(self):
@@ -53,8 +53,23 @@ class PropertyViewSet(viewsets.ModelViewSet):
             return PropertyUpdateSerializer
         return PropertyDetailSerializer
 
-    def perform_create(self, serializer):
-        serializer.save(listed_by=self.request.user)
+    def get_queryset(self):
+        queryset = super().get_queryset()
+
+        # Filter by user type
+        if self.request.user.is_authenticated:
+            user_type = self.request.query_params.get("user_type")
+            if user_type == "agent" and self.request.user.user_type == "AGENT":
+                return queryset.filter(listed_by=self.request.user)
+
+        # Filter by property status for non-agents
+        if not self.request.user.is_staff and not (
+            self.request.user.is_authenticated
+            and self.request.user.user_type == "AGENT"
+        ):
+            queryset = queryset.filter(status=Property.PropertyStatus.APPROVED)
+
+        return queryset
 
     @extend_schema(
         parameters=[
@@ -70,6 +85,24 @@ class PropertyViewSet(viewsets.ModelViewSet):
                 location=OpenApiParameter.QUERY,
                 description="Maximum price filter",
             ),
+            OpenApiParameter(
+                name="min_rent",
+                type=float,
+                location=OpenApiParameter.QUERY,
+                description="Minimum rent price filter (for rental listings)",
+            ),
+            OpenApiParameter(
+                name="max_rent",
+                type=float,
+                location=OpenApiParameter.QUERY,
+                description="Maximum rent price filter (for rental listings)",
+            ),
+            OpenApiParameter(
+                name="features",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                description="Comma-separated list of features to filter by (e.g. POOL,GYM,WIFI)",
+            ),
         ]
     )
     def list(self, request, *args, **kwargs):
@@ -78,11 +111,28 @@ class PropertyViewSet(viewsets.ModelViewSet):
         # Price range filtering
         min_price = request.query_params.get("min_price")
         max_price = request.query_params.get("max_price")
+        min_rent = request.query_params.get("min_rent")
+        max_rent = request.query_params.get("max_rent")
 
         if min_price:
             queryset = queryset.filter(price__gte=min_price)
         if max_price:
             queryset = queryset.filter(price__lte=max_price)
+        if min_rent:
+            queryset = queryset.filter(rent_price__gte=min_rent)
+        if max_rent:
+            queryset = queryset.filter(rent_price__lte=max_rent)
+
+        features = request.query_params.get("features")
+        if features:
+            feature_list = features.split(",")
+            for feature in feature_list:
+                if feature in dict(Property.FeatureAmenity.choices):
+                    # Filter properties where this feature is available
+                    queryset = queryset.filter(features_amenities__has_key=feature)
+                    queryset = queryset.exclude(
+                        features_amenities__contains={feature: False}
+                    )
 
         page = self.paginate_queryset(queryset)
         if page is not None:
