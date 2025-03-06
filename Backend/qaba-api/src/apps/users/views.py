@@ -295,7 +295,9 @@ class PasswordResetRequestView(APIView):
             try:
                 user = User.objects.get(email=email)
                 token = email_verification_token_generator.make_token(user)
-                reset_url = f"{settings.FRONTEND_URL}/reset-password/{token}"
+                user.password_reset_token = token
+
+                reset_url = f"{settings.FRONTEND_URL}/new-password/{token}"
                 send_mail(
                     subject="Reset your password",
                     message=render_to_string(
@@ -309,7 +311,7 @@ class PasswordResetRequestView(APIView):
                         {"reset_url": reset_url, "user": user},
                     ),
                 )
-
+                user.save()
                 return APIResponse.success(
                     message="a password reset email has been sent"
                 )
@@ -332,6 +334,9 @@ class PasswordResetConfirmView(APIView):
             token = serializer.validated_data["token"]
             try:
                 user = User.objects.get(password_reset_token=token)
+                if not email_verification_token_generator.check_token(user, token):
+                    return APIResponse.bad_request("Invalid token")
+
                 user.set_password(serializer.validated_data["new_password"])
                 user.password_reset_token = ""
                 user.save()
