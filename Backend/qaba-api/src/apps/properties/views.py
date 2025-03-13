@@ -4,9 +4,14 @@ from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from rest_framework import filters, permissions, viewsets
 from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.decorators import action
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.conf import settings
 
 
 from .models import Property, PropertyImage, PropertyVideo
+from apps.users.models import Notification
 from .serializers import (
     PropertyCreateSerializer,
     PropertyDetailSerializer,
@@ -35,7 +40,13 @@ class PropertyViewSet(viewsets.ModelViewSet):
         "bathrooms",
     ]
     search_fields = ["property_name", "description", "location"]
-    ordering_fields = ["sale_price", "listed_date", "bedrooms", "area_sqft", "rent_price"]
+    ordering_fields = [
+        "sale_price",
+        "listed_date",
+        "bedrooms",
+        "area_sqft",
+        "rent_price",
+    ]
     ordering = ["-listed_date"]
 
     def get_permissions(self):
@@ -127,6 +138,70 @@ class PropertyViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(queryset, many=True)
         return APIResponse.success(data=serializer.data)
+
+    @action(
+        detail=True,
+        methods=["POST"],
+        url_path="review",
+        permission_classes=[permissions.IsAdminUser],
+    )
+    def review_property(self, request, pk=None):
+        property_instance = self.get_object()
+
+        if property_instance.listing_status != Property.ListingStatus.PENDING:
+            return APIResponse.bad_request("Property is not pending review")
+
+        decision = request.data.get("decision", "").upper()
+        if decision not in ["APPROVED", "DECLINED"]:
+            return APIResponse.bad_request("Invalid decision")
+
+        property_instance.listing_status = decision
+        property_instance.save()
+
+        self._send_owner_review_notification_email(property_instance, decision)
+
+        return APIResponse.success(
+            data=PropertyDetailSerializer(
+                property_instance, context={"request": request}
+            ).data,
+            message=f"Property has been {decision.lower()}",
+        )
+
+    def _create_review_notification(self, property_instance):
+        owner = property_instance.listed_by
+        Notification.objects.create(
+            user=owner,
+            message=f"Your property listing '{property_instance.property_name}' is pending review.",
+        )
+
+    def _send_owner_review_notification_email(self, property_instance, decision):
+        owner = property_instance.listed_by
+
+        if owner.email:
+            subject = f"Property Listing {decision.title()}: {property_instance.property_name}"
+
+            # Render the HTML template
+            html_message = render_to_string(
+                "email/property_review_notification.html",
+                {
+                    "property_name": property_instance.property_name,
+                    "location": property_instance.location,
+                    "listed_by": owner.get_full_name() or owner.username,
+                },
+            )
+
+            try:
+                send_mail(
+                    subject=subject,
+                    html_message=html_message,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[owner.email],
+                )
+            except Exception as e:
+                print(f"Error sending email: {e}")
+                raise serializers.ValidationError(
+                    {"email": "Error sending email to admin users"}
+                )
 
 
 @extend_schema(tags=["Property Images"])

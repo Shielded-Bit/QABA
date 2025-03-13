@@ -1,0 +1,38 @@
+   <!-- Backend/qaba-api/src/templates/email/property_review_notification.html -->
+   <!DOCTYPE html>
+   <html lang="en">
+   <head>
+       <meta charset="UTF-8">
+       <meta name="viewport" content="width=device-width, initial-scale=1.0">
+       <title>Property Review Notification</title>
+       <style>
+           body {
+               font-family: Arial, sans-serif;
+               line-height: 1.6;
+           }
+           .container {
+               max-width: 600px;
+               margin: 0 auto;
+               padding: 20px;
+               border: 1px solid #ccc;
+               border-radius: 5px;
+           }
+           h1 {
+               color: #333;
+           }
+           p {
+               margin: 10px 0;
+           }
+       </style>
+   </head>
+   <body>
+       <div class="container">
+           <h1>New Property Pending Review</h1>
+           <p>A new property has been submitted for review:</p>
+           <p><strong>Property Name:</strong> {{ property_name }}</p>
+           <p><strong>Location:</strong> {{ location }}</p>
+           <p><strong>Listed By:</strong> {{ listed_by }}</p>
+           <p>Please review this property in the admin dashboard.</p>
+       </div>
+   </body>
+   </html>

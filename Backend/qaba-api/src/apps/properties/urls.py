@@ -1,6 +1,10 @@
 from rest_framework_nested import routers
 from django.urls import path, include, register_converter
-from .views import PropertyViewSet, PropertyImageViewSet, PropertyVideoViewSet
+from .views import (
+    PropertyViewSet,
+    PropertyImageViewSet,
+    PropertyVideoViewSet,
+)
 
 
 # Define a path converter for integer IDs

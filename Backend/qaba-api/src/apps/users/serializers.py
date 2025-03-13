@@ -9,7 +9,7 @@ from django.template.loader import render_to_string
 from rest_framework import serializers
 from drf_extra_fields.fields import Base64ImageField
 
-from .models import AgentProfile, ClientProfile, User
+from .models import AgentProfile, ClientProfile, Notification, User
 
 
 class LoginSerializer(serializers.Serializer):
@@ -250,3 +250,9 @@ class SendEmailVerificationSerializer(serializers.Serializer):
             ),
         )
         return user
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = ["id", "message", "is_read", "created_at"]

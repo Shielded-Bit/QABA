@@ -1,7 +1,12 @@
 from apps.users.serializers import UserSerializer
+from apps.users.models import Notification, User
 from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
 from drf_extra_fields.fields import Base64ImageField
+from django.core.mail import send_mail
+from django.conf import settings
+from django.template.loader import render_to_string
+
 
 from .models import Property, PropertyImage, PropertyVideo
 
@@ -137,7 +142,6 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, attrs):
-        # Validate that rent-related fields are provided for rental listings
         if attrs.get("listing_type") == Property.ListingType.RENT:
             if (
                 not attrs.get("property_type") == Property.PropertyType.APARTMENT
@@ -171,20 +175,66 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         images_data = validated_data.pop("images", [])
         video_data = validated_data.pop("video", None)
+        submit_for_review = validated_data.pop("submit_for_review", False)
+
+        if submit_for_review:
+            validated_data["listing_status"] = Property.ListingStatus.PENDING
 
         property_instance = Property.objects.create(
             listed_by=self.context["request"].user, **validated_data
         )
 
-        # Add images (up to 5)
         for image_data in images_data[:5]:
             PropertyImage.objects.create(property=property_instance, image=image_data)
 
-        # Add video (if provided)
         if video_data:
             PropertyVideo.objects.create(property=property_instance, video=video_data)
 
+        if submit_for_review:
+            self._send_admin_review_notification_email(property_instance)
+            self._create_review_notification(property_instance)
+
         return property_instance
+
+    def _create_review_notification(self, property_instance):
+        admin_user = User.objects.filter(user_type=User.UserType.ADMIN).first()
+        Notification.objects.create(
+            user=admin_user,
+            message=f"New property '{property_instance.property_name}' is pending review.",
+        )
+
+    def _send_admin_review_notification_email(self, property_instance):
+
+        admin_users = User.objects.filter(user_type=User.UserType.ADMIN)
+
+        if admin_users.exists():
+            admin_emails = [user.email for user in admin_users if user.email]
+
+            if admin_emails:
+                subject = (
+                    f"New Property Pending Review: {property_instance.property_name}"
+                )
+                html_message = render_to_string(
+                    "email/property_review_notification.html",
+                    {
+                        "property_name": property_instance.property_name,
+                        "location": property_instance.location,
+                        "listed_by": property_instance.listed_by.get_full_name(),
+                    },
+                )
+
+                try:
+                    send_mail(
+                        subject=subject,
+                        html_message=html_message,
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=admin_emails,
+                    )
+                except Exception as e:
+                    print(f"Error sending email: {e}")
+                    raise serializers.ValidationError(
+                        {"email": "Error sending email to admin users"}
+                    )
 
 
 class PropertyUpdateSerializer(serializers.ModelSerializer):

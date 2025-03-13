@@ -10,6 +10,7 @@ from rest_framework import generics, permissions, status
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
+from apps.users.models import Notification
 
 from .models import AgentProfile, ClientProfile, User
 from .serializers import (
@@ -19,6 +20,7 @@ from .serializers import (
     ClientProfileCreateSerializer,
     ClientRegistrationSerializer,
     LoginSerializer,
+    NotificationSerializer,
     PasswordChangeSerializer,
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
@@ -344,3 +346,30 @@ class PasswordResetConfirmView(APIView):
             except User.DoesNotExist:
                 APIResponse.not_found("User not found")
         APIResponse.bad_request(message=serializer.errors)
+
+
+@extend_schema(tags=["Notifications"])
+class NotificationListView(generics.ListAPIView):
+    serializer_class = NotificationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Notification.objects.filter(user=self.request.user)
+
+
+@extend_schema(tags=["Notifications"])
+class NotificationMarkReadView(generics.UpdateAPIView):
+    serializer_class = NotificationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Notification.objects.filter(user=self.request.user)
+
+    def update(self, request, *args, **kwargs):
+        notification = self.get_object()
+        notification.is_read = True
+        notification.save()
+        return APIResponse.success(
+            data=NotificationSerializer(notification).data,
+            message="Notification marked as read",
+        )
