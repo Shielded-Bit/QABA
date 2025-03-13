@@ -44,6 +44,8 @@ INSTALLED_APPS = [
     "rest_framework",  # Django REST framework
     "rest_framework_simplejwt",  # Django REST framework JWT
     "drf_spectacular",  # drf-spectacular
+    "cloudinary",  # Cloudinary
+    "cloudinary_storage",  # Cloudinary Storage
     # Local apps
     "apps.users",  # Custom user app
     "apps.properties",  # Properties app
@@ -132,7 +134,9 @@ SPECTACULAR_SETTINGS = {
 
 # JWT Settings
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=int(getenv("ACCESS_TOKEN_LIFETIME"), 15)),
+    "ACCESS_TOKEN_LIFETIME": timedelta(
+        minutes=int(getenv("ACCESS_TOKEN_LIFETIME"), 15)
+    ),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=int(getenv("REFRESH_TOKEN_LIFETIME"), 30)),
     "ROTATE_REFRESH_TOKENS": False,
     "BLACKLIST_AFTER_ROTATION": True,
@@ -147,9 +151,9 @@ AUTHENTICATION_BACKENDS = [
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = getenv("EMAIL_HOST", "smtp.gmail.com")
-EMAIL_PORT = getenv('EMAIL_PORT', 465)
-EMAIL_USE_TLS = getenv('EMAIL_USE_TLS', False)
-EMAIL_USE_SSL = getenv('EMAIL_USE_SSL', True)
+EMAIL_PORT = getenv("EMAIL_PORT", 465)
+EMAIL_USE_TLS = getenv("EMAIL_USE_TLS", False)
+EMAIL_USE_SSL = getenv("EMAIL_USE_SSL", True)
 EMAIL_HOST_USER = getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = getenv("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = getenv("DEFAULT_FROM_EMAIL")
@@ -179,3 +183,34 @@ CORS_ALLOW_HEADERS = [
     "x-csrftoken",
     "x-requested-with",
 ]
+
+# Cloudinary settings
+CLOUDINARY_STORAGE = {
+    "CLOUD_NAME": getenv("CLOUDINARY_CLOUD_NAME", ""),
+    "API_KEY": getenv("CLOUDINARY_API_KEY", ""),
+    "API_SECRET": getenv("CLOUDINARY_API_SECRET", ""),
+}
+
+# Set default file storage to Cloudinary for media files
+DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
+
+# Use specific storage classes for different types of media
+CLOUDINARY_STORAGE = {
+    "CLOUD_NAME": getenv("CLOUDINARY_CLOUD_NAME", ""),
+    "API_KEY": getenv("CLOUDINARY_API_KEY", ""),
+    "API_SECRET": getenv("CLOUDINARY_API_SECRET", ""),
+    "STATICFILES_MANIFEST_ROOT": STATIC_ROOT,
+    # Folder settings for different media types
+    "MEDIA_TAG": "media",
+    "STATIC_TAG": "static",
+    # Transformations and settings
+    "INVALID_VIDEO_ERROR_MESSAGE": "Please upload a valid video file.",
+    "EXCLUDE_DELETE_ORPHANED_MEDIA_PATHS": [],
+}
+
+# Set specific folders for different types of media
+CLOUDINARY_FOLDERS = {
+    "user_profiles": "qaba/users/profiles",
+    "property_images": "qaba/properties/images",
+    "property_videos": "qaba/properties/videos",
+}

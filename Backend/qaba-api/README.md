@@ -1,85 +1,64 @@
-# README.md
+# QABA Real Estate Platform
 
-# QABA Real Estate API
+## Overview
+QABA is a modern real estate platform designed to streamline property management, listings, and transactions. This platform provides a comprehensive solution for real estate professionals and clients.
 
-This project is a backend API for a real estate platform built using Django and Django REST Framework. It provides endpoints for managing users and properties.
+## Features
+- Property Listings Management
+- User Authentication and Authorization
+- Property Search and Filtering
+- Real-time Updates
+- Secure Transaction Processing
 
 ## Project Structure
-
 ```
-django-real-estate-api
-├── src
-│   ├── manage.py
-│   ├── core
-│   │   ├── __init__.py
-│   │   ├── settings
-│   │   │   ├── __init__.py
-│   │   │   ├── base.py
-│   │   │   ├── development.py
-│   │   │   └── production.py
-│   │   ├── urls.py
-│   │   └── wsgi.py
-│   ├── apps
-│   │   ├── users
-│   │   │   ├── __init__.py
-│   │   │   ├── models.py
-│   │   │   ├── serializers.py
-│   │   │   ├── urls.py
-│   │   │   └── views.py
-│   │   ├── properties
-│   │   │   ├── __init__.py
-│   │   │   ├── models.py
-│   │   │   ├── serializers.py
-│   │   │   ├── urls.py
-│   │   │   └── views.py
-│   ├── tests
-│   │   └── __init__.py
-├── requirements
-│   ├── base.txt
-│   ├── development.txt
-│   └── production.txt
-├── .env.example
-├── .gitignore
-└── README.md
+Backend/
+├── qaba-api/     # Backend API service
+└── Dockerfile    # Docker configuration for deployment
 ```
 
-## Setup Instructions
+## Getting Started
 
-1. **Clone the repository:**
-   ```bash
-   git clone <repository-url>
-   cd django-real-estate-api
-   ```
+### Prerequisites
+- Node.js (v16 or higher)
+- Docker
+- PostgreSQL
 
-2. **Create a virtual environment:**
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows use `venv\Scripts\activate`
-   ```
+### Installation
 
-3. **Install dependencies:**
-   ```bash
-   pip install -r requirements/base.txt
-   ```
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/QABA.git
+cd QABA
+```
 
-4. **Set up environment variables:**
-   Copy `.env.example` to `.env` and fill in the required values.
+2. Set up the backend:
+```bash
+cd Backend/qaba-api
+npm install
+```
 
-5. **Run migrations:**
-   ```bash
-   python src/manage.py migrate
-   ```
+3. Configure environment variables:
+Create a `.env` file in the backend directory with the necessary configurations.
 
-6. **Run the development server:**
-   ```bash
-   python src/manage.py runserver
-   ```
+4. Start the development server:
+```bash
+npm run dev
+```
 
-## Usage
+### Docker Deployment
+To build and run the application using Docker:
 
-- The API provides endpoints for user registration, authentication, and property management.
-- Refer to the API documentation for detailed usage instructions.
+```bash
+docker build -t qaba-backend .
+docker run -p 3000:3000 qaba-backend
+```
+
+## Contributing
+Please read our contributing guidelines before submitting pull requests.
 
 ## License
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-This project is licensed under the MIT License. See the LICENSE file for more details.
+## Support
+For support, please contact our development team or create an issue in the repository.

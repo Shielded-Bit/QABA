@@ -7,6 +7,7 @@ from django.contrib.auth import authenticate
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from rest_framework import serializers
+from drf_extra_fields.fields import Base64ImageField
 
 from .models import AgentProfile, ClientProfile, User
 
@@ -25,24 +26,37 @@ class LoginSerializer(serializers.Serializer):
 
 
 class ClientProfileSerializer(serializers.ModelSerializer):
+    profile_photo_url = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = ClientProfile
         fields = [
+            "id",
             "phone_number",
             "profile_photo",
+            "profile_photo_url",
             "bio",
             "address",
             "preferred_location",
             "budget_range",
         ]
 
+    def get_profile_photo_url(self, obj):
+        if obj.profile_photo:
+            return obj.profile_photo.url
+        return None
+
 
 class AgentProfileSerializer(serializers.ModelSerializer):
+    profile_photo_url = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = AgentProfile
         fields = [
+            "id",
             "phone_number",
             "profile_photo",
+            "profile_photo_url",
             "bio",
             "address",
             "license_number",
@@ -50,6 +64,11 @@ class AgentProfileSerializer(serializers.ModelSerializer):
             "years_of_experience",
             "specializations",
         ]
+
+    def get_profile_photo_url(self, obj):
+        if obj.profile_photo:
+            return obj.profile_photo.url
+        return None
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -93,9 +112,7 @@ class BaseUserRegistrationSerializer(serializers.ModelSerializer):
         user.email_verification_token = token
 
         # Send verification email
-        verification_url = (
-            f"{settings.FRONTEND_URL}/verify-email?token={token}"
-        )
+        verification_url = f"{settings.FRONTEND_URL}/verify-email?token={token}"
 
         try:
             send_mail(
@@ -141,6 +158,8 @@ class AdminRegistrationSerializer(BaseUserRegistrationSerializer):
 
 
 class ClientProfileCreateSerializer(serializers.ModelSerializer):
+    profile_photo = Base64ImageField(required=False)
+
     class Meta:
         model = ClientProfile
         fields = [
@@ -158,6 +177,8 @@ class ClientProfileCreateSerializer(serializers.ModelSerializer):
 
 
 class AgentProfileCreateSerializer(serializers.ModelSerializer):
+    profile_photo = Base64ImageField(required=False)
+
     class Meta:
         model = AgentProfile
         fields = [
