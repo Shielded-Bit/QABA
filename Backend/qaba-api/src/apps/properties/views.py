@@ -2,12 +2,13 @@ from core.utils.permissions import IsAgentOrAdmin, IsOwnerOrReadOnly
 from core.utils.response import APIResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
-from rest_framework import filters, permissions, viewsets
+from rest_framework import filters, permissions, viewsets, serializers
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.decorators import action
 from django.core.mail import send_mail
-from django.template.loader import render_to_string
 from django.conf import settings
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
 
 
 from .models import Property, PropertyImage, PropertyVideo
@@ -182,17 +183,23 @@ class PropertyViewSet(viewsets.ModelViewSet):
 
             # Render the HTML template
             html_message = render_to_string(
-                "email/property_review_notification.html",
+                "email/owner_property_review_notification.html",
                 {
+                    "decision": decision.lower(),
+                    "decision_title": (
+                        "Congratulations"
+                        if decision == "APPROVED"
+                        else "Your property listing has been declined"
+                    ),
                     "property_name": property_instance.property_name,
                     "location": property_instance.location,
-                    "listed_by": owner.get_full_name() or owner.username,
                 },
             )
-
+            plain_message = strip_tags(html_message)
             try:
                 send_mail(
                     subject=subject,
+                    message=plain_message,
                     html_message=html_message,
                     from_email=settings.DEFAULT_FROM_EMAIL,
                     recipient_list=[owner.email],

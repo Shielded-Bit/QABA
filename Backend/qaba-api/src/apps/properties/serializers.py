@@ -6,7 +6,7 @@ from drf_extra_fields.fields import Base64ImageField
 from django.core.mail import send_mail
 from django.conf import settings
 from django.template.loader import render_to_string
-
+from django.utils.html import strip_tags
 
 from .models import Property, PropertyImage, PropertyVideo
 
@@ -116,6 +116,10 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
         required=False,
         help_text="Upload a video for the property (optional)",
     )
+    submit_for_review = serializers.BooleanField(
+        default=False,
+        help_text="Submit the property for review by the admin",
+    )
 
     class Meta:
         model = Property
@@ -125,7 +129,7 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
             "sale_price",
             "property_type",
             "listing_type",
-            "listing_status",
+            "submit_for_review",
             "location",
             "bedrooms",
             "bathrooms",
@@ -184,8 +188,9 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
             listed_by=self.context["request"].user, **validated_data
         )
 
-        for image_data in images_data[:5]:
-            PropertyImage.objects.create(property=property_instance, image=image_data)
+        if images_data:
+            for image_data in images_data[:5]:
+                PropertyImage.objects.create(property=property_instance, image=image_data)
 
         if video_data:
             PropertyVideo.objects.create(property=property_instance, video=video_data)
@@ -198,6 +203,8 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
 
     def _create_review_notification(self, property_instance):
         admin_user = User.objects.filter(user_type=User.UserType.ADMIN).first()
+        if not admin_user:
+            raise serializers.ValidationError({"admin_user": "Admin user not found"})
         Notification.objects.create(
             user=admin_user,
             message=f"New property '{property_instance.property_name}' is pending review.",
@@ -215,17 +222,19 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
                     f"New Property Pending Review: {property_instance.property_name}"
                 )
                 html_message = render_to_string(
-                    "email/property_review_notification.html",
+                    "email/admin_property_review_notification.html",
                     {
                         "property_name": property_instance.property_name,
                         "location": property_instance.location,
                         "listed_by": property_instance.listed_by.get_full_name(),
                     },
                 )
+                plain_message = strip_tags(html_message)
 
                 try:
                     send_mail(
                         subject=subject,
+                        message=plain_message,
                         html_message=html_message,
                         from_email=settings.DEFAULT_FROM_EMAIL,
                         recipient_list=admin_emails,
