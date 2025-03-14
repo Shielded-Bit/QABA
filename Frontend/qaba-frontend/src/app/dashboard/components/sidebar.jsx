@@ -11,11 +11,11 @@ import {
   Mail,
   Settings,
   HelpCircle,
-  LogOut,
   ChevronDown,
   LayoutDashboard,
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
+import { LogoutButton } from '../logout';
 
 export default function Sidebar() {
   const [isPropertiesOpen, setIsPropertiesOpen] = useState(false);
@@ -31,24 +31,24 @@ export default function Sidebar() {
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth < 768) {
+      const isMobileSize = window.innerWidth < 768;
+      setIsMobile(isMobileSize);
+
+      // Automatically collapse the sidebar on mobile
+      if (isMobileSize) {
         setIsSidebarCollapsed(true);
-        setIsMobile(true);
       } else {
         setIsSidebarCollapsed(false);
-        setIsMobile(false);
       }
     };
 
-    handleResize();
+    handleResize(); // Check on initial render
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const toggleSidebar = () => {
-    if (isMobile) {
-      setIsSidebarCollapsed(!isSidebarCollapsed);
-    }
+    setIsSidebarCollapsed(!isSidebarCollapsed);
   };
 
   return (
@@ -107,7 +107,11 @@ export default function Sidebar() {
       <div className="p-4 space-y-2 border-t">
         {renderLink('/dashboard/help-support', 'Help & Support', pathname, HelpCircle, isSidebarCollapsed)}
         {renderLink('/dashboard/settings', 'Settings', pathname, Settings, isSidebarCollapsed)}
-        {renderLink('/dashboard/logout', 'Log out', pathname, LogOut, isSidebarCollapsed)}
+
+        {/* Replace the logout link with the LogoutButton */}
+        <div className={getLinkClass(pathname, '/dashboard/logout', isSidebarCollapsed)}>
+          <LogoutButton />
+        </div>
       </div>
     </div>
   );
