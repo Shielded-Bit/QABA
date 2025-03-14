@@ -1,14 +1,13 @@
 "use client";
 import React from 'react';
 import Image from 'next/image'; // Make sure this is properly imported if you're using Next.js
-import Button from '../components/shared/Button';
 import AddPropertyInput from '../components/addPropertyInput/AddPropertyInput';
 
 
 
 const AddListingPage = () => {
   return (
-    <div className=" ">
+    <div className=" px-5">
       {/* Top Banner Section */}
       <div className="relative mb-8">
         {/* Top Banner */}
@@ -16,7 +15,7 @@ const AddListingPage = () => {
           {/* Background Image with Gradient */}
           <div className="absolute w-full h-full bg-gradient-to-r from-[rgba(2,79,152,0.8)] to-[rgba(56,179,176,0.2)]">
             <Image
-              src="https://res.cloudinary.com/dqbbm0guw/image/upload/v1735199273/Rectangle_133_igi92o.png"
+              src="https://res.cloudinary.com/dqbbm0guw/image/upload/v1737723125/Rectangle_133_2_sblujb.png"
               alt="Property listing background image"
               fill
               quality={90}

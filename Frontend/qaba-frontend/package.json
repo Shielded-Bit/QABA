@@ -10,8 +10,14 @@
   },
   "dependencies": {
     "@next/font": "^14.2.15",
+signin
     "date-fns": "^4.1.0",
     "lucide-react": "^0.479.0",
+
+    "axios": "^1.7.9",
+    "framer-motion": "^12.4.3",
+    "lucide-react": "^0.475.0",
+ main
     "next": "^15.0.4",
     "next-cloudinary": "^6.16.0",
     "react": "^19.0.0",
