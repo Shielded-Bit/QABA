@@ -2,11 +2,16 @@ appdirs==1.4.4
 asgiref==3.8.1
 attrs==24.3.0
 black==21.7b0
+certifi==2025.1.31
+charset-normalizer==3.4.1
 click==8.1.8
+cloudinary==1.42.2
 Django==5.1.6
+django-cloudinary-storage==0.3.0
 django-cors-headers==4.7.0
 django-debug-toolbar==3.2.1
 django-extensions==3.1.5
+django-extra-fields==3.0.2
 django-filter==25.1
 djangorestframework==3.15.2
 djangorestframework-simplejwt==5.3.1
@@ -14,6 +19,7 @@ drf-nested-routers==0.94.1
 drf-spectacular==0.28.0
 flake8==3.9.2
 gunicorn==23.0.0
+idna==3.10
 inflection==0.5.1
 iniconfig==2.0.0
 jsonschema==4.23.0
@@ -37,9 +43,12 @@ pytz==2024.2
 PyYAML==6.0.2
 referencing==0.35.1
 regex==2024.11.6
+requests==2.32.3
 rpds-py==0.22.3
+six==1.17.0
 sqlparse==0.5.3
 toml==0.10.2
 tomli==1.2.3
 typing_extensions==4.12.2
 uritemplate==4.1.1
+urllib3==2.3.0
