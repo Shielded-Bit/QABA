@@ -13,7 +13,7 @@ export default function RootLayout({ children }) {
       <head>
         {/* You can leave <head> empty since metadata is managed by the `metadata` object */}
       </head>
-      <body className="bg-background text-foregroun">
+      <body className="bg-background text-foreground">
         <Navbar />
         <main>{children}</main>
         <Footer />
