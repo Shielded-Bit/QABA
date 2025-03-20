@@ -1,43 +1,62 @@
+import smtplib
+
+from core.utils.response import APIResponse
+from core.utils.token import email_verification_token_generator
 from django.conf import settings
+from django.contrib.auth import authenticate
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from rest_framework import serializers
-from django.contrib.auth import authenticate
-from .models import User, ClientProfile, AgentProfile
-from .utils.token import email_verification_token_generator
+from drf_extra_fields.fields import Base64ImageField
+
+from .models import AgentProfile, ClientProfile, Notification, User
 
 
 class LoginSerializer(serializers.Serializer):
-    username = serializers.CharField()
+    email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
 
     def validate(self, data):
         user = authenticate(**data)
-        print(user)
-        if user:
-            return user
-        raise serializers.ValidationError("Incorrect credentials")
+        if not user:
+            APIResponse.unauthorized("Invalid credentials")
+        if not user.is_active:
+            APIResponse.forbidden("Account is not activated")
+        return user
 
 
 class ClientProfileSerializer(serializers.ModelSerializer):
+    profile_photo_url = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = ClientProfile
         fields = [
+            "id",
             "phone_number",
             "profile_photo",
+            "profile_photo_url",
             "bio",
             "address",
             "preferred_location",
             "budget_range",
         ]
 
+    def get_profile_photo_url(self, obj):
+        if obj.profile_photo:
+            return obj.profile_photo.url
+        return None
+
 
 class AgentProfileSerializer(serializers.ModelSerializer):
+    profile_photo_url = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = AgentProfile
         fields = [
+            "id",
             "phone_number",
             "profile_photo",
+            "profile_photo_url",
             "bio",
             "address",
             "license_number",
@@ -45,6 +64,11 @@ class AgentProfileSerializer(serializers.ModelSerializer):
             "years_of_experience",
             "specializations",
         ]
+
+    def get_profile_photo_url(self, obj):
+        if obj.profile_photo:
+            return obj.profile_photo.url
+        return None
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -72,6 +96,11 @@ class BaseUserRegistrationSerializer(serializers.ModelSerializer):
         model = User
         fields = ["username", "email", "password", "first_name", "last_name"]
 
+    def validate_email(self, value):
+        if User.objects.filter(email=value).exists():
+            APIResponse.bad_request("User with this email already exists")
+        return value
+
     def create(self, validated_data):
         user = User(**validated_data)
         user.set_password(validated_data["password"])
@@ -81,20 +110,32 @@ class BaseUserRegistrationSerializer(serializers.ModelSerializer):
         # Generate verification token
         token = email_verification_token_generator.make_token(user)
         user.email_verification_token = token
-        user.save()
 
         # Send verification email
-        verification_url = f"{settings.FRONTEND_URL}/verify-email/{token}"
-        send_mail(
-            subject="Verify your email",
-            message=render_to_string(
-                "email/verification.html",
-                {"verification_url": verification_url, "user": user},
-            ),
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            html_message=True,
-        )
+        verification_url = f"{settings.FRONTEND_URL}/verify-email?token={token}"
+
+        try:
+            send_mail(
+                subject="Verify your email",
+                message=render_to_string(
+                    "email/verification.html",
+                    {"verification_url": verification_url, "user": user},
+                ),
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[user.email],
+                html_message=render_to_string(
+                    "email/verification.html",
+                    {"verification_url": verification_url, "user": user},
+                ),
+            )
+
+        except smtplib.SMTPException as e:
+            APIResponse.bad_request(str(e))
+
+        except Exception as e:
+            APIResponse.bad_request(str(e))
+
+        user.save()
         return user
 
 
@@ -117,6 +158,8 @@ class AdminRegistrationSerializer(BaseUserRegistrationSerializer):
 
 
 class ClientProfileCreateSerializer(serializers.ModelSerializer):
+    profile_photo = Base64ImageField(required=False)
+
     class Meta:
         model = ClientProfile
         fields = [
@@ -134,6 +177,8 @@ class ClientProfileCreateSerializer(serializers.ModelSerializer):
 
 
 class AgentProfileCreateSerializer(serializers.ModelSerializer):
+    profile_photo = Base64ImageField(required=False)
+
     class Meta:
         model = AgentProfile
         fields = [
@@ -174,3 +219,40 @@ class PasswordResetRequestSerializer(serializers.Serializer):
 class PasswordResetConfirmSerializer(serializers.Serializer):
     token = serializers.CharField()
     new_password = serializers.CharField(write_only=True)
+
+
+class SendEmailVerificationSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def validate_email(self, value):
+        if not User.objects.filter(email=value).exists():
+            APIResponse.bad_request("User with this email does not exist")
+        return value
+
+    def send_verification_email(self, email):
+        user = User.objects.get(email=email)
+        token = email_verification_token_generator.make_token(user)
+        user.email_verification_token = token
+        user.save()
+
+        verification_url = f"{settings.FRONTEND_URL}/verify-email/{token}"
+        send_mail(
+            subject="Verify your email",
+            message=render_to_string(
+                "email/verification.html",
+                {"verification_url": verification_url, "user": user},
+            ),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            html_message=render_to_string(
+                "email/verification.html",
+                {"verification_url": verification_url, "user": user},
+            ),
+        )
+        return user
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = ["id", "message", "is_read", "created_at"]

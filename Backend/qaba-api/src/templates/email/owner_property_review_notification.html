@@ -1,0 +1,45 @@
+   <!-- Backend/qaba-api/src/templates/email/property_review_notification.html -->
+   <!DOCTYPE html>
+   <html lang="en">
+   <head>
+       <meta charset="UTF-8">
+       <meta name="viewport" content="width=device-width, initial-scale=1.0">
+       <title>Property Review Notification</title>
+       <style>
+           body {
+               font-family: Arial, sans-serif;
+               line-height: 1.6;
+           }
+           .container {
+               max-width: 600px;
+               margin: 0 auto;
+               padding: 20px;
+               border: 1px solid #ccc;
+               border-radius: 5px;
+           }
+           h1 {
+               color: #333;
+           }
+           p {
+               margin: 10px 0;
+           }
+           .status {
+               font-weight: bold;
+           }
+       </style>
+   </head>
+   <body>
+       <div class="container">
+           <h1>Property Listing Review Notification</h1>
+           <p class="status">{{ decision_title }}!</p>
+           <p>Your property listing has been {{ decision }}:</p>
+           <p><strong>Property Name:</strong> {{ property_name }}</p>
+           <p><strong>Location:</strong> {{ location }}</p>
+           {% if decision == "APPROVED" %}
+               <p>Your property is now visible to potential clients.</p>
+           {% else %}
+               <p>Please contact our support team for more information.</p>
+           {% endif %}
+       </div>
+   </body>
+   </html>

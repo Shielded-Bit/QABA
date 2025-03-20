@@ -1,5 +1,8 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from cloudinary.models import CloudinaryField
+from django.conf import settings
+from django.utils.translation import gettext_lazy as _
 
 
 class User(AbstractUser):
@@ -13,6 +16,7 @@ class User(AbstractUser):
     )
     is_email_verified = models.BooleanField(default=False)
     email_verification_token = models.CharField(max_length=100, blank=True)
+    password_reset_token = models.CharField(max_length=100, blank=True)
 
     class Meta:
         verbose_name = "User"
@@ -37,7 +41,22 @@ class User(AbstractUser):
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     phone_number = models.CharField(max_length=15, blank=True, null=True)
-    profile_photo = models.ImageField(upload_to="profiles/", blank=True, null=True)
+    profile_photo = CloudinaryField(
+        "image",
+        folder=settings.CLOUDINARY_FOLDERS.get("user_profiles"),
+        transformation={
+            "quality": "auto:good",
+            "crop": "fill",
+            "width": 400,
+            "height": 400,
+            "gravity": "face",
+        },
+        format="webp",
+        resource_type="image",
+        blank=True,
+        null=True,
+        help_text=_("Upload a profile photo"),
+    )
     bio = models.TextField(blank=True, null=True)
     address = models.CharField(max_length=255, blank=True, null=True)
 
@@ -56,3 +75,18 @@ class AgentProfile(Profile):
     company_name = models.CharField(max_length=100, blank=True, null=True)
     years_of_experience = models.PositiveIntegerField(default=0)
     specializations = models.CharField(max_length=255, blank=True, null=True)
+
+
+class Notification(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications"
+    )
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Notification for {self.user.username}: {self.message[:30]}..."

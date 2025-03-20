@@ -24,7 +24,7 @@ export default function TopNav() {
   };
 
   return (
-    <div className="bg-gray-100 shadow-md w-full">
+    <div className="bg-gray-100 shadow-md w-full sticky ">
       {/* Large Screen Navigation */}
       <div className="hidden sm:flex justify-between items-center p-4">
         {/* Search Bar */}

@@ -3,16 +3,21 @@ from .views import (
     LoginView,
     ClientRegistrationView,
     AgentRegistrationView,
+    NotificationListView,
+    NotificationMarkReadView,
     UserList,
     UserDetail,
     ClientProfileView,
     AgentProfileView,
+    ClientProfileCreateView,
+    AgentProfileCreateView,
     PasswordChangeView,
     AdminRegistrationView,
     RefreshTokenView,
     EmailVerificationView,
     PasswordResetRequestView,
     PasswordResetConfirmView,
+    SendEmailVerificationView
 )
 
 
@@ -26,12 +31,17 @@ auth_patterns = [
     path('auth/password-reset/', PasswordResetRequestView.as_view(), name='password-reset'),
     path('auth/password-reset/confirm/', PasswordResetConfirmView.as_view(), name='password-reset-confirm'),
     path("auth/password/change/", PasswordChangeView.as_view(), name="password-change"),
+    path('auth/send-email-verification/', SendEmailVerificationView.as_view(), name='send-email-verification')
 ]
 
 urlpatterns = [
     *auth_patterns,
     path("users/", UserList.as_view(), name="user-list"),
-    path("users/<int:pk>/", UserDetail.as_view(), name="user-detail"),
+    path("users/me/", UserDetail.as_view(), name="user-detail"),
     path("profile/client/", ClientProfileView.as_view(), name="client-profile"),
     path("profile/agent/", AgentProfileView.as_view(), name="agent-profile"),
+    path("profile/client/create", ClientProfileCreateView.as_view(), name="create-client-profile"),
+    path("profile/agent/create", AgentProfileCreateView.as_view(), name="create-agent-profile"),
+    path("notifications/", NotificationListView.as_view(), name="notification-list"),
+    path("notifications/<int:pk>/read/", NotificationMarkReadView.as_view(), name="notification-mark-read"),
 ]
