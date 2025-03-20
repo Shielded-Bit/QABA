@@ -140,7 +140,7 @@ export default function PasswordPage() {
               className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
             />
             {errors.confirmPassword && (
-              <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>
+              <p className="text-red-600 text-sm mt-1">{errors.confirmPassword}</p>
             )}
           </div>
         </div>
