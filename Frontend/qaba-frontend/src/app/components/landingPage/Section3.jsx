@@ -13,7 +13,7 @@ const Section3 = () => {
     {
       id: 1,
       title: 'The Dream Family Home',
-      price: '₦700,000 / Year',
+      price: '₦700,000,000 / Year',
       description:
         "A beautiful home combining spacious living, modern features, and a prime location.",
       image:
@@ -43,7 +43,7 @@ const Section3 = () => {
   ];
 
   return (
-    <section className="bg-gray-50 px-4 sm:px-6 lg:px-8 py-16">
+    <section className="bg-gray-50 px-6 sm:px-12  py-16">
       {/* Section Heading */}
       <h2 className="text-3xl font-bold mb-8 text-center">
         Best Properties Available

@@ -1,6 +1,9 @@
 'use client';
 import React, { useState } from 'react';
 import Image from 'next/image';
+import { signIn } from '../../app/utils/auth/api.js';
+import TextInput from '../components/shared/TextInput.jsx';
+import PasswordInput from '../components/shared/PasswordInput.jsx';
 
 const bgpict = [
   {
@@ -19,15 +22,53 @@ const bgpict = [
     src: 'https://res.cloudinary.com/ddzaww11y/image/upload/v1737901695/view_qioayd.png',
     alt: 'view password',
   },
-
 ];
+
 
 const SignIn = () => {
   const [showPassword, setShowPassword] = useState(false);
+const [formData, setFormData] = useState({
+  email: '',
+  password: '',
+});
+const [error, setError] = useState('');
+const [loading, setLoading] = useState(false); // Add loading state
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
+const togglePasswordVisibility = () => {
+  setShowPassword(!showPassword);
+};
+
+const handleChange = (e) => {
+  setFormData({
+    ...formData,
+    [e.target.id]: e.target.value,
+  });
+};
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setError('');
+  setLoading(true); // Start loading
+
+  const requestData = {
+    email: formData.email,
+    password: formData.password,
   };
+
+  console.log('Request Data:', requestData); // Log the request data
+
+  try {
+    const response = await signIn(requestData);
+    console.log('Response:', response); // Log the response
+    alert('Sign-in successful');
+  } catch (error) {
+    console.error('Sign-in failed', error);
+    setError(error.response?.data?.message || 'Sign-in failed');
+  } finally {
+    setLoading(false); // Stop loading
+  }
+};
+
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-800 py-10">
@@ -56,37 +97,17 @@ const SignIn = () => {
               your convenience
             </p>
 
-            <form className="mt-6">
+            <form className="mt-6" onSubmit={handleSubmit}>
+              {error && <p className="text-red-500">{error}</p>}
               <div className="mt-1 pt-1">
-                <input
-                  type="email"
-                  id="email"
-                  className="px-2 peer w-full border-b-2 border-gradient-to-r from-[#014d98] to-[#3ab7b1] bg-transparent text-gray-900 text-sm pb-1 focus:outline-none focus:border-blue-600"
-                  placeholder="Email Address"
-                  required
-                />
+              <TextInput type="email" id="email" placeholder="Email Address" value={formData.email} handleChange={handleChange} />
+
               </div>
 
               <div className="relative mt-1 pt-7">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  id="password"
-                  className="px-2 peer w-full border-b-2 border-gradient-to-r from-[#014d98] to-[#3ab7b1] bg-transparent text-gray-900 text-sm pb-1 focus:outline-none focus:border-blue-600"
-                  placeholder="Password"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={togglePasswordVisibility}
-                  className="absolute right-0 top-[39px]  transform -translate-y-1/2 px-2"
-                >
-                  <Image
-                    src={showPassword ? bgpict[3].src : bgpict[2].src}
-                    alt={showPassword ? bgpict[3].alt : bgpict[2].alt}
-                    width={20}
-                    height={20}
-                  />
-                </button>
+              <PasswordInput id="password" showPassword={showPassword} togglePasswordVisibility={togglePasswordVisibility} value={formData.password} handleChange={handleChange} bgpict={bgpict} />
+
+              
               </div>
 
               <div className="mt-2 text-left">
@@ -95,12 +116,7 @@ const SignIn = () => {
                 </a>
               </div>
 
-              <button
-                type="submit"
-                className="mt-10 w-full rounded-md bg-gradient-to-r from-[#014d98] to-[#3ab7b1] px-4 py-2 text-white transition-all duration-300 hover:from-[#3ab7b1] hover:to-[#014d98]"
-              >
-                Sign In
-              </button>
+
             </form>
 
             <p className="mt-9 text-left text-sm text-gray-600">
@@ -162,37 +178,16 @@ const SignIn = () => {
               Sign in so that you can buy and rent with us conveniently.
             </p>
 
-            <form className="mt-6">
+            <form className="mt-6" onSubmit={handleSubmit}>
+              {error && <p className="text-red-500">{error}</p>}
               <div className="mt-4">
-                <input
-                  type="email"
-                  id="email"
-                  className="w-full px-2 py- peer  border-b-2 border-gradient-to-r from-[#014d98] to-[#3ab7b1] bg-transparent text-gray-900 text-sm pb-1 focus:outline-none focus:border-blue-600"
-                  placeholder="Email Address"
-                  required
-                />
+              <TextInput type="text" id="firstname" placeholder="First Name" value={formData.firstname} handleChange={handleChange} />
+
               </div>
 
               <div className="relative mt-9">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  id="password"
-                  className="w-full px-2 py- peer  border-b-2 border-gradient-to-r from-[#014d98] to-[#3ab7b1] bg-transparent text-gray-900 text-sm pb-1 focus:outline-none focus:border-blue-600"
-                  placeholder="Password"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={togglePasswordVisibility}
-                  className="absolute right-0 top-1/2 transform -translate-y-1/2 px-2"
-                >
-                  <Image
-                    src={showPassword ? bgpict[3].src : bgpict[2].src}
-                    alt={showPassword ? bgpict[3].alt : bgpict[2].alt}
-                    width={20}
-                    height={20}
-                  />
-                </button>
+              <PasswordInput id="password" showPassword={showPassword} togglePasswordVisibility={togglePasswordVisibility} value={formData.password} handleChange={handleChange} bgpict={bgpict} />
+
               </div>
 
               <div className="mt-3 text-left">
@@ -201,17 +196,20 @@ const SignIn = () => {
                 </a>
               </div>
 
+           
               <button
-                type="submit"
-                className="mt-6 w-full py-2 px-4 bg-gradient-to-r from-blue-600 to-teal-500 text-white rounded-md hover:opacity-90"
-              >
-                Sign In
-              </button>
+  type="submit"
+  className="mt-6 w-full rounded-md bg-gradient-to-r from-[#014d98] to-[#3ab7b1] px-4 py-2 text-white transition-all duration-300 hover:from-[#3ab7b1] hover:to-[#014d98] disabled:opacity-50 disabled:cursor-not-allowed"
+  disabled={loading}
+>
+  {loading ? "Signing In..." : "Sign In"}
+</button>
+
             </form>
 
             <p className="mt-7 text-left text-sm text-gray-600">
               Don&apos;t have an account yet?{' '}
-              <a href="signin/page2.jsx" className="text-gradient hover:underline">
+              <a href="create-account" className="text-gradient hover:underline">
                 Register
               </a>
             </p>
@@ -246,12 +244,6 @@ const SignIn = () => {
             </p>
           </div>
         </div>
-
-
-
-
-
-
       </div>
     </div>
   );
