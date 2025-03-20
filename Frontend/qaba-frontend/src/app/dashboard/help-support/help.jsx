@@ -24,15 +24,15 @@ export default function HelpAndSupport() {
           <div className="space-y-4">
             <div className="bg-white p-6 rounded-lg shadow">
               <h3 className="text-lg font-semibold text-gray-800">How do I create a new property listing?</h3>
-              <p className="mt-2 text-gray-600">To create a new property listing, go to the "Listings" section in your dashboard and click on "Add New Listing." Fill in the required details and submit.</p>
+              <p className="mt-2 text-gray-600">To create a new property listing, go to the &quot;Listings&quot; section in your dashboard and click on &quot;Add New Listing.&quot; Fill in the required details and submit.</p>
             </div>
             <div className="bg-white p-6 rounded-lg shadow">
               <h3 className="text-lg font-semibold text-gray-800">How can I edit my profile information?</h3>
-              <p className="mt-2 text-gray-600">Navigate to the "Profile" section in your account settings. You can update your information and save the changes.</p>
+              <p className="mt-2 text-gray-600">Navigate to the &quot;Profile&quot; section in your account settings. You can update your information and save the changes.</p>
             </div>
             <div className="bg-white p-6 rounded-lg shadow">
               <h3 className="text-lg font-semibold text-gray-800">What payment methods are supported?</h3>
-              <p className="mt-2 text-gray-600">We support credit/debit cards, PayPal, and bank transfers. You can manage your payment methods in the "Billing" section.</p>
+              <p className="mt-2 text-gray-600">We support credit/debit cards, PayPal, and bank transfers. You can manage your payment methods in the &quot;Billing&quot; section.</p>
             </div>
           </div>
         </section>

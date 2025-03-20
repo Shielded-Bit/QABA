@@ -94,7 +94,7 @@ export default function Sidebar() {
               isPropertiesOpen ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'
             }`}
           >
-            {renderSubLink('/dashboard/properties/rent', 'Rent Properties', pathname, Key, isSidebarCollapsed)}
+            {renderSubLink('/dashboard/properties', 'Rent Properties', pathname, Key, isSidebarCollapsed)}
             {renderSubLink('/dashboard/properties/buy', 'Buy Properties', pathname, Home, isSidebarCollapsed)}
           </div>
         </div>

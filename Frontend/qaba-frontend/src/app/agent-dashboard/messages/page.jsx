@@ -13,14 +13,14 @@ const people = [
 const initialMessages = {
   1: [
     { id: 1, text: 'Hey, how are you?', sender: 'John Doe', avatar: 'https://i.pravatar.cc/150' },
-    { id: 2, text: 'I’m good, thanks!', sender: 'You', avatar: 'https://i.pravatar.cc/150' },
+    { id: 2, text: "I’m good, thanks!", sender: 'You', avatar: 'https://i.pravatar.cc/150' },
   ],
   2: [
     { id: 1, text: 'See you later!', sender: 'Jane Smith', avatar: 'https://i.pravatar.cc/150' },
     { id: 2, text: 'Sure, take care!', sender: 'You', avatar: 'https://i.pravatar.cc/150' },
   ],
   3: [
-    { id: 1, text: 'What’s up?', sender: 'Alice Johnson', avatar: 'https://via.placeholder.com/40' },
+    { id: 1, text: "What’s up?", sender: 'Alice Johnson', avatar: 'https://via.placeholder.com/40' },
     { id: 2, text: 'Not much, just working.', sender: 'You', avatar: 'https://via.placeholder.com/40' },
   ],
 };

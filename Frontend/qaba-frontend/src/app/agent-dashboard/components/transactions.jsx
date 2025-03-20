@@ -1,6 +1,7 @@
 // app/components/TransactionTable.js
 "use client";
 
+import Image from "next/image";
 import React, { useState } from "react";
 
 const transactions = [
@@ -120,11 +121,14 @@ const TransactionTable = () => {
             {filteredTransactions.map((transaction, index) => (
               <tr key={index} className="border-b hover:bg-gray-50 transition-colors">
                 <td className="p-2 flex items-center gap-2">
-                  <img
-                    src="https://res.cloudinary.com/ddzaww11y/image/upload/v1740505215/profile_mmaj88.png"
-                    alt="avatar"
-                    className="w-9 h-9 rounded"
-                  />
+                <Image
+  src="https://res.cloudinary.com/ddzaww11y/image/upload/v1740505215/profile_mmaj88.png"
+  alt="avatar"
+  width={36}  // Equivalent to w-9 (9 * 4 = 36px)
+  height={36} // Equivalent to h-9
+  className="rounded"
+/>
+
                   <div>
                     <p className="text-sm font-medium">{transaction.name}</p>
                     <p className="text-xs text-gray-500">{transaction.id}</p>

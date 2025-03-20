@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { BellDot, Trash2, Eye, Search, Menu } from "lucide-react";
+import Image from "next/image";
 
 export default function TopNav() {
   const [notifications, setNotifications] = useState([
@@ -93,11 +94,14 @@ export default function TopNav() {
 
           {/* User Profile */}
           <div className="flex items-center gap-2">
-            <img
-              src="https://i.pravatar.cc/150"
-              alt="User Avatar"
-              className="h-10 w-10 rounded-full object-cover"
-            />
+          <Image
+  src="https://i.pravatar.cc/150"
+  alt="User Avatar"
+  width={40} // Adjust based on h-10 (40px)
+  height={40}
+  className="rounded-full object-cover"
+/>
+
             <div className="hidden sm:flex flex-col">
               <span className="text-sm font-medium text-gray-800">Ekene Moses</span>
               <span className="text-xs text-gray-500">Client</span>
@@ -133,11 +137,15 @@ export default function TopNav() {
 
         {/* User Profile (Reduced for Mobile) */}
         <div className="flex items-center gap-1 ml-4">
-          <img
-            src="https://i.pravatar.cc/150"
-            alt="User Avatar"
-            className="h-8 w-8 rounded-full object-cover"
-          />
+        <Image
+  src="https://i.pravatar.cc/150"
+  alt="User Avatar"
+  width={32} // Adjust based on h-8 (32px)
+  height={32}
+  className="rounded-full object-cover"
+/>
+
+
           {/* Show User Name on Mobile */}
           <span className="text-sm font-medium text-gray-800">Ekene</span>
         </div>
