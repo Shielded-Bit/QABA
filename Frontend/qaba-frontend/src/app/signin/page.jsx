@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import Image from 'next/image';
+import { useRouter } from "next/navigation";
 import { signIn } from '../../app/utils/auth/api.js';
 import TextInput from '../components/shared/TextInput.jsx';
 import PasswordInput from '../components/shared/PasswordInput.jsx';
@@ -27,47 +28,68 @@ const bgpict = [
 
 const SignIn = () => {
   const [showPassword, setShowPassword] = useState(false);
-const [formData, setFormData] = useState({
-  email: '',
-  password: '',
-});
-const [error, setError] = useState('');
-const [loading, setLoading] = useState(false); // Add loading state
+  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
-const togglePasswordVisibility = () => {
-  setShowPassword(!showPassword);
-};
-
-const handleChange = (e) => {
-  setFormData({
-    ...formData,
-    [e.target.id]: e.target.value,
-  });
-};
-
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setError('');
-  setLoading(true); // Start loading
-
-  const requestData = {
-    email: formData.email,
-    password: formData.password,
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
   };
 
-  console.log('Request Data:', requestData); // Log the request data
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.id]: e.target.value,
+    });
+  };
 
-  try {
-    const response = await signIn(requestData);
-    console.log('Response:', response); // Log the response
-    alert('Sign-in successful');
-  } catch (error) {
-    console.error('Sign-in failed', error);
-    setError(error.response?.data?.message || 'Sign-in failed');
-  } finally {
-    setLoading(false); // Stop loading
-  }
-};
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    const requestData = {
+      email: formData.email,
+      password: formData.password,
+    };
+
+    console.log("Request Data:", requestData);
+
+    try {
+      const response = await signIn(requestData);
+      console.log("Response:", response);
+
+      // Extract token and user details
+      const accessToken = response.data?.access;
+      const userType = response.data?.user?.user_type; // No need to lowercase since backend is consistent
+
+      console.log("Access Token:", accessToken);
+      console.log("User Type:", userType);
+
+      if (!accessToken || !userType) {
+        throw new Error("Invalid login response: Missing token or user type.");
+      }
+
+      // Store token and user type in localStorage
+      localStorage.setItem("access_token", accessToken);
+      localStorage.setItem("user_type", userType);
+
+      // Redirect based on role
+      if (userType === "AGENT") {
+        router.push("/agent-dashboard"); // Redirect to agent dashboard
+      } else if (userType === "CLIENT") {
+        router.push("/dashboard"); // Redirect to client dashboard
+      } else {
+        alert("Unknown user role: " + userType);
+      }
+    } catch (error) {
+      console.error("Sign-in failed", error);
+      setError(error.response?.data?.message || "Sign-in failed");
+    } finally {
+      setLoading(false);
+    }
+  };
 
 
   return (
@@ -115,7 +137,13 @@ const handleSubmit = async (e) => {
                   Forgot password?
                 </a>
               </div>
-
+              <button
+  type="submit"
+  className="mt-6 w-full rounded-md bg-gradient-to-r from-[#014d98] to-[#3ab7b1] px-4 py-2 text-white transition-all duration-300 hover:from-[#3ab7b1] hover:to-[#014d98] disabled:opacity-50 disabled:cursor-not-allowed"
+  disabled={loading}
+>
+  {loading ? "Signing In..." : "Sign In"}
+</button>
 
             </form>
 
@@ -181,7 +209,7 @@ const handleSubmit = async (e) => {
             <form className="mt-6" onSubmit={handleSubmit}>
               {error && <p className="text-red-500">{error}</p>}
               <div className="mt-4">
-              <TextInput type="text" id="firstname" placeholder="First Name" value={formData.firstname} handleChange={handleChange} />
+              <TextInput type="email" id="email" placeholder="Email Address" value={formData.email} handleChange={handleChange} />
 
               </div>
 
