@@ -24,9 +24,9 @@ export default function TopNav() {
   };
 
   return (
-    <div className="bg-gray-100 shadow-md w-full sticky ">
+    <div className="bg-gray-100  w-full sticky">
       {/* Large Screen Navigation */}
-      <div className="hidden sm:flex justify-between items-center p-4">
+      <div className="hidden sm:flex justify-between items-center p-6 ">
         {/* Search Bar */}
         <div className="flex items-center flex-1 relative max-w-md">
           <Search className="absolute left-3 h-5 w-5 text-gray-500" />
@@ -46,33 +46,50 @@ export default function TopNav() {
               <span className="absolute top-0 right-0 block h-3 w-3 bg-red-500 rounded-full"></span>
             )}
           </div>
+{/* Dim Overlay */}
+{showNotifications && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 z-50"
+    onClick={() => setShowNotifications(false)}
+  ></div>
+)}
 
-          {/* Notification Dropdown */}
-          {showNotifications && (
-            <div className="absolute top-10 right-0 bg-white shadow-lg rounded-md w-64 p-3 z-50">
-              {notifications.length === 0 ? (
-                <p className="text-sm text-gray-500">No new notifications</p>
-              ) : (
-                notifications.map((notif) => (
-                  <div key={notif.id} className="flex justify-between items-center p-2 border-b">
-                    <p className={`text-sm text-gray-800 ${notif.expanded ? "whitespace-normal" : "truncate"}`}>
-                      {notif.message}
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <Eye
-                        className="h-4 w-4 text-blue-500 cursor-pointer"
-                        onClick={() => toggleMessageExpansion(notif.id)}
-                      />
-                      <Trash2
-                        className="h-4 w-4 text-red-500 cursor-pointer"
-                        onClick={() => handleDelete(notif.id)}
-                      />
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
+
+{/* Notification Dropdown */}
+{showNotifications && (
+  <div
+    className="absolute top-10 right-0 bg-white shadow-lg rounded-md w-64 p-3 z-50"
+  >
+    {notifications.length === 0 ? (
+      <p className="text-sm text-gray-500">No new notifications</p>
+    ) : (
+      notifications.map((notif) => (
+        <div
+          key={notif.id}
+          className="flex justify-between items-center p-2 border-b bg-white"
+        >
+          <p
+            className={`text-sm text-gray-800 ${
+              notif.expanded ? "whitespace-normal" : "truncate"
+            }`}
+          >
+            {notif.message}
+          </p>
+          <div className="flex items-center gap-2">
+            <Eye
+              className="h-4 w-4 text-blue-500 cursor-pointer"
+              onClick={() => toggleMessageExpansion(notif.id)}
+            />
+            <Trash2
+              className="h-4 w-4 text-red-500 cursor-pointer"
+              onClick={() => handleDelete(notif.id)}
+            />
+          </div>
+        </div>
+      ))
+    )}
+  </div>
+)}
+
 
           {/* User Profile */}
           <div className="flex items-center gap-2">

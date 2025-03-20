@@ -116,22 +116,7 @@ const handleSubmit = async (e) => {
                 </a>
               </div>
 
-              <button
- signin
-                type="submit"
-                className="mt-10 w-full rounded-md bg-gradient-to-r from-[#014d98] to-[#3ab7b1] px-4 py-2 text-white transition-all duration-300 hover:from-[#3ab7b1] hover:to-[#014d98]"
-              >
-                <a href="">Sign In</a>
-              </button>
 
-  type="submit"
-  className="mt-10 w-full rounded-md bg-gradient-to-r from-[#014d98] to-[#3ab7b1] px-4 py-2 text-white transition-all duration-300 hover:from-[#3ab7b1] hover:to-[#014d98] disabled:opacity-50 disabled:cursor-not-allowed"
-  disabled={loading}
->
-  {loading ? "Signing In..." : "Sign In"}
-</button>
-
- main
             </form>
 
             <p className="mt-9 text-left text-sm text-gray-600">
