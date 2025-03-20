@@ -181,7 +181,7 @@ const handleSubmit = async (e) => {
             <form className="mt-6" onSubmit={handleSubmit}>
               {error && <p className="text-red-500">{error}</p>}
               <div className="mt-4">
-              <TextInput type="text" id="firstname" placeholder="First Name" value={formData.firstname} handleChange={handleChange} />
+              <TextInput type="email" id="email" placeholder="Email Address" value={formData.email} handleChange={handleChange} />
 
               </div>
 
