@@ -130,6 +130,8 @@ SPECTACULAR_SETTINGS = {
     "SWAGGER_UI_SETTINGS": {
         "persistAuthorization": True,
     },
+    "UPLOAD_FILES_USING_FORM": True,
+    "COMPONENT_SPLIT_REQUEST": True,
 }
 
 # JWT Settings
@@ -184,12 +186,6 @@ CORS_ALLOW_HEADERS = [
     "x-requested-with",
 ]
 
-# Cloudinary settings
-CLOUDINARY_STORAGE = {
-    "CLOUD_NAME": getenv("CLOUDINARY_CLOUD_NAME", ""),
-    "API_KEY": getenv("CLOUDINARY_API_KEY", ""),
-    "API_SECRET": getenv("CLOUDINARY_API_SECRET", ""),
-}
 
 # Set default file storage to Cloudinary for media files
 DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"

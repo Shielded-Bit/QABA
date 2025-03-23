@@ -1,6 +1,6 @@
+from cloudinary.models import CloudinaryField
 from django.conf import settings
 from django.db import models
-from cloudinary.models import CloudinaryField
 from django.utils.translation import gettext_lazy as _
 
 
@@ -25,6 +25,18 @@ class Property(models.Model):
         PENDING = "PENDING", "Pending"
         DECLINED = "DECLINED", "Declined"
 
+    class Amenities(models.TextChoices):
+        GYM = "GYM", "Gym"
+        SWIMMING_POOL = "SWIMMING_POOL", "Swimming Pool"
+        PARKING = "PARKING", "Parking"
+        GARDEN = "GARDEN", "Garden"
+        SECURITY = "SECURITY", "Security"
+        CCTV = "CCTV", "CCTV"
+
+    class RentFrequency(models.TextChoices):
+        MONTHLY = "MONTHLY", "Monthly"
+        YEARLY = "YEARLY", "Yearly"
+
     # Basic property fields
     property_name = models.CharField(max_length=255)
     description = models.TextField()
@@ -41,6 +53,11 @@ class Property(models.Model):
     bathrooms = models.PositiveIntegerField(null=True, blank=True)
     area_sqft = models.FloatField(null=True, blank=True)
     listed_date = models.DateTimeField(auto_now_add=True)
+    amenities = models.JSONField(
+        default=list,
+        blank=True,
+        help_text=_("List of amenities available with this property"),
+    )
 
     # Only Agent or Admin can create properties
     listed_by = models.ForeignKey(
@@ -49,11 +66,6 @@ class Property(models.Model):
         related_name="properties",
         limit_choices_to={"user_type__in": ["ADMIN", "AGENT"]},
     )
-
-    # Rent specific fields
-    class RentFrequency(models.TextChoices):
-        MONTHLY = "MONTHLY", "Monthly"
-        YEARLY = "YEARLY", "Yearly"
 
     rent_frequency = models.CharField(
         max_length=10,
@@ -76,6 +88,10 @@ class Property(models.Model):
         blank=True,
         help_text="Sale price (applicable for sale listings)",
     )
+
+    def has_amenity(self, amenity):
+        """Check if property has a specific amenity"""
+        return amenity in self.amenities
 
     def __str__(self):
         return f"{self.property_name} - {self.location} ({self.get_property_type_display()})"

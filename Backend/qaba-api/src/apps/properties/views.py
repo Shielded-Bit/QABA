@@ -1,18 +1,17 @@
+from apps.users.models import Notification
 from core.utils.permissions import IsAgentOrAdmin, IsOwnerOrReadOnly
 from core.utils.response import APIResponse
-from django_filters.rest_framework import DjangoFilterBackend
-from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
-from rest_framework import filters, permissions, viewsets, serializers
-from rest_framework.parsers import FormParser, MultiPartParser
-from rest_framework.decorators import action
-from django.core.mail import send_mail
 from django.conf import settings
+from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
-
+from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.utils import OpenApiParameter, extend_schema
+from rest_framework import filters, permissions, serializers, viewsets
+from rest_framework.decorators import action
+from rest_framework.parsers import FormParser, MultiPartParser
 
 from .models import Property, PropertyImage, PropertyVideo
-from apps.users.models import Notification
 from .serializers import (
     PropertyCreateSerializer,
     PropertyDetailSerializer,
@@ -204,100 +203,13 @@ class PropertyViewSet(viewsets.ModelViewSet):
                     from_email=settings.DEFAULT_FROM_EMAIL,
                     recipient_list=[owner.email],
                 )
-            except Exception as e:
-                print(f"Error sending email: {e}")
+            except Exception:
                 raise serializers.ValidationError(
                     {"email": "Error sending email to admin users"}
                 )
 
 
 @extend_schema(tags=["Property Images"])
-@extend_schema_view(
-    list=extend_schema(
-        parameters=[
-            OpenApiParameter(
-                name="property_pk",
-                type=int,
-                location=OpenApiParameter.PATH,
-                description="ID of the property",
-            ),
-        ]
-    ),
-    retrieve=extend_schema(
-        parameters=[
-            OpenApiParameter(
-                name="property_pk",
-                type=int,
-                location=OpenApiParameter.PATH,
-                description="ID of the property",
-            ),
-            OpenApiParameter(
-                name="id",
-                type=int,
-                location=OpenApiParameter.PATH,
-                description="ID of the property image",
-            ),
-        ]
-    ),
-    create=extend_schema(
-        parameters=[
-            OpenApiParameter(
-                name="property_pk",
-                type=int,
-                location=OpenApiParameter.PATH,
-                description="ID of the property",
-            ),
-        ]
-    ),
-    update=extend_schema(
-        parameters=[
-            OpenApiParameter(
-                name="property_pk",
-                type=int,
-                location=OpenApiParameter.PATH,
-                description="ID of the property",
-            ),
-            OpenApiParameter(
-                name="id",
-                type=int,
-                location=OpenApiParameter.PATH,
-                description="ID of the property image",
-            ),
-        ]
-    ),
-    partial_update=extend_schema(
-        parameters=[
-            OpenApiParameter(
-                name="property_pk",
-                type=int,
-                location=OpenApiParameter.PATH,
-                description="ID of the property",
-            ),
-            OpenApiParameter(
-                name="id",
-                type=int,
-                location=OpenApiParameter.PATH,
-                description="ID of the property image",
-            ),
-        ]
-    ),
-    destroy=extend_schema(
-        parameters=[
-            OpenApiParameter(
-                name="property_pk",
-                type=int,
-                location=OpenApiParameter.PATH,
-                description="ID of the property",
-            ),
-            OpenApiParameter(
-                name="id",
-                type=int,
-                location=OpenApiParameter.PATH,
-                description="ID of the property image",
-            ),
-        ]
-    ),
-)
 class PropertyImageViewSet(viewsets.ModelViewSet):
     serializer_class = PropertyImageSerializer
     parser_classes = (MultiPartParser, FormParser)
@@ -315,108 +227,22 @@ class PropertyImageViewSet(viewsets.ModelViewSet):
         return [permission() for permission in permission_classes]
 
     def perform_create(self, serializer):
-        property = Property.objects.get(pk=self.kwargs["property_pk"])
+        try:
+            property = Property.objects.get(pk=self.kwargs["property_pk"])
+        except Property.DoesNotExist:
+            return APIResponse.not_found("Property not found")
         if property.listed_by != self.request.user and not self.request.user.is_staff:
-            raise permissions.PermissionDenied(
+            return APIResponse.forbidden(
                 "You don't have permission to add images to this property"
             )
 
-        # Check if property already has 5 images
         if PropertyImage.objects.filter(property=property).count() >= 5:
-            raise permissions.PermissionDenied(
-                "This property already has the maximum of 5 images"
-            )
+            return APIResponse.bad_request("This property already has 5 images")
 
         serializer.save(property_id=self.kwargs["property_pk"])
 
 
 @extend_schema(tags=["Property Videos"])
-@extend_schema_view(
-    list=extend_schema(
-        parameters=[
-            OpenApiParameter(
-                name="property_pk",
-                type=int,
-                location=OpenApiParameter.PATH,
-                description="ID of the property",
-            ),
-        ]
-    ),
-    retrieve=extend_schema(
-        parameters=[
-            OpenApiParameter(
-                name="property_pk",
-                type=int,
-                location=OpenApiParameter.PATH,
-                description="ID of the property",
-            ),
-            OpenApiParameter(
-                name="id",
-                type=int,
-                location=OpenApiParameter.PATH,
-                description="ID of the property video",
-            ),
-        ]
-    ),
-    create=extend_schema(
-        parameters=[
-            OpenApiParameter(
-                name="property_pk",
-                type=int,
-                location=OpenApiParameter.PATH,
-                description="ID of the property",
-            ),
-        ]
-    ),
-    update=extend_schema(
-        parameters=[
-            OpenApiParameter(
-                name="property_pk",
-                type=int,
-                location=OpenApiParameter.PATH,
-                description="ID of the property",
-            ),
-            OpenApiParameter(
-                name="id",
-                type=int,
-                location=OpenApiParameter.PATH,
-                description="ID of the property video",
-            ),
-        ]
-    ),
-    partial_update=extend_schema(
-        parameters=[
-            OpenApiParameter(
-                name="property_pk",
-                type=int,
-                location=OpenApiParameter.PATH,
-                description="ID of the property",
-            ),
-            OpenApiParameter(
-                name="id",
-                type=int,
-                location=OpenApiParameter.PATH,
-                description="ID of the property video",
-            ),
-        ]
-    ),
-    destroy=extend_schema(
-        parameters=[
-            OpenApiParameter(
-                name="property_pk",
-                type=int,
-                location=OpenApiParameter.PATH,
-                description="ID of the property",
-            ),
-            OpenApiParameter(
-                name="id",
-                type=int,
-                location=OpenApiParameter.PATH,
-                description="ID of the property video",
-            ),
-        ]
-    ),
-)
 class PropertyVideoViewSet(viewsets.ModelViewSet):
     serializer_class = PropertyVideoSerializer
     parser_classes = (MultiPartParser, FormParser)
@@ -436,14 +262,11 @@ class PropertyVideoViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         property = Property.objects.get(pk=self.kwargs["property_pk"])
         if property.listed_by != self.request.user and not self.request.user.is_staff:
-            raise permissions.PermissionDenied(
-                "You don't have permission to add a video to this property"
+            return APIResponse.forbidden(
+                "You don't have permission to add videos to this property"
             )
 
-        # Check if property already has a video
         if PropertyVideo.objects.filter(property=property).exists():
-            raise permissions.PermissionDenied(
-                "This property already has a video. Delete the existing video first."
-            )
+            return APIResponse.bad_request("This property already has a video")
 
         serializer.save(property_id=self.kwargs["property_pk"])

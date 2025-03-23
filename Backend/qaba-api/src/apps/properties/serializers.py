@@ -1,17 +1,17 @@
-from apps.users.serializers import UserSerializer
 from apps.users.models import Notification, User
-from rest_framework import serializers
-from drf_spectacular.utils import extend_schema_field
-from drf_extra_fields.fields import Base64ImageField
-from django.core.mail import send_mail
+from apps.users.serializers import UserSerializer
 from django.conf import settings
+from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
+from drf_spectacular.utils import extend_schema_field
+from rest_framework import serializers
 
 from .models import Property, PropertyImage, PropertyVideo
 
 
 class PropertyImageSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(write_only=True)
     image_url = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
@@ -25,6 +25,7 @@ class PropertyImageSerializer(serializers.ModelSerializer):
 
 
 class PropertyVideoSerializer(serializers.ModelSerializer):
+    video = serializers.FileField(write_only=True)
     video_url = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
@@ -85,15 +86,45 @@ class PropertyListSerializer(serializers.ModelSerializer):
         return None
 
 
+class AmenitiesField(serializers.ListField):
+    """Custom field to handle amenities list"""
+
+    def to_representation(self, value):
+        if not value:
+            return []
+
+        result = []
+        amenity_choices = dict(Property.Amenities.choices)
+        for amenity in value:
+            if amenity in amenity_choices or amenity in amenity_choices.values():
+                result.append(amenity_choices[amenity.upper()])
+        return result
+
+    def to_internal_value(self, data):
+        if not isinstance(data, list):
+            raise serializers.ValidationError("Amenities must be a list")
+
+        amenities_list = data[0].split(",") if isinstance(data[0], str) else data
+
+        valid_amenities = [choice[0] for choice in Property.Amenities.choices]
+        for item in amenities_list:
+            if item not in valid_amenities:
+                raise serializers.ValidationError(f"'{item}' is not a valid amenity")
+
+        return amenities_list
+
+
 class PropertyDetailSerializer(PropertyListSerializer):
     images = PropertyImageSerializer(many=True, read_only=True)
     video = PropertyVideoSerializer(read_only=True)
     rent_frequency_display = serializers.CharField(
         source="get_rent_frequency_display", read_only=True
     )
+    amenities = AmenitiesField()
 
     class Meta(PropertyListSerializer.Meta):
         fields = PropertyListSerializer.Meta.fields + [
+            "amenities",
             "description",
             "images",
             "video",
@@ -105,10 +136,9 @@ class PropertyDetailSerializer(PropertyListSerializer):
 
 class PropertyCreateSerializer(serializers.ModelSerializer):
     images = serializers.ListField(
-        child=Base64ImageField(required=False),
+        child=serializers.ImageField(),
         write_only=True,
         required=False,
-        max_length=5,
         help_text="Upload up to 5 images for the property",
     )
     video = serializers.FileField(
@@ -119,6 +149,11 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
     submit_for_review = serializers.BooleanField(
         default=False,
         help_text="Submit the property for review by the admin",
+    )
+    amenities = AmenitiesField(
+        write_only=True,
+        required=False,
+        help_text="List of amenities available in the property",
     )
 
     class Meta:
@@ -133,6 +168,7 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
             "location",
             "bedrooms",
             "bathrooms",
+            "amenities",
             "area_sqft",
             "images",
             "video",
@@ -147,15 +183,6 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         if attrs.get("listing_type") == Property.ListingType.RENT:
-            if (
-                not attrs.get("property_type") == Property.PropertyType.APARTMENT
-                or attrs.get("property_type") == Property.PropertyType.HOUSE
-            ):
-                raise serializers.ValidationError(
-                    {
-                        "property_type": "Property type must be apartment or house for rental listings"
-                    }
-                )
             if not attrs.get("rent_frequency"):
                 raise serializers.ValidationError(
                     {"rent_frequency": "Rent frequency is required for rental listings"}
@@ -168,10 +195,6 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
             if not attrs.get("sale_price"):
                 raise serializers.ValidationError(
                     {"sale_price": "Sale price is required for sale listings"}
-                )
-            if not attrs.get("area_sqft"):
-                raise serializers.ValidationError(
-                    {"area_sqft": "Area sqft is required for land listings"}
                 )
 
         return attrs
@@ -190,7 +213,9 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
 
         if images_data:
             for image_data in images_data[:5]:
-                PropertyImage.objects.create(property=property_instance, image=image_data)
+                PropertyImage.objects.create(
+                    property=property_instance, image=image_data
+                )
 
         if video_data:
             PropertyVideo.objects.create(property=property_instance, video=video_data)
@@ -211,7 +236,6 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
         )
 
     def _send_admin_review_notification_email(self, property_instance):
-
         admin_users = User.objects.filter(user_type=User.UserType.ADMIN)
 
         if admin_users.exists():

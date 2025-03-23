@@ -1,5 +1,6 @@
 import smtplib
 
+from apps.users.models import Notification
 from core.utils.response import APIResponse
 from core.utils.token import email_verification_token_generator
 from django.conf import settings
@@ -7,10 +8,10 @@ from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import generics, permissions, status
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
-from apps.users.models import Notification
 
 from .models import AgentProfile, ClientProfile, User
 from .serializers import (
@@ -103,6 +104,7 @@ class AdminRegistrationView(generics.CreateAPIView):
 class ClientProfileCreateView(generics.CreateAPIView):
     permission_classes = (permissions.IsAuthenticated,)
     serializer_class = ClientProfileCreateSerializer
+    parser_classes = (MultiPartParser, FormParser)
 
     def perform_create(self, serializer):
         if not self.request.user.is_client:
@@ -119,6 +121,7 @@ class ClientProfileCreateView(generics.CreateAPIView):
 class AgentProfileCreateView(generics.CreateAPIView):
     permission_classes = (permissions.IsAuthenticated,)
     serializer_class = AgentProfileCreateSerializer
+    parser_classes = (MultiPartParser, FormParser)
 
     def perform_create(self, serializer):
         if not self.request.user.is_agent:
@@ -135,6 +138,7 @@ class AgentProfileCreateView(generics.CreateAPIView):
 class ClientProfileView(generics.RetrieveUpdateAPIView):
     serializer_class = ClientProfileCreateSerializer
     permission_classes = (permissions.IsAuthenticated,)
+    parser_classes = (MultiPartParser, FormParser)
 
     def get_object(self):
         if not self.request.user.is_client:
