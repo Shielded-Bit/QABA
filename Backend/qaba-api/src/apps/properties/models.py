@@ -26,12 +26,19 @@ class Property(models.Model):
         DECLINED = "DECLINED", "Declined"
 
     class Amenities(models.TextChoices):
-        GYM = "GYM", "Gym"
+        CAR_PARK = "CAR_PARK", "Car Park"
+        BIG_COMPOUND = "BIG_COMPOUND", "Big Compound"
+        CCTV_CAMERA = "CCTV_CAMERA", "CCTV Camera"
+        POP_CEILING = "POP_CEILING", "POP Ceiling"
+        TRAFFIC_LIGHT = "TRAFFIC_LIGHT", "Traffic Light"
+        HOUSE_SECURITY = "HOUSE_SECURITY", "House Security"
         SWIMMING_POOL = "SWIMMING_POOL", "Swimming Pool"
+        SECURITY_DOOR = "SECURITY_DOOR", "Security Door"
+        BOYS_QUARTERS = "BOYS_QUARTERS", "Boys Quarters"
+        GYM = "GYM", "Gym"
         PARKING = "PARKING", "Parking"
         GARDEN = "GARDEN", "Garden"
-        SECURITY = "SECURITY", "Security"
-        CCTV = "CCTV", "CCTV"
+        OTHERS = "OTHERS", "Others"
 
     class RentFrequency(models.TextChoices):
         MONTHLY = "MONTHLY", "Monthly"
