@@ -9,7 +9,7 @@ import {
 const stats = [
   { icon: Landmark, label: "Total Properties", value: 20 },
   { icon: CircleDollarSign, label: "Sold Properties", value: 10 },
-  { icon: Key, label: "Sold Properties", value: 20 },
+  { icon: Key, label: "Pending Properties", value: 20 },
   { icon: HousePlus, label: "Publish Properties", value: 15 },
 ];
 

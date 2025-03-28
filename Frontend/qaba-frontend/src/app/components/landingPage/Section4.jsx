@@ -30,7 +30,7 @@ const Section4 = () => {
   };
 
   return (
-    <section className="max-w-6xl mx-auto my-16 px-6">
+    <section className="w-full mx-auto my-16 px-6 sm:px-14">
       <h2 className="text-4xl font-extrabold text-left mb-12 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-teal-500">
         Frequently Asked Questions (FAQs)
       </h2>

@@ -25,15 +25,24 @@ export default function Sidebar() {
   const [isMobile, setIsMobile] = useState(false);
   const pathname = usePathname();
 
+  // Effect to set dropdown states based on current path
   useEffect(() => {
-    if (pathname.startsWith("/dashboard/properties")) {
+    // Check if current path matches any properties routes
+    if (pathname.startsWith("/agent-dashboard/myListings") || 
+        pathname.startsWith("/agent-dashboard/draft")) {
       setIsPropertiesOpen(true);
+    }
+    
+    // Check if current path matches any add property routes
+    if (pathname.startsWith("/agent-dashboard/for-rent") || 
+        pathname.startsWith("/agent-dashboard/for-sell")) {
+      setIsAddPropertyOpen(true);
     }
   }, [pathname]);
 
   useEffect(() => {
     const handleResize = () => {
-      const isMobileSize = window.innerWidth < 768;
+      const isMobileSize = window.innerWidth < 1023;
       setIsMobile(isMobileSize);
       if (isMobileSize) {
         setIsSidebarCollapsed(true);
@@ -95,13 +104,18 @@ export default function Sidebar() {
 }
 
 function renderDropdown(label, Icon, isOpen, setIsOpen, links, pathname, isCollapsed) {
+  // Check if any sublink is active to keep dropdown open
+  const isAnySubLinkActive = links.some(link => checkActiveLink(pathname, link.href));
+  
   return (
     <div>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={`w-full flex items-center ${
           isCollapsed ? "justify-center px-2" : "justify-between px-3"
-        } py-2 rounded-md hover:bg-gradient-to-r from-[#014d98] to-[#3ab7b1] hover:text-white`}
+        } py-2 rounded-md hover:bg-gradient-to-r from-[#014d98] to-[#3ab7b1] hover:text-white ${
+          isAnySubLinkActive ? "text-blue-600" : ""
+        }`}
       >
         <div className="flex items-center">
           <Icon className={getIconClass(isCollapsed)} />
@@ -120,8 +134,8 @@ function renderDropdown(label, Icon, isOpen, setIsOpen, links, pathname, isColla
             isOpen ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
           }`}
         >
-          {links.map((link) => (
-            renderSubLink(link.href, link.label, pathname, link.icon, isCollapsed)
+          {links.map((link, index) => (
+            renderSubLink(link.href, link.label, pathname, link.icon, isCollapsed, index)
           ))}
         </div>
       </div>
@@ -161,9 +175,9 @@ function renderLink(href, label, pathname, Icon, isCollapsed) {
   );
 }
 
-function renderSubLink(href, label, pathname, Icon, isCollapsed) {
+function renderSubLink(href, label, pathname, Icon, isCollapsed, key) {
   return (
-    <a href={href} className={getLinkClass(pathname, href, isCollapsed)}>
+    <a key={key} href={href} className={getLinkClass(pathname, href, isCollapsed)}>
       <Icon className={getIconClass(isCollapsed)} />
       <span className={getTextClass(isCollapsed)}>{label}</span>
     </a>
