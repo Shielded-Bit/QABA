@@ -1,8 +1,38 @@
-from django.contrib.auth.models import AbstractUser
-from django.db import models
 from cloudinary.models import CloudinaryField
 from django.conf import settings
+from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.db import models
 from django.utils.translation import gettext_lazy as _
+
+
+class UserManager(BaseUserManager):
+    """Custom user manager that requires email, first_name, last_name, and password"""
+
+    def create_user(self, email, password, first_name, last_name, **extra_fields):
+        """Create and save a User with the given email, password and required fields."""
+        if not email:
+            raise ValueError(_("Email must be set"))
+        if not first_name:
+            raise ValueError(_("First name must be set"))
+        if not last_name:
+            raise ValueError(_("Last name must be set"))
+
+        email = self.normalize_email(email)
+        user = self.model(
+            email=email, first_name=first_name, last_name=last_name, **extra_fields
+        )
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, password, first_name, last_name, **extra_fields):
+        """Create and save a SuperUser with the given email, password and required fields."""
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+        extra_fields.setdefault("is_active", True)
+        extra_fields.setdefault("user_type", "ADMIN")
+
+        return self.create_user(email, password, first_name, last_name, **extra_fields)
 
 
 class User(AbstractUser):
@@ -11,6 +41,14 @@ class User(AbstractUser):
         CLIENT = "CLIENT", "Client"
         AGENT = "AGENT", "Agent"
 
+    # Make email required and unique
+    email = models.EmailField(_("email address"), unique=True)
+    # Make first name and last name required
+    first_name = models.CharField(_("first name"), max_length=150)
+    last_name = models.CharField(_("last name"), max_length=150)
+
+    username = None
+
     user_type = models.CharField(
         max_length=10, choices=UserType.choices, default=UserType.CLIENT
     )
@@ -18,12 +56,18 @@ class User(AbstractUser):
     email_verification_token = models.CharField(max_length=100, blank=True)
     password_reset_token = models.CharField(max_length=100, blank=True)
 
+    USERNAME_FIELD = "email"
+
+    REQUIRED_FIELDS = ["first_name", "last_name"]
+
+    objects = UserManager()
+
     class Meta:
         verbose_name = "User"
         verbose_name_plural = "Users"
 
     def __str__(self):
-        return f"{self.username} ({self.get_user_type_display()})"
+        return f"{self.first_name} {self.last_name} ({self.get_user_type_display()})"
 
     @property
     def is_admin(self):
@@ -57,7 +101,9 @@ class Profile(models.Model):
         null=True,
         help_text=_("Upload a profile photo"),
     )
-    bio = models.TextField(blank=True, null=True)
+    country = models.CharField(max_length=255, blank=True, null=True)
+    state = models.CharField(max_length=255, blank=True, null=True)
+    city = models.CharField(max_length=255, blank=True, null=True)
     address = models.CharField(max_length=255, blank=True, null=True)
 
     class Meta:
@@ -65,16 +111,11 @@ class Profile(models.Model):
 
 
 class ClientProfile(Profile):
-    # Add client-specific fields here
-    preferred_location = models.CharField(max_length=255, blank=True, null=True)
-    budget_range = models.CharField(max_length=50, blank=True, null=True)
+    pass
 
 
 class AgentProfile(Profile):
-    license_number = models.CharField(max_length=50, blank=True, null=True)
-    company_name = models.CharField(max_length=100, blank=True, null=True)
-    years_of_experience = models.PositiveIntegerField(default=0)
-    specializations = models.CharField(max_length=255, blank=True, null=True)
+    pass
 
 
 class Notification(models.Model):
@@ -89,4 +130,4 @@ class Notification(models.Model):
         ordering = ["-created_at"]
 
     def __str__(self):
-        return f"Notification for {self.user.username}: {self.message[:30]}..."
+        return f"Notification for {self.user.email}: {self.message[:30]}..."

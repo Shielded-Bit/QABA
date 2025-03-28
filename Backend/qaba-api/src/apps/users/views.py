@@ -1,11 +1,7 @@
-import smtplib
-
 from apps.users.models import Notification
 from core.utils.response import APIResponse
+from core.utils.send_email import send_password_reset_email, send_verification_email
 from core.utils.token import email_verification_token_generator
-from django.conf import settings
-from django.core.mail import send_mail
-from django.template.loader import render_to_string
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import generics, permissions, status
 from rest_framework.parsers import FormParser, MultiPartParser
@@ -16,9 +12,11 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from .models import AgentProfile, ClientProfile, User
 from .serializers import (
     AdminRegistrationSerializer,
-    AgentProfileCreateSerializer,
+    AgentProfilePatchSerializer,
+    AgentProfileSerializer,
     AgentRegistrationSerializer,
-    ClientProfileCreateSerializer,
+    ClientProfilePatchSerializer,
+    ClientProfileSerializer,
     ClientRegistrationSerializer,
     LoginSerializer,
     NotificationSerializer,
@@ -61,6 +59,9 @@ class ClientRegistrationView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
+
+        send_verification_email(user)
+
         return APIResponse.success(
             data={"user": UserSerializer(user).data},
             message="Registration successful. Please check your email to verify your account.",
@@ -77,6 +78,11 @@ class AgentRegistrationView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
+
+        # Send verification email
+        send_verification_email(user)
+
+        # Still return success even if email fails (but log it)
         return APIResponse.success(
             data={"user": UserSerializer(user).data},
             message="Registration successful. Please check your email to verify your account.",
@@ -101,86 +107,107 @@ class AdminRegistrationView(generics.CreateAPIView):
 
 
 @extend_schema(tags=["Profiles"])
-class ClientProfileCreateView(generics.CreateAPIView):
-    permission_classes = (permissions.IsAuthenticated,)
-    serializer_class = ClientProfileCreateSerializer
-    parser_classes = (MultiPartParser, FormParser)
-
-    def perform_create(self, serializer):
-        if not self.request.user.is_client:
-            return APIResponse.forbidden("Only clients can create client profiles")
-        serializer.save()
-        return APIResponse.success(
-            data=serializer.data,
-            message="Profile created",
-            status_code=status.HTTP_201_CREATED,
-        )
-
-
-@extend_schema(tags=["Profiles"])
-class AgentProfileCreateView(generics.CreateAPIView):
-    permission_classes = (permissions.IsAuthenticated,)
-    serializer_class = AgentProfileCreateSerializer
-    parser_classes = (MultiPartParser, FormParser)
-
-    def perform_create(self, serializer):
-        if not self.request.user.is_agent:
-            return APIResponse.forbidden("Only agents can create agent profiles")
-        serializer.save()
-        return APIResponse.success(
-            data=serializer.data,
-            message="Profile created",
-            status_code=status.HTTP_201_CREATED,
-        )
-
-
-@extend_schema(tags=["Profiles"])
-class ClientProfileView(generics.RetrieveUpdateAPIView):
-    serializer_class = ClientProfileCreateSerializer
+class ClientProfileView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
     parser_classes = (MultiPartParser, FormParser)
 
-    def get_object(self):
-        if not self.request.user.is_client:
-            APIResponse.forbidden("Only clients can view client profiles")
+    @extend_schema(responses={200: ClientProfileSerializer})
+    def get(self, request):
+        """Retrieve client profile for current authenticated user"""
+        if not request.user.is_client:
+            return APIResponse.forbidden("Only clients can view client profiles")
 
-        # check if the user has a client profile
-        if not hasattr(self.request.user, "clientprofile"):
-            APIResponse.not_found("Client profile not found")
+        # Check if the user has a client profile
+        if not hasattr(request.user, "clientprofile"):
+            # Create a profile if it doesn't exist
+            profile = ClientProfile.objects.create(user=request.user)
+            Notification.objects.create(
+                user=request.user,
+                message="Your profile has been created. Please update your details in the profile section.",
+            )
+        else:
+            profile = request.user.clientprofile
 
-        return APIResponse.success(
-            data=ClientProfile.objects.get(user=self.request.user),
-            message="Profile retrieved",
-        )
-
-    def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = self.get_serializer(instance)
+        serializer = ClientProfileSerializer(profile)
         return APIResponse.success(
             data=serializer.data, message="Client profile retrieved"
         )
 
+    @extend_schema(
+        request=ClientProfilePatchSerializer, responses={200: ClientProfileSerializer}
+    )
+    def patch(self, request):
+        """Update client profile for current authenticated user"""
+        if not request.user.is_client:
+            return APIResponse.forbidden("Only clients can update client profiles")
+
+        # Check if the user has a client profile
+        if not hasattr(request.user, "clientprofile"):
+            # Create a profile if it doesn't exist
+            profile = ClientProfile.objects.create(user=request.user)
+            Notification.objects.create(
+                user=request.user,
+                message="Your profile has been created. Please update your details in the profile section.",
+            )
+        else:
+            profile = request.user.clientprofile
+
+        serializer = ClientProfilePatchSerializer(
+            profile, data=request.data, partial=True
+        )
+
+        if serializer.is_valid():
+            serializer.save()
+            updated_profile = ClientProfileSerializer(profile)
+            return APIResponse.success(
+                data=updated_profile.data, message="Client profile updated successfully"
+            )
+
+        return APIResponse.bad_request(serializer.errors)
+
 
 @extend_schema(tags=["Profiles"])
-class AgentProfileView(generics.RetrieveUpdateAPIView):
-    serializer_class = AgentProfileCreateSerializer
+class AgentProfileView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
+    parser_classes = (MultiPartParser, FormParser)
 
-    def get_object(self):
-        if not self.request.user.is_agent:
-            APIResponse.forbidden("Only agents can view agent profiles")
-        # check if the user has an agent profile
-        if not hasattr(self.request.user, "agentprofile"):
-            APIResponse.not_found("Agent profile not found")
+    @extend_schema(responses={200: AgentProfileSerializer})
+    def get(self, request):
+        """Retrieve agent profile for current authenticated user"""
+        if not request.user.is_agent:
+            return APIResponse.forbidden("Only agents can view agent profiles")
+        try:
+            profile = request.user.agentprofile
+        except AgentProfile.DoesNotExist:
+            profile = AgentProfile.objects.create(user=request.user)
 
-        return AgentProfile.objects.get(user=self.request.user)
-
-    def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = self.get_serializer(instance)
+        serializer = AgentProfileSerializer(profile)
         return APIResponse.success(
             data=serializer.data, message="Agent profile retrieved"
         )
+
+    @extend_schema(
+        request=AgentProfilePatchSerializer, responses={200: AgentProfileSerializer}
+    )
+    def patch(self, request):
+        """Update agent profile for current authenticated user"""
+        if not request.user.is_agent:
+            return APIResponse.forbidden("Only agents can update agent profiles")
+
+        profile = request.user.agentprofile
+
+        serializer = AgentProfilePatchSerializer(
+            profile, data=request.data, partial=True
+        )
+
+        if serializer.is_valid():
+            serializer.save()
+            updated_profile = AgentProfileSerializer(profile)
+            return APIResponse.success(
+                data=updated_profile.data, message="Agent profile updated successfully"
+            )
+
+        return APIResponse.bad_request(serializer.errors)
 
 
 @extend_schema(tags=["Users"])
@@ -264,10 +291,35 @@ class EmailVerificationView(APIView):
             user.is_active = True
             user.save()
 
+            self._create_profile_for_user(user)
+
             # Redirect to frontend success page
             return APIResponse.success(data="Email verified")
         except User.DoesNotExist:
             return APIResponse.not_found("User not found")
+
+    def _create_profile_for_user(self, user):
+        """Create appropriate profile based on user type"""
+        try:
+            profile_created = False
+
+            if user.is_client and not hasattr(user, "clientprofile"):
+                ClientProfile.objects.create(user=user)
+                profile_created = True
+            elif user.is_agent and not hasattr(user, "agentprofile"):
+                AgentProfile.objects.create(user=user)
+                profile_created = True
+
+            # Create a notification to inform the user
+            if profile_created:
+                Notification.objects.create(
+                    user=user,
+                    message="Your profile has been created. Please update your details in the profile section.",
+                )
+
+        except Exception as e:
+            # Log the error but don't interrupt the verification process
+            print(f"Error creating profile for user {user.email}: {str(e)}")
 
 
 @extend_schema(tags=["Authentication"])
@@ -280,13 +332,30 @@ class SendEmailVerificationView(APIView):
         if serializer.is_valid():
             email = serializer.validated_data["email"]
             try:
-                User.objects.get(email=email)
-                serializer.send_verification_email(email)
-                return APIResponse.success(
-                    message="Email verification email sent to your email"
-                )
+                user = User.objects.get(email=email)
+
+                # Only send verification if email is not already verified
+                if not user.is_email_verified:
+                    email_result = send_verification_email(user)
+
+                    if not email_result.get("success", False):
+                        return APIResponse.bad_request(
+                            f"Failed to send email: {email_result.get('error', 'Unknown error')}"
+                        )
+
+                    return APIResponse.success(
+                        message="Email verification sent to your email"
+                    )
+                else:
+                    return APIResponse.bad_request("Email is already verified")
+
             except User.DoesNotExist:
-                return APIResponse.not_found("User not found")
+                # Don't reveal user existence for security reasons
+                return APIResponse.success(
+                    message="If a user with this email exists, a verification email has been sent"
+                )
+
+        return APIResponse.bad_request(serializer.errors)
 
 
 @extend_schema(tags=["Authentication"])
@@ -300,33 +369,24 @@ class PasswordResetRequestView(APIView):
             email = serializer.validated_data["email"]
             try:
                 user = User.objects.get(email=email)
-                token = email_verification_token_generator.make_token(user)
-                user.password_reset_token = token
 
-                reset_url = f"{settings.FRONTEND_URL}/new-password/{token}"
-                send_mail(
-                    subject="Reset your password",
-                    message=render_to_string(
-                        "email/password_reset.html",
-                        {"reset_url": reset_url, "user": user},
-                    ),
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[user.email],
-                    html_message=render_to_string(
-                        "email/password_reset.html",
-                        {"reset_url": reset_url, "user": user},
-                    ),
-                )
-                user.save()
+                email_result = send_password_reset_email(user)
+
+                if not email_result.get("success", False):
+                    return APIResponse.bad_request(
+                        f"Failed to send email: {email_result.get('error', 'Unknown error')}"
+                    )
+
                 return APIResponse.success(
-                    message="a password reset email has been sent"
+                    message="A password reset email has been sent"
                 )
-            except smtplib.SMTPException as e:
-                APIResponse.bad_request(str(e))
-            except User.DoesNotExist:
-                APIResponse.not_found("User not found")
 
-        APIResponse.bad_request(message=serializer.errors)
+            except User.DoesNotExist:
+                return APIResponse.success(
+                    message="If a user with this email exists, a password reset email has been sent"
+                )
+
+        return APIResponse.bad_request(serializer.errors)
 
 
 @extend_schema(tags=["Authentication"])

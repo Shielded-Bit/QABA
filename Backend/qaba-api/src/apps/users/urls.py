@@ -9,8 +9,6 @@ from .views import (
     UserDetail,
     ClientProfileView,
     AgentProfileView,
-    ClientProfileCreateView,
-    AgentProfileCreateView,
     PasswordChangeView,
     AdminRegistrationView,
     RefreshTokenView,
@@ -40,8 +38,6 @@ urlpatterns = [
     path("users/me/", UserDetail.as_view(), name="user-detail"),
     path("profile/client/", ClientProfileView.as_view(), name="client-profile"),
     path("profile/agent/", AgentProfileView.as_view(), name="agent-profile"),
-    path("profile/client/create", ClientProfileCreateView.as_view(), name="create-client-profile"),
-    path("profile/agent/create", AgentProfileCreateView.as_view(), name="create-agent-profile"),
     path("notifications/", NotificationListView.as_view(), name="notification-list"),
     path("notifications/<int:pk>/read/", NotificationMarkReadView.as_view(), name="notification-mark-read"),
 ]
