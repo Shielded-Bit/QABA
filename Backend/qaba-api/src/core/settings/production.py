@@ -1,4 +1,5 @@
 from os import getenv
+
 from .base import *
 
 # Production settings
@@ -32,4 +33,15 @@ CSRF_COOKIE_SECURE = True
 SECURE_HSTS_SECONDS = 31536000  # 1 year
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
-X_FRAME_OPTIONS = 'DENY'
+X_FRAME_OPTIONS = "DENY"
+
+# # WhiteNoise configuration for production
+# STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+# # Enable GZip compression
+# WHITENOISE_MIDDLEWARE = {
+#     "enable_gzip_compression": True,
+# }
+
+# # Cache control for static files (1 year)
+# WHITENOISE_MAX_AGE = 31536000

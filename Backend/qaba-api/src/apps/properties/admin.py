@@ -118,7 +118,6 @@ class PropertyAdmin(admin.ModelAdmin):
         "listed_by__first_name",
         "listed_by__last_name",
     )
-    raw_id_fields = ("listed_by",)
     readonly_fields = ("listed_date",)
     inlines = [PropertyImageInline, PropertyVideoInline, AmenitiesInline]
     date_hierarchy = "listed_date"
