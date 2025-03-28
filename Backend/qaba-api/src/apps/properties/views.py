@@ -10,9 +10,11 @@ from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import filters, permissions, serializers, viewsets
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.views import APIView
 
-from .models import Property, PropertyImage, PropertyVideo
+from .models import Amenity, Property, PropertyImage, PropertyVideo
 from .serializers import (
+    AmenitySerializer,
     PropertyCreateSerializer,
     PropertyDetailSerializer,
     PropertyImageSerializer,
@@ -270,3 +272,21 @@ class PropertyVideoViewSet(viewsets.ModelViewSet):
             return APIResponse.bad_request("This property already has a video")
 
         serializer.save(property_id=self.kwargs["property_pk"])
+
+
+# Add this view to your existing views
+@extend_schema(tags=["Amenities"])
+class AmenityView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    @extend_schema(
+        responses=AmenitySerializer(many=True),
+        description="Retrieve a list of all amenities",
+    )
+    def get(self, request):
+        amenities = Amenity.objects.filter(is_active=True)
+        serializer = AmenitySerializer(amenities, many=True)
+
+        return APIResponse.success(
+            data=serializer.data, message="Amenities retrieved successfully"
+        )

@@ -7,7 +7,7 @@ from django.utils.html import strip_tags
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from .models import Property, PropertyImage, PropertyVideo
+from .models import Amenity, Property, PropertyImage, PropertyVideo
 
 
 class PropertyImageSerializer(serializers.ModelSerializer):
@@ -86,32 +86,10 @@ class PropertyListSerializer(serializers.ModelSerializer):
         return None
 
 
-class AmenitiesField(serializers.ListField):
-    """Custom field to handle amenities list"""
-
-    def to_representation(self, value):
-        if not value:
-            return []
-
-        result = []
-        amenity_choices = dict(Property.Amenities.choices)
-        for amenity in value:
-            if amenity in amenity_choices or amenity in amenity_choices.values():
-                result.append(amenity_choices[amenity.upper()])
-        return result
-
-    def to_internal_value(self, data):
-        if not isinstance(data, list):
-            raise serializers.ValidationError("Amenities must be a list")
-
-        amenities_list = data[0].split(",") if isinstance(data[0], str) else data
-
-        valid_amenities = [choice[0] for choice in Property.Amenities.choices]
-        for item in amenities_list:
-            if item not in valid_amenities:
-                raise serializers.ValidationError(f"'{item}' is not a valid amenity")
-
-        return amenities_list
+class AmenitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Amenity
+        fields = ["id", "name", "code", "icon", "is_active"]
 
 
 class PropertyDetailSerializer(PropertyListSerializer):
@@ -120,7 +98,7 @@ class PropertyDetailSerializer(PropertyListSerializer):
     rent_frequency_display = serializers.CharField(
         source="get_rent_frequency_display", read_only=True
     )
-    amenities = AmenitiesField()
+    amenities = AmenitySerializer(many=True, read_only=True)
 
     class Meta(PropertyListSerializer.Meta):
         fields = PropertyListSerializer.Meta.fields + [
@@ -150,10 +128,11 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
         default=False,
         help_text="Submit the property for review by the admin",
     )
-    amenities = AmenitiesField(
+    amenities_ids = serializers.ListField(
+        child=serializers.IntegerField(),
         write_only=True,
         required=False,
-        help_text="List of amenities available in the property",
+        help_text="List of amenity IDs for this property",
     )
 
     class Meta:
@@ -168,7 +147,7 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
             "location",
             "bedrooms",
             "bathrooms",
-            "amenities",
+            "amenities_ids",
             "area_sqft",
             "images",
             "video",
@@ -203,6 +182,7 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
         images_data = validated_data.pop("images", [])
         video_data = validated_data.pop("video", None)
         submit_for_review = validated_data.pop("submit_for_review", False)
+        amenities_ids = validated_data.pop("amenities_ids", [])
 
         if submit_for_review:
             validated_data["listing_status"] = Property.ListingStatus.PENDING
@@ -211,6 +191,11 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
             listed_by=self.context["request"].user, **validated_data
         )
 
+        # Add amenities
+        if amenities_ids:
+            property_instance.amenities.set(amenities_ids)
+
+        # Handle images and video as before
         if images_data:
             for image_data in images_data[:5]:
                 PropertyImage.objects.create(
@@ -220,6 +205,7 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
         if video_data:
             PropertyVideo.objects.create(property=property_instance, video=video_data)
 
+        # Handle notifications as before
         if submit_for_review:
             self._send_admin_review_notification_email(property_instance)
             self._create_review_notification(property_instance)

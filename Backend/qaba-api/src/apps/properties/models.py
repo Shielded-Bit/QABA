@@ -4,6 +4,30 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 
+class Amenity(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    code = models.CharField(max_length=50, unique=True)
+    icon = models.CharField(
+        max_length=50, blank=True, null=True, help_text="CSS icon class or code"
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Amenity"
+        verbose_name_plural = "Amenities"
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        # Ensure code is uppercase and uses underscores
+        self.code = self.code.upper().replace(" ", "_")
+        super().save(*args, **kwargs)
+
+
 class Property(models.Model):
     class PropertyType(models.TextChoices):
         HOUSE = "HOUSE", "House"
@@ -25,21 +49,6 @@ class Property(models.Model):
         PENDING = "PENDING", "Pending"
         DECLINED = "DECLINED", "Declined"
 
-    class Amenities(models.TextChoices):
-        CAR_PARK = "CAR_PARK", "Car Park"
-        BIG_COMPOUND = "BIG_COMPOUND", "Big Compound"
-        CCTV_CAMERA = "CCTV_CAMERA", "CCTV Camera"
-        POP_CEILING = "POP_CEILING", "POP Ceiling"
-        TRAFFIC_LIGHT = "TRAFFIC_LIGHT", "Traffic Light"
-        HOUSE_SECURITY = "HOUSE_SECURITY", "House Security"
-        SWIMMING_POOL = "SWIMMING_POOL", "Swimming Pool"
-        SECURITY_DOOR = "SECURITY_DOOR", "Security Door"
-        BOYS_QUARTERS = "BOYS_QUARTERS", "Boys Quarters"
-        GYM = "GYM", "Gym"
-        PARKING = "PARKING", "Parking"
-        GARDEN = "GARDEN", "Garden"
-        OTHERS = "OTHERS", "Others"
-
     class RentFrequency(models.TextChoices):
         MONTHLY = "MONTHLY", "Monthly"
         YEARLY = "YEARLY", "Yearly"
@@ -60,10 +69,11 @@ class Property(models.Model):
     bathrooms = models.PositiveIntegerField(null=True, blank=True)
     area_sqft = models.FloatField(null=True, blank=True)
     listed_date = models.DateTimeField(auto_now_add=True)
-    amenities = models.JSONField(
-        default=list,
+    amenities = models.ManyToManyField(
+        Amenity,
+        related_name="properties",
         blank=True,
-        help_text=_("List of amenities available with this property"),
+        help_text=_("Amenities available with this property"),
     )
 
     # Only Agent or Admin can create properties
@@ -102,6 +112,11 @@ class Property(models.Model):
 
     def __str__(self):
         return f"{self.property_name} - {self.location} ({self.get_property_type_display()})"
+    
+    class Meta:
+        verbose_name = "Property"
+        verbose_name_plural = "Properties"
+        ordering = ["-listed_date"]
 
 
 class PropertyImage(models.Model):

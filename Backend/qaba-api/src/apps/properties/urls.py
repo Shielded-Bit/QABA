@@ -1,9 +1,11 @@
+from django.urls import include, path, register_converter
 from rest_framework_nested import routers
-from django.urls import path, include, register_converter
+
 from .views import (
-    PropertyViewSet,
+    AmenityView,
     PropertyImageViewSet,
     PropertyVideoViewSet,
+    PropertyViewSet,
 )
 
 
@@ -34,4 +36,5 @@ properties_router.register(r"videos", PropertyVideoViewSet, basename="property-v
 urlpatterns = [
     path("", include(router.urls)),
     path("", include(properties_router.urls)),
+    path("amenities/", AmenityView.as_view(), name="amenities-list"),
 ]
