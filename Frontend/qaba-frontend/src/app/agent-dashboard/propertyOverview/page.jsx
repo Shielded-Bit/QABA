@@ -1,5 +1,4 @@
 "use client";
-import Header1 from '../components/header1';
 import PropertiesNumber from '../components/propertiesnumber';
 import MonthlyRevenue from '../components/monthlyRevenue'; // Import the chart component
 import PropertyStats from '../components/propertyStats';
@@ -7,9 +6,7 @@ import PropertyStats from '../components/propertyStats';
 export default function PropertyOverview() {
   return (
     <>
-      <div className="dashboard-header lg:ml-4 ml-3">
-        <Header1 /> 
-      </div>
+     
        {/* Top Numbers Row Wrapper */}
        <div className="dashboard-numbers sm:pl-10 pl-16 px-6">
         {/* Text with fixed gradient */}

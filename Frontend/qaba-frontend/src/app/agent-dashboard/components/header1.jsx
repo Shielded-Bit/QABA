@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { BellDot, Trash2, Eye, Search, Menu } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 export default function TopNav() {
   const [notifications, setNotifications] = useState([
@@ -25,9 +26,9 @@ export default function TopNav() {
   };
 
   return (
-    <div className="bg-gray-100  w-full sticky">
+    <div className="bg-gray-100 w-full sticky px-3 md:px-10">
       {/* Large Screen Navigation */}
-      <div className="hidden sm:flex justify-between items-center p-6 ">
+      <div className="hidden sm:flex justify-between items-center p-6">
         {/* Search Bar */}
         <div className="flex items-center flex-1 relative max-w-md">
           <Search className="absolute left-3 h-5 w-5 text-gray-500" />
@@ -47,78 +48,57 @@ export default function TopNav() {
               <span className="absolute top-0 right-0 block h-3 w-3 bg-red-500 rounded-full"></span>
             )}
           </div>
-{/* Dim Overlay */}
-{showNotifications && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 z-50"
-    onClick={() => setShowNotifications(false)}
-  ></div>
-)}
 
-
-{/* Notification Dropdown */}
-{showNotifications && (
-  <div
-    className="absolute top-10 right-0 bg-white shadow-lg rounded-md w-64 p-3 z-50"
-  >
-    {notifications.length === 0 ? (
-      <p className="text-sm text-gray-500">No new notifications</p>
-    ) : (
-      notifications.map((notif) => (
-        <div
-          key={notif.id}
-          className="flex justify-between items-center p-2 border-b bg-white"
-        >
-          <p
-            className={`text-sm text-gray-800 ${
-              notif.expanded ? "whitespace-normal" : "truncate"
-            }`}
-          >
-            {notif.message}
-          </p>
-          <div className="flex items-center gap-2">
-            <Eye
-              className="h-4 w-4 text-blue-500 cursor-pointer"
-              onClick={() => toggleMessageExpansion(notif.id)}
-            />
-            <Trash2
-              className="h-4 w-4 text-red-500 cursor-pointer"
-              onClick={() => handleDelete(notif.id)}
-            />
-          </div>
-        </div>
-      ))
-    )}
-  </div>
-)}
-
+          {/* Notifications Dropdown */}
+          {showNotifications && (
+            <>
+              <div className="fixed inset-0 bg-black bg-opacity-50 z-50" onClick={() => setShowNotifications(false)}></div>
+              <div className="absolute top-10 right-0 bg-white shadow-lg rounded-md w-64 p-3 z-50">
+                {notifications.length === 0 ? (
+                  <p className="text-sm text-gray-500">No new notifications</p>
+                ) : (
+                  notifications.map((notif) => (
+                    <div key={notif.id} className="flex justify-between items-center p-2 border-b bg-white">
+                      <p className={`text-sm text-gray-800 ${notif.expanded ? "whitespace-normal" : "truncate"}`}>
+                        {notif.message}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Eye className="h-4 w-4 text-blue-500 cursor-pointer" onClick={() => toggleMessageExpansion(notif.id)} />
+                        <Trash2 className="h-4 w-4 text-red-500 cursor-pointer" onClick={() => handleDelete(notif.id)} />
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </>
+          )}
 
           {/* User Profile */}
-          <div className="flex items-center gap-2">
-          <Image
-  src="https://i.pravatar.cc/150"
-  alt="User Avatar"
-  width={40} // Adjust based on h-10 (40px)
-  height={40}
-  className="rounded-full object-cover"
-/>
-
+          <Link href="/agent-dashboard/settings" className="flex items-center gap-2 cursor-pointer">
+            <Image
+              src="https://i.pravatar.cc/150"
+              alt="User Avatar"
+              width={40}
+              height={40}
+              className="rounded-full object-cover"
+            />
             <div className="hidden sm:flex flex-col">
               <span className="text-sm font-medium text-gray-800">Ekene Moses</span>
               <span className="text-xs text-gray-500">Client</span>
             </div>
-          </div>
+          </Link>
         </div>
       </div>
 
       {/* Mobile Navigation */}
-      <div className="sm:hidden flex justify-between  items-center p-4 ">
+      <div className="sm:hidden flex justify-between items-center p-4">
         {/* Mobile Menu Button */}
         <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
           <Menu className="h-7 w-7 text-gray-600" />
         </button>
 
-        {/* Search Bar (Reduced for Mobile) */}
-        <div className="flex items-center flex-1 relative mx-4 ">
+        {/* Search Bar (Mobile) */}
+        <div className="flex items-center flex-1 relative mx-4">
           <Search className="absolute left-3 h-4 w-4 text-gray-500" />
           <input
             type="text"
@@ -135,20 +115,17 @@ export default function TopNav() {
           )}
         </div>
 
-        {/* User Profile (Reduced for Mobile) */}
-        <div className="flex items-center gap-1 ml-4">
-        <Image
-  src="https://i.pravatar.cc/150"
-  alt="User Avatar"
-  width={32} // Adjust based on h-8 (32px)
-  height={32}
-  className="rounded-full object-cover"
-/>
-
-
-          {/* Show User Name on Mobile */}
+        {/* User Profile (Mobile) */}
+        <Link href="/agent-dashboard/settings" className="flex items-center gap-1 ml-4 cursor-pointer">
+          <Image
+            src="https://i.pravatar.cc/150"
+            alt="User Avatar"
+            width={32}
+            height={32}
+            className="rounded-full object-cover"
+          />
           <span className="text-sm font-medium text-gray-800">Ekene</span>
-        </div>
+        </Link>
       </div>
 
       {/* Mobile Notifications Dropdown */}
@@ -164,14 +141,8 @@ export default function TopNav() {
                     {notif.message}
                   </p>
                   <div className="flex items-center gap-2">
-                    <Eye
-                      className="h-4 w-4 text-blue-500 cursor-pointer"
-                      onClick={() => toggleMessageExpansion(notif.id)}
-                    />
-                    <Trash2
-                      className="h-4 w-4 text-red-500 cursor-pointer"
-                      onClick={() => handleDelete(notif.id)}
-                    />
+                    <Eye className="h-4 w-4 text-blue-500 cursor-pointer" onClick={() => toggleMessageExpansion(notif.id)} />
+                    <Trash2 className="h-4 w-4 text-red-500 cursor-pointer" onClick={() => handleDelete(notif.id)} />
                   </div>
                 </div>
               ))
