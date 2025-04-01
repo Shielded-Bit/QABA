@@ -46,6 +46,7 @@ class User(AbstractUser):
     # Make first name and last name required
     first_name = models.CharField(_("first name"), max_length=150)
     last_name = models.CharField(_("last name"), max_length=150)
+    phone_number = models.CharField(max_length=15, blank=True, null=True)
 
     username = None
 
@@ -84,7 +85,6 @@ class User(AbstractUser):
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    phone_number = models.CharField(max_length=15, blank=True, null=True)
     profile_photo = CloudinaryField(
         "image",
         folder=settings.CLOUDINARY_FOLDERS.get("user_profiles"),

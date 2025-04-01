@@ -10,7 +10,6 @@ class ClientProfilePatchSerializer(serializers.ModelSerializer):
     class Meta:
         model = ClientProfile
         fields = [
-            "phone_number",
             "profile_photo",
             "country",
             "state",
@@ -29,7 +28,6 @@ class AgentProfilePatchSerializer(serializers.ModelSerializer):
     class Meta:
         model = AgentProfile
         fields = [
-            "phone_number",
             "profile_photo",
             "country",
             "state",
@@ -51,7 +49,6 @@ class ClientProfileSerializer(serializers.ModelSerializer):
         model = ClientProfile
         fields = [
             "id",
-            "phone_number",
             "profile_photo_url",
             "country",
             "state",
@@ -72,7 +69,6 @@ class AgentProfileSerializer(serializers.ModelSerializer):
         model = AgentProfile
         fields = [
             "id",
-            "phone_number",
             "profile_photo_url",
             "country",
             "state",
@@ -159,12 +155,24 @@ class UserSerializer(serializers.ModelSerializer):
             "email",
             "first_name",
             "last_name",
+            "phone_number",
             "user_type",
             "client_profile",
             "agent_profile",
             "is_email_verified",
         ]
         read_only_fields = ["is_email_verified"]
+
+
+class UserUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["first_name", "last_name", "phone_number"]
+        extra_kwargs = {
+            "first_name": {"required": True},
+            "last_name": {"required": True},
+            "phone_number": {"required": False},
+        }
 
 
 class LoginSerializer(serializers.Serializer):

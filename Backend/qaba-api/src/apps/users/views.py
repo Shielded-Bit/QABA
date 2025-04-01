@@ -25,6 +25,7 @@ from .serializers import (
     PasswordResetRequestSerializer,
     SendEmailVerificationSerializer,
     UserSerializer,
+    UserUpdateSerializer,
 )
 
 
@@ -218,20 +219,45 @@ class UserList(generics.ListAPIView):
 
 
 @extend_schema(tags=["Users"])
-class UserDetail(generics.RetrieveUpdateDestroyAPIView):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
+class CurrentUserView(APIView):
+    """
+    View for retrieving the current authenticated user
+    """
+
     permission_classes = (permissions.IsAuthenticated,)
 
-    def get_object(self):
-        if self.request.user.is_admin:
-            return super().get_object()
-        return self.request.user  # Return user instance, not a response
+    @extend_schema(responses={200: UserSerializer})
+    def get(self, request):
+        """Get the currently authenticated user's details"""
+        user = request.user
+        serializer = UserSerializer(user)
+        return APIResponse.success(
+            data=serializer.data, message="User retrieved successfully"
+        )
 
-    def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = self.get_serializer(instance)
-        return APIResponse.success(data=serializer.data, message="User retrieved")
+
+@extend_schema(tags=["Users"])
+class UpdateUserView(APIView):
+    """
+    View for updating the current authenticated user
+    """
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    @extend_schema(request=UserUpdateSerializer, responses={200: UserSerializer})
+    def patch(self, request):
+        """Update the currently authenticated user's details"""
+        user = request.user
+        serializer = UserUpdateSerializer(user, data=request.data, partial=True)
+
+        if serializer.is_valid():
+            serializer.save()
+            updated_serializer = UserSerializer(user)
+            return APIResponse.success(
+                data=updated_serializer.data, message="User updated successfully"
+            )
+
+        return APIResponse.bad_request(serializer.errors)
 
 
 @extend_schema(tags=["Authentication"])

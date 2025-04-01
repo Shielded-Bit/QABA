@@ -53,6 +53,7 @@ class UserAdmin(BaseUserAdmin):
         "first_name",
         "last_name",
         "user_type",
+        "phone_number",
         "is_email_verified",
         "is_active",
         "date_joined",
@@ -65,7 +66,7 @@ class UserAdmin(BaseUserAdmin):
 
     fieldsets = (
         (None, {"fields": ("email", "password")}),
-        (_("Personal info"), {"fields": ("first_name", "last_name")}),
+        (_("Personal info"), {"fields": ("first_name", "last_name", "phone_number")}),
         (_("User type"), {"fields": ("user_type",)}),
         (
             _("Verification"),
@@ -101,6 +102,7 @@ class UserAdmin(BaseUserAdmin):
                     "email",
                     "first_name",
                     "last_name",
+                    "phone_number",
                     "user_type",
                     "password1",
                     "password2",
@@ -179,20 +181,18 @@ class UserAdmin(BaseUserAdmin):
 
 @admin.register(ClientProfile)
 class ClientProfileAdmin(admin.ModelAdmin):
-    list_display = ("user", "phone_number", "address", "country", "city")
+    list_display = ("user", "address", "country", "city")
     list_filter = ("country", "city")
     search_fields = (
         "user__email",
         "user__first_name",
         "user__last_name",
-        "phone_number",
         "city",
         "country",
     )
 
     fieldsets = (
         (None, {"fields": ("user",)}),
-        (_("Contact Info"), {"fields": ("phone_number",)}),
         (_("Location"), {"fields": ("country", "state", "city", "address")}),
         (_("Profile"), {"fields": ("profile_photo",)}),
     )
@@ -205,7 +205,6 @@ class ClientProfileAdmin(admin.ModelAdmin):
 class AgentProfileAdmin(admin.ModelAdmin):
     list_display = (
         "user",
-        "phone_number",
         "country",
         "city",
     )
@@ -214,14 +213,12 @@ class AgentProfileAdmin(admin.ModelAdmin):
         "user__email",
         "user__first_name",
         "user__last_name",
-        "phone_number",
         "country",
         "city",
     )
 
     fieldsets = (
         (None, {"fields": ("user",)}),
-        (_("Contact Info"), {"fields": ("phone_number",)}),
         (_("Location"), {"fields": ("country", "state", "city", "address")}),
         (_("Profile"), {"fields": ("profile_photo",)}),
     )
