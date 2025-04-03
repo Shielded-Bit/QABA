@@ -83,7 +83,7 @@ class PropertyViewSet(viewsets.ModelViewSet):
             self.request.user.is_authenticated
             and self.request.user.user_type == "AGENT"
         ):
-            queryset = queryset.filter(status=Property.ListingStatus.APPROVED)
+            queryset = queryset.filter(listing_status=Property.ListingStatus.APPROVED)
 
         return queryset
 
