@@ -1,5 +1,6 @@
 
 "use client";
+import Header1 from './components/header1';
 import Header2 from './components/header2';
 import PropertiesNumber from './components/propertiesnumber';
 import Cards from './components/cards';
@@ -13,6 +14,7 @@ export default function DashboardPage() {
       <div className=''>
         {/* Header Wrapper */}
         <div className="dashboard-header lg:ml-4 ml-3 ">
+          <Header1 />
           <Header2 />
         </div>
 

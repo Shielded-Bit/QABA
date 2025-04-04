@@ -63,40 +63,36 @@ export default function Buy() {
   );
 
   return (
-    <div className="px-2 sm:px-14 py-4">
-      <div className=" pt-6">
+    <div className="p-4 md:p-8 bg-gray-50 pt-6">
       {/* Filters */}
-    <div className="flex flex-wrap gap-4 mb-4 md:mb-6">
-      <FilterDropdown
-        label="Location"
-        options={['Lagos', 'Abuja']}
-        onChange={(value) => setFilters({ ...filters, location: value })}
-      />
-      <FilterDropdown
-        label="City"
-        options={['Ikoyi', 'Maitama', 'Lekki', 'Asokoro', 'Wuse']}
-        onChange={(value) => setFilters({ ...filters, city: value })}
-      />
-      <FilterDropdown
-        label="Type"
-        options={['buy']}
-        onChange={(value) => setFilters({ ...filters, type: value })}
-      />
-      <FilterDropdown
-        label="Purpose"
-        options={['Rent', 'Buy', 'Shortlet']}
-        onChange={(value) => setFilters({ ...filters, purpose: value })}
-      />
-      <Button
-        label="Search"
-        onClick={handleSearch}
-        variant="primary"
-        className="h-10"
-      />
-    </div>
-  </div>
-
-
+      <div className="flex flex-wrap gap-4 mb-4 md:mb-6">
+        <FilterDropdown
+          label="Location"
+          options={['Lagos', 'Abuja']}
+          onChange={(value) => setFilters({ ...filters, location: value })}
+        />
+        <FilterDropdown
+          label="City"
+          options={['Ikoyi', 'Maitama', 'Lekki', 'Asokoro', 'Wuse']}
+          onChange={(value) => setFilters({ ...filters, city: value })}
+        />
+        <FilterDropdown
+          label="Type"
+          options={['buy']}
+          onChange={(value) => setFilters({ ...filters, type: value })}
+        />
+        <FilterDropdown
+          label="Purpose"
+          options={['Rent', 'Buy', 'Shortlet']}
+          onChange={(value) => setFilters({ ...filters, purpose: value })}
+        />
+        <Button
+          label="Search"
+          onClick={handleSearch}
+          variant="primary"
+          className="h-10"
+        />
+      </div>
 
       {/* Heading */}
       <h1 className="text-3xl font-light mb-4 md:mb-6">

@@ -1,4 +1,5 @@
 "use client";
+import Header1 from '../components/header1';
 import PropertiesNumber from '../components/propertiesnumber';
 
 
@@ -7,9 +8,12 @@ import Propertycards from '../../agent-dashboard/myListings/propertyCard';
 export default function FavouritesPage() {
   return (
     <>
-    
+      <div className="dashboard-header lg:ml-4 ml-3 ">
+        <Header1 />
+       
+      </div>
        {/* Top Numbers Row Wrapper */}
-       <div className="dashboard-numbers sm:pl-10 pl-12 px-6">
+       <div className="dashboard-numbers sm:pl-10 pl-16 px-6">
     {/* Text with fixed gradient */}
     <h1 className="text-xl font-normal px-4 py-4 bg-clip-text text-transparent bg-gradient-to-r from-[#014d98] via-[#1d86a9] to-[#3ab7b1]">
         My Listings
