@@ -1,37 +1,30 @@
 'use client';
 
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { Bookmark } from 'lucide-react';
 import Button from '../shared/Button';
 
 const ListingCard = ({ id, title, price, description, image, type }) => {
   const router = useRouter();
-  const [isFavorited, setIsFavorited] = useState(false);
 
   const handleCardClick = () => {
     router.push(`/details/${id}`);
   };
 
-  const toggleFavorite = (e) => {
-    e.stopPropagation(); // Prevent card click event
-    setIsFavorited(!isFavorited);
-    // Here, you can add logic to save favorite status to user dashboard
-  };
-
   return (
-    <div className="max-w-md bg-white rounded-lg overflow-hidden shadow-md relative" onClick={handleCardClick}>
+    <div
+      className="max-w-md bg-white rounded-lg  overflow-hidden "
+      onClick={handleCardClick}
+    >
       {/* Image */}
-      <div className="relative p-4">
+      <div className="relative p-4 ">
         <Image
           className="w-full rounded-lg object-cover"
           src={image}
           alt={title}
           width={400}
-          height={250}
+          height={250} // Increased height for a better layout
         />
-        
         {/* Type Badge */}
         <span
           className={`absolute top-6 left-6 px-3 py-1 rounded-full text-xs font-semibold text-white ${
@@ -40,14 +33,6 @@ const ListingCard = ({ id, title, price, description, image, type }) => {
         >
           {type === 'rent' ? 'Rent' : 'Buy'}
         </span>
-        
-        {/* Favorite Icon */}
-        <button
-          className="absolute top-6 right-6 p-2 bg-white rounded-full shadow-md hover:bg-gray-200"
-          onClick={toggleFavorite}
-        >
-          <Bookmark size={20} className={isFavorited ? 'text-red-500' : 'text-gray-500'} />
-        </button>
       </div>
 
       {/* Card Content */}
@@ -72,19 +57,37 @@ const ListingCard = ({ id, title, price, description, image, type }) => {
 
         {/* Features */}
         <div className="flex justify-between text-gray-500 text-sm mt-4">
-          <span className="flex items-center">🏠 Spacious Living Area</span>
-          <span className="flex items-center">🍳 Modern Kitchen</span>
+          <span className="flex items-center">
+            &#x1F3E1; Spacious Living Area
+          </span>
+          <span className="flex items-center">
+            &#x1F373; Modern Kitchen
+          </span>
         </div>
         <div className="flex justify-between text-gray-500 text-sm mt-2">
-          <span className="flex items-center">🏡 Private Backyard</span>
-          <span className="flex items-center">📌 Master Suite</span>
+          <span className="flex items-center">
+            &#x1F3E0; Private Backyard
+          </span>
+          <span className="flex items-center">
+            &#x1F4CC; Master Suite
+          </span>
         </div>
       </div>
 
       {/* Action Button */}
-      <div className="flex justify-center items-center p-4">
-        <Button label="Learn More" onClick={handleCardClick} bgColor="white" className="w-40 h-14" />
-      </div>
+      <div className="flex justify-center items-center  ">
+  <div className="p-14">
+    <Button
+      label="Learn More"
+      onClick={handleCardClick}
+      bgColor="white" // White background
+      className="w-40 h-14 "
+    />
+  </div>
+</div>
+
+
+
     </div>
   );
 };

@@ -1,10 +1,10 @@
 
 "use client";
-import Header1 from './components/header1';
-import Header2 from './components/header2';
-import PropertiesNumber from './components/propertiesnumber';
-import Cards from './components/cards';
-import Transactions from './components/transactions';
+import Header1 from '../components/header1';
+import Header2 from '../components/header2';
+import PropertiesNumber from '../components/propertiesnumber';
+import Cards from '../components/cards';
+import Transactions from '../components/transactions';
 
 export default function DashboardPage() {
   return (

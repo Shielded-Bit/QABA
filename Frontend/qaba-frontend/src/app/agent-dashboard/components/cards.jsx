@@ -3,9 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useSwipeable } from "react-swipeable";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { useNotifications, NotificationProvider } from "../../../contexts/NotificationContext";
 
-// Sales data
 const data = [
   { name: "Feb", sales: 30 },
   { name: "Mar", sales: 20 },
@@ -17,12 +15,12 @@ const data = [
   { name: "Sep", sales: 45 },
 ];
 
-// Wrapper component that ensures the NotificationProvider is available
-const DashboardWithProvider = () => (
-  <NotificationProvider>
-    <Dashboard />
-  </NotificationProvider>
-);
+const notifications = [
+  { id: 1, title: "Price Drop Alert", message: "Good news! The price of Luxury Villa has dropped by 10%. Check it out now" },
+  { id: 2, title: "New Message from Agent", message: "You have a new message from Ekene regarding Modern Duplex." },
+  { id: 3, title: "New Message from Agent", message: "You have a new message from Ekene regarding Modern Duplex." },
+  { id: 4, title: "New Message from Agent", message: "You have a new message from Ekene regarding Modern Duplex." },
+];
 
 const Dashboard = () => (
   <div className="px-2 py-1">
@@ -76,159 +74,71 @@ const MonthlyRevenue = () => {
 
       {/* Chart */}
       <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={filteredData}>
-          <XAxis dataKey="name" tick={{ fill: "#9ca3af", fontSize: 12 }} axisLine={false} />
-          <YAxis hide />
-          <Tooltip content={<CustomTooltip />} cursor={{ fill: "transparent" }} />
-          <Bar
-            dataKey="sales"
-            barSize={50}
-            shape={(props) => {
-              const { x, y, width, height, payload } = props;
-              const isMax = payload.sales === Math.max(...data.map((d) => d.sales));
-              return (
-                <rect
-                  x={x}
-                  y={y}
-                  width={width}
-                  height={height}
-                  fill={isMax ? "url(#gradient)" : "rgba(209, 213, 219, 0.5)"}
-                  rx="4" // Border radius
-                  ry="4"
-                />
-              );
-            }}
-          />
-          <defs>
-            <linearGradient id="gradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#014d98" />
-              <stop offset="100%" stopColor="#3ab7b1" />
-            </linearGradient>
-          </defs>
-        </BarChart>
+      <BarChart data={filteredData}>
+  <XAxis dataKey="name" tick={{ fill: "#9ca3af", fontSize: 12 }} axisLine={false} />
+  <YAxis hide />
+  <Tooltip content={<CustomTooltip />} cursor={{ fill: "transparent" }} />
+  <Bar
+    dataKey="sales"
+    barSize={50}
+    shape={(props) => {
+      const { x, y, width, height, payload } = props;
+      const isMax = payload.sales === Math.max(...data.map((d) => d.sales));
+      return (
+        <rect
+          x={x}
+          y={y}
+          width={width}
+          height={height}
+          fill={isMax ? "url(#gradient)" : "rgba(209, 213, 219, 0.5)"}
+          rx="4" // Border radius
+          ry="4"
+        />
+      );
+    }}
+  />
+  <defs>
+    <linearGradient id="gradient" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stopColor="#014d98" />
+      <stop offset="100%" stopColor="#3ab7b1" />
+    </linearGradient>
+  </defs>
+</BarChart>
+
       </ResponsiveContainer>
     </div>
   );
 };
 
-// Component that safely uses the context
-const NotificationsSection = () => {
-  const notificationsContext = useNotifications();
-  
-  // Check if context is undefined and provide fallback values
-  const { 
-    notifications = [], 
-    loading = true, 
-    error = null, 
-    markAsRead = () => {} 
-  } = notificationsContext || {};
-
-  return (
-    <div className="bg-white shadow-md rounded-lg p-4 text-gray-600">
-      <h2 className="text-lg font-semibold mb-4">Notifications</h2>
-      
-      {loading ? (
-        <div className="flex justify-center items-center h-40">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-        </div>
-      ) : error ? (
-        <div className="text-red-500 text-center py-4">
-          Error loading notifications: {error}
-        </div>
-      ) : notifications.length === 0 ? (
-        <div className="text-center py-8 text-gray-400">
-          No notifications at this time
-        </div>
-      ) : (
-        <div className="space-y-3 mt-7">
-          {notifications.map((notification) => (
-            <NotificationCard 
-              key={notification.id} 
-              notification={notification}
-              onMarkAsRead={() => markAsRead(notification.id)}
-            />
-          ))}
-        </div>
-      )}
+const NotificationsSection = () => (
+  <div className="bg-white shadow-md rounded-lg p-4 text-gray-600">
+    <h2 className="text-lg font-semibold mb-4">Notifications</h2>
+    <div className="space-y-3 mt-7">
+      {notifications.map((notification) => (
+        <NotificationCard key={notification.id} {...notification} />
+      ))}
     </div>
-  );
-};
+  </div>
+);
 
-// Component that safely uses the context
-const NotificationsList = () => {
-  const notificationsContext = useNotifications();
-  
-  // Check if context is undefined and provide fallback values
-  const { 
-    notifications = [], 
-    loading = true, 
-    error = null, 
-    markAsRead = () => {} 
-  } = notificationsContext || {};
-
-  return (
-    <div className="bg-white shadow-md rounded-lg p-4 w-full">
-      <h2 className="text-lg font-semibold mb-4 text-gray-600">Notifications</h2>
-      
-      {loading ? (
-        <div className="flex justify-center items-center h-40">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-        </div>
-      ) : error ? (
-        <div className="text-red-500 text-center py-4">
-          Error loading notifications: {error}
-        </div>
-      ) : notifications.length === 0 ? (
-        <div className="text-center py-8 text-gray-400">
-          No notifications at this time
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {notifications.map((notification) => (
-            <NotificationCard 
-              key={notification.id}
-              notification={notification}
-              onMarkAsRead={() => markAsRead(notification.id)}
-            />
-          ))}
-        </div>
-      )}
-      
-      {!loading && !error && notifications.length > 0 && (
-        <a href="/notifications" className="mt-4 text-center block text-blue-600 hover:underline">
-          View All
-        </a>
-      )}
+const NotificationsList = () => (
+  <div className="bg-white shadow-md rounded-lg p-4 w-full">
+    <h2 className="text-lg font-semibold mb-4 text-gray-600">Notifications</h2>
+    <div className="space-y-3">
+      {notifications.map((notification) => (
+        <NotificationCard key={notification.id} {...notification} />
+      ))}
     </div>
-  );
-};
+    <a href="#" className="mt-4 text-center block text-blue-600 hover:underline">View All</a>
+  </div>
+);
 
-const NotificationCard = ({ notification, onMarkAsRead }) => {
-  const { id, message, is_read, created_at } = notification;
-  
-  // Format the date
-  const formattedDate = new Date(created_at).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-
-  return (
-    <div 
-      className={`border-b pb-3 last:border-b-0 w-full cursor-pointer hover:bg-gray-50 transition ${!is_read ? 'bg-blue-50' : ''}`}
-      onClick={() => !is_read && onMarkAsRead()}
-    >
-      <div className="flex justify-between items-start">
-        <p className="text-xs sm:text-sm text-gray-500">{message}</p>
-        {!is_read && (
-          <span className="inline-block w-2 h-2 bg-blue-500 rounded-full ml-2 mt-1"></span>
-        )}
-      </div>
-      <p className="text-xs text-gray-400 mt-1">{formattedDate}</p>
-    </div>
-  );
-};
+const NotificationCard = ({ title, message }) => (
+  <div className="border-b pb-3 last:border-b-0 w-full cursor-pointer hover:bg-gray-50 transition">
+    <h3 className="font-semibold text-sm sm:text-base text-gray-800">{title}</h3>
+    <p className="text-xs sm:text-sm text-gray-500">{message}</p>
+  </div>
+);
 
 const MobileSwiper = ({ items }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -252,4 +162,4 @@ const MobileSwiper = ({ items }) => {
   );
 };
 
-export default DashboardWithProvider;
+export default Dashboard;

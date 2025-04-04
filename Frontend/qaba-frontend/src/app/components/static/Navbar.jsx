@@ -14,9 +14,8 @@ const Navbar = () => {
   const isActive = (path) => pathname === path;
 
   return (
-    <nav className="sticky top-0 left-0 right-0 w-full z-50 bg-[rgb(246,246,246)]">
-  <div className="max-w-[95%] mx-auto flex justify-between items-center py-4 px-2 sm:px-6">
-  
+    <nav className="sticky top-0 left-0 w-full z-50 bg-[rgb(246,246,246)]">
+      <div className="container mx-auto flex justify-between items-center py-4 px-6">
         {/* Logo */}
         <div className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#014d98] to-[#3ab7b1]">
           <Link href="/">QABA</Link>

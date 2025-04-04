@@ -38,7 +38,7 @@ const Section6 = () => {
   ];
 
   return (
-    <section className="bg-[#efe4da] py-16 px-2 md:px-14">
+    <section className="bg-[#efe4da] py-16 px-6 md:px-12">
       {/* Section Heading */}
       <div className="max-w-6xl mx-auto text-center mb-12">
         <h2 className="text-3xl font-bold mb-4">
@@ -82,7 +82,7 @@ const Section6 = () => {
             className="transition-all duration-700 ease-in-out animate-fadeIn"
           >
             {/* Article Card */}
-            <div className="flex flex-col px-2">
+            <div className="flex flex-col">
               {/* Image */}
               <div className="relative w-full h-80">
                 <Image
