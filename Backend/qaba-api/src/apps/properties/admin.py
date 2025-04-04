@@ -18,13 +18,13 @@ class AmenityAdmin(admin.ModelAdmin):
         "created_at",
     )
     list_filter = ("is_active", "created_at")
-    search_fields = ("name", "code")
+    search_fields = ("name",)
     list_editable = ("is_active",)
     ordering = ("name",)
     readonly_fields = ("created_at", "updated_at")
 
     fieldsets = (
-        (None, {"fields": ("name", "code")}),
+        (None, {"fields": ("name",)}),
         (_("Display"), {"fields": ("icon", "is_active")}),
         (
             _("Timestamps"),

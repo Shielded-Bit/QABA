@@ -89,7 +89,7 @@ class PropertyListSerializer(serializers.ModelSerializer):
 class AmenitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Amenity
-        fields = ["id", "name", "code", "icon", "is_active"]
+        fields = ["id", "name", "icon"]
 
 
 class PropertyDetailSerializer(PropertyListSerializer):

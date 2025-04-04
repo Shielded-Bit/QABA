@@ -24,7 +24,7 @@ class Amenity(models.Model):
 
     def save(self, *args, **kwargs):
         # Ensure code is uppercase and uses underscores
-        self.code = self.code.upper().replace(" ", "_")
+        self.code = self.name.upper().replace(" ", "_")
         super().save(*args, **kwargs)
 
 
