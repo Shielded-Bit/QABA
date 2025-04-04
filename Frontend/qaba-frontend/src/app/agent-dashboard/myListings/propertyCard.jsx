@@ -186,11 +186,11 @@ export default function OurWork() {
   };
 
   useEffect(() => {
-    const fetchProperties = async () => {
+    const fetchPendingProperties = async () => {
       try {
         setLoading(true);
-        // Remove the filter to get all properties
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API}/api/v1/properties/`, {
+        // Use the specific endpoint for pending properties
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API}/api/v1/properties/?listing_status=PENDING`, {
             method: 'GET',
             headers: {
               'Content-Type': 'application/json',
@@ -248,32 +248,18 @@ export default function OurWork() {
           listing_status: p.listing_status
         })));
         
-        // Filter properties by status
-        setPendingProperties(formattedProperties.filter(property => 
-          property.listing_status === "PENDING" || 
-          property.listing_status === "pending" || 
-          property.listing_status === "DRAFT" || 
-          property.listing_status === "draft"
-        ));
-        
-        setPublishedProperties(formattedProperties.filter(property => 
-          property.listing_status === "PUBLISHED" || 
-          property.listing_status === "published" || 
-          property.listing_status === "ACTIVE" || 
-          property.listing_status === "active" ||
-          property.listing_status === "LIVE" ||
-          property.listing_status === "live"
-        ));
+        // Set pending properties directly from the filtered API response
+        setPendingProperties(formattedProperties);
         
       } catch (err) {
-        console.error("Failed to fetch properties:", err);
+        console.error("Failed to fetch pending properties:", err);
         setError(err.message);
       } finally {
         setLoading(false);
       }
     };
     
-    fetchProperties();
+    fetchPendingProperties();
   }, []);
 
   if (loading) {
@@ -305,11 +291,6 @@ export default function OurWork() {
           <PropertySection 
               title="Pending Listed Properties" 
               properties={pendingProperties} 
-              className="text-sm md:text-3xl" 
-          />
-          <PropertySection 
-              title="Published Listed Properties" 
-              properties={publishedProperties} 
               className="text-sm md:text-3xl" 
           />
       </div>
