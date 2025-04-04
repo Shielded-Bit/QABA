@@ -8,17 +8,17 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   const router = useRouter();
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token"); // Store tokens securely in production
-    const userType = localStorage.getItem("user_type"); // Expected: "AGENT" or "CLIENT"
+    const token = localStorage.getItem("access_token");
+    const userType = localStorage.getItem("user_type");
 
     if (!token || !allowedRoles.includes(userType)) {
-      router.push("/signin"); // Redirect unauthorized users
+      router.push("/signin");
     } else {
       setAuthorized(true);
     }
-  }, []);
+  }, [allowedRoles, router]); // ✅ Added dependencies
 
-  if (!isAuthorized) return null; // Prevent rendering before checking auth
+  if (!isAuthorized) return null;
   return children;
 };
 

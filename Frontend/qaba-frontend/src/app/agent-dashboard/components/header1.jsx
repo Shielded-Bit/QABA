@@ -1,17 +1,52 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { BellDot, Trash2, Eye, Search, Menu } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useProfile } from "../../../contexts/ProfileContext";
 
 export default function TopNav() {
   const [notifications, setNotifications] = useState([
     { id: 1, message: "New property listing available!", expanded: false },
-    { id: 2, message: "Agent John Doe sent you a message.", expanded: false },
+    { id: 2, message: "Agent sent you a message.", expanded: false },
   ]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [profileImageUrl, setProfileImageUrl] = useState("");
+  
+  // Use the shared profile context and provide default values if needed
+  const { userData = {}, profileImage, isLoading, userType } = useProfile();
+  
+  // Explicitly set user data for development/testing
+  // This ensures we have the actual user data when testing the component
+  useEffect(() => {
+    // You can remove this effect in production
+    // This is just to ensure we're using the actual user data during development
+    console.log("Current user data:", userData);
+  }, [userData]);
+
+  // Set profile image when component mounts or when profileImage from context changes
+  useEffect(() => {
+    if (profileImage) {
+      setProfileImageUrl(profileImage);
+    } else if (userData) {
+      // Try to get from userData as backup
+      const photoUrl = userData.agent_profile?.profile_photo_url || userData.client_profile?.profile_photo_url;
+      if (photoUrl) {
+        setProfileImageUrl(photoUrl);
+      } else {
+        // Try to get from localStorage as final backup
+        const savedImage = localStorage.getItem('profile_image_url');
+        if (savedImage) {
+          setProfileImageUrl(savedImage);
+        } else {
+          // Default placeholder if no image is found
+          setProfileImageUrl("https://i.pravatar.cc/150");
+        }
+      }
+    }
+  }, [profileImage, userData]);
 
   const handleDelete = (id) => {
     setNotifications(notifications.filter((notif) => notif.id !== id));
@@ -23,6 +58,57 @@ export default function TopNav() {
         notif.id === id ? { ...notif, expanded: !notif.expanded } : notif
       )
     );
+  };
+
+  // Format user display name - directly using data properties if they exist
+  const getUserDisplayName = () => {
+    // Check if we have valid userData first
+    if (!userData) return "Guest";
+
+    // Check for existing first_name/last_name properties
+    const firstName = userData.first_name || userData.data?.first_name || "";
+    const lastName = userData.last_name || userData.data?.last_name || "";
+    
+    if (firstName && lastName) {
+      return `${firstName} ${lastName}`;
+    } else if (firstName) {
+      return firstName;
+    } else if (lastName) {
+      return lastName;
+    } else {
+      // Last resort: use email or return "User"
+      const email = userData.email || userData.data?.email;
+      return email ? email.split('@')[0] : "User";
+    }
+  };
+
+  // Get short name for mobile display
+  const getShortName = () => {
+    const firstName = userData?.first_name || userData?.data?.first_name;
+    if (!firstName) return "Guest";
+    return firstName;
+  };
+
+  // Get user role based on user_type
+  const getUserRole = () => {
+    const type = userType || userData?.user_type || userData?.data?.user_type;
+    if (!type) return "User";
+    return type === "AGENT" ? "Agent" : "Client";
+  };
+
+  // Determine the settings page URL based on user type
+  const getSettingsUrl = () => {
+    const type = userType || userData?.user_type || userData?.data?.user_type;
+    return type === "AGENT" ? "/agent-dashboard/settings" : "/dashboard/settings";
+  };
+
+  // Get the first initial for the avatar fallback
+  const getInitial = () => {
+    const firstName = userData?.first_name || userData?.data?.first_name;
+    if (firstName) {
+      return firstName.charAt(0);
+    }
+    return "U"; // Default to "U" for User
   };
 
   return (
@@ -74,17 +160,32 @@ export default function TopNav() {
           )}
 
           {/* User Profile */}
-          <Link href="/agent-dashboard/settings" className="flex items-center gap-2 cursor-pointer">
-            <Image
-              src="https://i.pravatar.cc/150"
-              alt="User Avatar"
-              width={40}
-              height={40}
-              className="rounded-full object-cover"
-            />
+          <Link href={getSettingsUrl()} className="flex items-center gap-2 cursor-pointer">
+            <div className="w-10 h-10 relative rounded-full overflow-hidden border border-gray-300 shadow-sm">
+              {!isLoading && profileImageUrl ? (
+                <Image
+                  src={profileImageUrl}
+                  alt={`${getUserDisplayName()} Profile`}
+                  width={40}
+                  height={40}
+                  className="rounded-full object-cover"
+                  key={profileImageUrl} // Use actual URL as key to force re-render
+                  onError={(e) => {
+                    // If image fails to load, fall back to default
+                    setProfileImageUrl("https://i.pravatar.cc/150");
+                  }}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                  <span className="text-xl font-medium text-gray-500">
+                    {getInitial()}
+                  </span>
+                </div>
+              )}
+            </div>
             <div className="hidden sm:flex flex-col">
-              <span className="text-sm font-medium text-gray-800">Ekene Moses</span>
-              <span className="text-xs text-gray-500">Client</span>
+              <span className="text-sm font-medium text-gray-800">{getUserDisplayName()}</span>
+              <span className="text-xs text-gray-500">{getUserRole()}</span>
             </div>
           </Link>
         </div>
@@ -116,15 +217,27 @@ export default function TopNav() {
         </div>
 
         {/* User Profile (Mobile) */}
-        <Link href="/agent-dashboard/settings" className="flex items-center gap-1 ml-4 cursor-pointer">
-          <Image
-            src="https://i.pravatar.cc/150"
-            alt="User Avatar"
-            width={32}
-            height={32}
-            className="rounded-full object-cover"
-          />
-          <span className="text-sm font-medium text-gray-800">Ekene</span>
+        <Link href={getSettingsUrl()} className="flex items-center gap-1 ml-4 cursor-pointer">
+          <div className="w-8 h-8 relative rounded-full overflow-hidden border border-gray-300">
+            {!isLoading && profileImageUrl ? (
+              <Image
+                src={profileImageUrl}
+                alt={`${getShortName()} Profile`}
+                width={32}
+                height={32}
+                className="rounded-full object-cover"
+                key={profileImageUrl} // Use actual URL as key to force re-render
+                onError={() => setProfileImageUrl("https://i.pravatar.cc/150")}
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                <span className="text-sm font-medium text-gray-500">
+                  {getInitial()}
+                </span>
+              </div>
+            )}
+          </div>
+          <span className="text-sm font-medium text-gray-800">{getShortName()}</span>
         </Link>
       </div>
 
