@@ -73,10 +73,8 @@ class PropertyViewSet(viewsets.ModelViewSet):
         queryset = super().get_queryset()
 
         # Filter by user type
-        if self.request.user.is_authenticated:
-            user_type = self.request.query_params.get("user_type")
-            if user_type == "agent" and self.request.user.user_type == "AGENT":
-                return queryset.filter(listed_by=self.request.user)
+        if self.request.user.is_authenticated and self.request.user.user_type == "AGENT":
+            return queryset.filter(listed_by=self.request.user)
 
         # Filter by property status for non-agents
         if not self.request.user.is_staff and not (
@@ -90,13 +88,13 @@ class PropertyViewSet(viewsets.ModelViewSet):
     @extend_schema(
         parameters=[
             OpenApiParameter(
-                name="min_price",
+                name="min_sale",
                 type=float,
                 location=OpenApiParameter.QUERY,
                 description="Minimum price filter",
             ),
             OpenApiParameter(
-                name="max_price",
+                name="max_sale",
                 type=float,
                 location=OpenApiParameter.QUERY,
                 description="Maximum price filter",
@@ -119,15 +117,15 @@ class PropertyViewSet(viewsets.ModelViewSet):
         queryset = self.filter_queryset(self.get_queryset())
 
         # Price range filtering
-        min_price = request.query_params.get("min_price")
-        max_price = request.query_params.get("max_price")
+        min_price = request.query_params.get("min_sale")
+        max_price = request.query_params.get("max_sale")
         min_rent = request.query_params.get("min_rent")
         max_rent = request.query_params.get("max_rent")
 
         if min_price:
-            queryset = queryset.filter(price__gte=min_price)
+            queryset = queryset.filter(sale_price__gte=min_price)
         if max_price:
-            queryset = queryset.filter(price__lte=max_price)
+            queryset = queryset.filter(sale_price__lte=max_price)
         if min_rent:
             queryset = queryset.filter(rent_price__gte=min_rent)
         if max_rent:
