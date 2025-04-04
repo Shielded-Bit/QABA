@@ -66,39 +66,46 @@ export default function Rent() {
   );
 
   return (
-    <div className="p-4 md:p-8 bg-gray-50 pt-6">
-      {/* Filters */}
-      <div className="flex flex-wrap gap-4 mb-4 md:mb-6">
-        <FilterDropdown
-          label="Location"
-          options={['Lagos', 'Abuja']}
-          onChange={(value) => setFilters({ ...filters, location: value })}
-        />
-        <FilterDropdown
-          label="City"
-          options={['Ikeja', 'Wuse', 'Lekki']}
-          onChange={(value) => setFilters({ ...filters, city: value })}
-        />
-        <FilterDropdown
-          label="Type"
-          options={['rent']}
-          onChange={(value) => setFilters({ ...filters, type: value })}
-        />
-        <FilterDropdown
-          label="Purpose"
-          options={['Rent', 'Buy', 'Shortlet']}
-          onChange={(value) => setFilters({ ...filters, purpose: value })}
-        />
-        <Button
-          label="Search"
-          onClick={handleSearch}
-          variant="primary"
-          className="h-10"
-        />
+    <div className="px-2 sm:px-14 py-4">
+      <div className=" pt-6">
+        {/* Filters */}
+        <div className="flex flex-wrap gap-4 mb-4 md:mb-6">
+          <FilterDropdown
+            label="Location"
+            options={['Lagos', 'Abuja']}
+            onChange={(value) => setFilters({ ...filters, location: value })}
+          />
+          <FilterDropdown
+            label="City"
+            options={['Ikeja', 'Wuse', 'Lekki']}
+            onChange={(value) => setFilters({ ...filters, city: value })}
+          />
+          <FilterDropdown
+            label="Type"
+            options={['rent']}
+            onChange={(value) => setFilters({ ...filters, type: value })}
+          />
+          <FilterDropdown
+            label="Purpose"
+            options={['Rent', 'Buy', 'Shortlet']}
+            onChange={(value) => setFilters({ ...filters, purpose: value })}
+          />
+          <Button
+            label="Search"
+            onClick={handleSearch}
+            variant="primary"
+            className="h-10"
+          />
+        </div>
+  
+        {/* Rest of your content here */}
       </div>
+    
+
+  
 
       {/* Heading */}
-      <h1 className="text-3xl font-light mb-4 md:mb-6">
+      <h1 className="text-3xl font-light mb-4 md:mb-6 ">
         <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#014d98] to-[#014d98]">
           Properties
         </span>{' '}

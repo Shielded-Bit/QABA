@@ -9,9 +9,9 @@ export default function DashboardHeader() {
   return (
     <div>
       {/* Desktop Layout */}
-      <div className="hidden sm:flex justify-between items-center bg-gray-100 px-4 mt-2">
+      <div className="hidden sm:flex justify-between items-center bg-gray-100 px-8 mt-2">
         {/* Dashboard Title */}
-        <h1 className="text-3xl font-bold text-gradient">
+        <h1 className="text-2xl font-bold text-gradient">
           Dashboard
         </h1>
 
