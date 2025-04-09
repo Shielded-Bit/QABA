@@ -61,6 +61,8 @@ class PropertyListSerializer(serializers.ModelSerializer):
             "id",
             "property_name",
             "sale_price",
+            "rent_price",
+            "rent_frequency",
             "property_type",
             "property_type_display",
             "listing_type",
