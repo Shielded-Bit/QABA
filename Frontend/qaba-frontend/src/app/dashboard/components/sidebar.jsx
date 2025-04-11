@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { LogoutButton } from '../logout';
+import Link from 'next/link';
 
 export default function Sidebar() {
   const [isPropertiesOpen, setIsPropertiesOpen] = useState(false);
@@ -59,7 +60,9 @@ export default function Sidebar() {
     >
       <div className="p-4 flex items-center justify-between border-b">
         <div className={`text-xl font-bold text-gradient ${isSidebarCollapsed ? 'hidden' : 'block'}`}>
-          QABA
+        <Link href="/" className="text-gradient hover:opacity-80 transition-opacity">
+      QABA
+    </Link>
         </div>
         {isMobile && (
           <button onClick={toggleSidebar} className="p-2 hover:bg-gray-100 rounded">
@@ -94,8 +97,8 @@ export default function Sidebar() {
               isPropertiesOpen ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'
             }`}
           >
-            {renderSubLink('/dashboard/properties', 'Rent Properties', pathname, Key, isSidebarCollapsed)}
-            {renderSubLink('/dashboard/properties/buy', 'Buy Properties', pathname, Home, isSidebarCollapsed)}
+            {renderSubLink('/rent', 'Rent Properties', pathname, Key, isSidebarCollapsed)}
+            {renderSubLink('/buy', 'Buy Properties', pathname, Home, isSidebarCollapsed)}
           </div>
         </div>
 

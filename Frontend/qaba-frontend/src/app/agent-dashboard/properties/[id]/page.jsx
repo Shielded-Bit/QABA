@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, Car, Shield, Video } from "lucide-react";
+import { ChevronLeft, ChevronRight, Car, Shield, Video, PlayCircle, BookImage } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -16,6 +16,7 @@ export default function PropertyDetail() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [showVideo, setShowVideo] = useState(false);
 
   useEffect(() => {
     const fetchPropertyDetail = async () => {
@@ -74,6 +75,10 @@ export default function PropertyDetail() {
     router.push('/agent-dashboard/myListings');
   };
 
+  const toggleVideo = () => {
+    setShowVideo(!showVideo);
+  };
+
   const handleDeleteProperty = async () => {
     try {
       setDeleteLoading(true);
@@ -104,6 +109,81 @@ export default function PropertyDetail() {
     } finally {
       setDeleteLoading(false);
     }
+  };
+
+  // Helper function to render action buttons based on property status
+  const renderActionButtons = () => {
+    const status = property?.listing_status?.toUpperCase();
+    
+    // For DRAFT properties: Show both Edit and Delete buttons
+    if (status === 'DRAFT') {
+      return (
+        <div className="flex gap-2 mt-2 md:mt-0">
+          <button 
+            className="px-3 py-1.5 border border-gray-300 rounded-md hover:bg-gray-50"
+            onClick={() => router.push(`/agent-dashboard/edit-property/${params.id}`)}
+          >
+            Edit
+          </button>
+          <button 
+            className="px-3 py-1.5 bg-red-500 text-white rounded-md hover:bg-red-600"
+            onClick={() => setShowDeleteModal(true)}
+          >
+            Delete
+          </button>
+        </div>
+      );
+    }
+    
+    // For APPROVED properties: Show no Edit or Delete buttons
+    else if (status === 'APPROVED') {
+      return (
+        <div className="flex gap-2 mt-2 md:mt-0">
+       <button 
+  className="px-3 py-1.5 bg-gradient-to-r from-blue-900 to-green-400 text-white rounded-md hover:opacity-90 transition-all duration-300"
+  onClick={handleBack}
+>
+  Back to Listings
+</button>
+
+        </div>
+      );
+    }
+    
+    // For PENDING properties: Show no Edit or Delete buttons
+    else if (status === 'PENDING') {
+      return (
+        <div className="flex gap-2 mt-2 md:mt-0">
+          <span className="px-3 py-1.5 bg-yellow-100 text-yellow-800 border border-yellow-300 rounded-md">
+            Under Review
+          </span>
+          <button 
+            className="px-3 py-1.5 border border-gray-300 rounded-md hover:bg-gray-50"
+            onClick={handleBack}
+          >
+            Back
+          </button>
+        </div>
+      );
+    }
+    
+    // Default case: Show Edit and Delete buttons
+    return (
+      <div className="flex gap-2 mt-2 md:mt-0">
+        <button 
+          className="px-3 py-1.5 border border-gray-300 rounded-md hover:bg-gray-50"
+          onClick={() => router.push(`/agent-dashboard/edit-property/${params.id}`)}
+        >
+          Edit
+        </button>
+        <button 
+          className="px-3 py-1.5 bg-red-500 text-white rounded-md hover:bg-red-600"
+          onClick={() => setShowDeleteModal(true)}
+        >
+          Delete
+        </button>
+      </div>
+    );
   };
 
   if (loading) {
@@ -140,8 +220,8 @@ export default function PropertyDetail() {
         <p className="text-xl mb-4">Property not found</p>
         <button 
           onClick={handleBack}
-          className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-        >
+          className="px-3 py-1.5 bg-gradient-to-r from-blue-900 to-green-400 text-white rounded-md hover:opacity-90 transition-all duration-300"
+          >
           Back to Properties
         </button>
       </div>
@@ -190,6 +270,22 @@ export default function PropertyDetail() {
     return typeof value === 'string' && value.startsWith(prefix);
   };
 
+  // Add status indicator badge
+  const getStatusBadge = () => {
+    const status = property?.listing_status?.toUpperCase();
+    if (status === 'APPROVED') {
+      return <span className="px-3 py-1 bg-green-100 text-green-800 text-sm font-medium rounded-full">Approved</span>;
+    } else if (status === 'PENDING') {
+      return <span className="px-3 py-1 bg-yellow-100 text-yellow-800 text-sm font-medium rounded-full">Pending</span>;
+    } else if (status === 'DRAFT') {
+      return <span className="px-3 py-1 bg-gray-100 text-gray-800 text-sm font-medium rounded-full">Draft</span>;
+    }
+    return null;
+  };
+
+  // Check if the property has a video
+  const hasVideo = property.video && property.video.video_url;
+
   return (
     <div className="w-full mx-auto p-0 lg:p-8 pl-14 ">
       {/* Toast Container for notifications */}
@@ -231,21 +327,11 @@ export default function PropertyDetail() {
       
       <div className="bg-white rounded-lg shadow-sm p-4 lg:p-8 max-w-6xl mx-auto">
         <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4">
-          <h1 className="text-2xl md:text-3xl font-bold">{property.property_name}</h1>
-          <div className="flex gap-2 mt-2 md:mt-0">
-            <button 
-              className="px-3 py-1.5 border border-gray-300 rounded-md hover:bg-gray-50"
-              onClick={() => router.push(`/agent-dashboard/edit-property/${params.id}`)}
-            >
-              Edit
-            </button>
-            <button 
-              className="px-3 py-1.5 bg-red-500 text-white rounded-md hover:bg-red-600"
-              onClick={() => setShowDeleteModal(true)}
-            >
-              Delete this property
-            </button>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl md:text-3xl font-bold">{property.property_name}</h1>
+            {getStatusBadge()}
           </div>
+          {renderActionButtons()}
         </div>
 
         <p className="text-blue-500 mb-4 md:mb-6">{property.location}</p>
@@ -263,65 +349,102 @@ export default function PropertyDetail() {
 
         {/* Image and Description Section - Side by Side on md and larger screens */}
         <div className="flex flex-col md:flex-row gap-6 mb-8">
-          {/* Image Carousel - Takes full width on mobile, 50% on larger screens */}
+          {/* Image/Video Carousel - Takes full width on mobile, 50% on larger screens */}
           <div className="md:w-1/2">
             <div className="relative mb-4">
-              <div className="w-full h-64 md:h-96 relative rounded-lg overflow-hidden">
-                {/* Main displayed image with proper handling of image objects */}
-                {images && images[currentImageIndex] && (
-                  <Image 
-                    src={getImageUrl(images[currentImageIndex])} 
-                    alt={property.property_name || "Property Image"}
-                    fill
-                    style={{ objectFit: "cover" }}
-                    unoptimized={true} // Important for external images
-                  />
-                )}
-              </div>
+              {/* Toggle between image and video if video exists */}
+              {hasVideo && (
+                <div className="flex justify-end mb-2">
+                  <button
+                    onClick={toggleVideo}
+                    className="flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-blue-900 to-green-400 text-white rounded-md hover:opacity-90 transition-all duration-300"
+                    >
+                    {showVideo ? (
+                      <>
+                        <BookImage className="w-4 h-4" /> View Photos
+                      </>
+                    ) : (
+                      <>
+                        <PlayCircle className="w-4 h-4" /> Watch Video
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
               
-              <div className="absolute inset-y-0 left-0 flex items-center">
-                <button 
-                  onClick={handlePrevImage}
-                  className="bg-white rounded-full p-1 md:p-2 shadow-md ml-2 md:ml-4"
-                  aria-label="Previous image"
-                >
-                  <ChevronLeft className="w-4 h-4 md:w-6 md:h-6" />
-                </button>
-              </div>
-              
-              <div className="absolute inset-y-0 right-0 flex items-center">
-                <button 
-                  onClick={handleNextImage}
-                  className="bg-white rounded-full p-1 md:p-2 shadow-md mr-2 md:mr-4"
-                  aria-label="Next image"
-                >
-                  <ChevronRight className="w-4 h-4 md:w-6 md:h-6" />
-                </button>
-              </div>
-            </div>
-            
-            <div className="flex justify-center gap-2">
-              {images.map((img, index) => (
-                <button
-                  key={index}
-                  className={`w-12 h-10 md:w-16 md:h-12 rounded overflow-hidden ${
-                    currentImageIndex === index ? 'ring-2 ring-blue-500' : ''
-                  }`}
-                  onClick={() => setCurrentImageIndex(index)}
-                >
-                  <div className="relative w-full h-full">
-                    {/* Thumbnail images with proper handling of image objects */}
+              {/* Show Video or Images */}
+              {(hasVideo && showVideo) ? (
+                <div className="w-full h-64 md:h-96 relative rounded-lg overflow-hidden">
+                  <video 
+                    controls
+                    className="w-full h-full object-cover"
+                    src={property.video.video_url}
+                    poster={property.thumbnail || (images[0] && getImageUrl(images[0]))}
+                  >
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
+              ) : (
+                <div className="w-full h-64 md:h-96 relative rounded-lg overflow-hidden">
+                  {/* Main displayed image with proper handling of image objects */}
+                  {images && images[currentImageIndex] && (
                     <Image 
-                      src={getImageUrl(img)} 
-                      alt={`Property thumbnail ${index + 1}`}
+                      src={getImageUrl(images[currentImageIndex])} 
+                      alt={property.property_name || "Property Image"}
                       fill
                       style={{ objectFit: "cover" }}
-                      unoptimized={true} // Since we're using Cloudinary URLs
+                      unoptimized={true} // Important for external images
                     />
+                  )}
+                  
+                  <div className="absolute inset-y-0 left-0 flex items-center">
+                    <button 
+                      onClick={handlePrevImage}
+                      className="bg-white rounded-full p-1 md:p-2 shadow-md ml-2 md:ml-4"
+                      aria-label="Previous image"
+                    >
+                      <ChevronLeft className="w-4 h-4 md:w-6 md:h-6" />
+                    </button>
                   </div>
-                </button>
-              ))}
+                  
+                  <div className="absolute inset-y-0 right-0 flex items-center">
+                    <button 
+                      onClick={handleNextImage}
+                      className="bg-white rounded-full p-1 md:p-2 shadow-md mr-2 md:mr-4"
+                      aria-label="Next image"
+                    >
+                      <ChevronRight className="w-4 h-4 md:w-6 md:h-6" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
+            
+            {/* Only show image thumbnails when not showing video */}
+            {!showVideo && (
+              <div className="flex justify-center gap-2">
+                {images.map((img, index) => (
+                  <button
+                    key={index}
+                    className={`w-12 h-10 md:w-16 md:h-12 rounded overflow-hidden ${
+                      currentImageIndex === index ? 'ring-2 ring-blue-500' : ''
+                    }`}
+                    onClick={() => setCurrentImageIndex(index)}
+                  >
+                    <div className="relative w-full h-full">
+                      {/* Thumbnail images with proper handling of image objects */}
+                      <Image 
+                        src={getImageUrl(img)} 
+                        alt={`Property thumbnail ${index + 1}`}
+                        fill
+                        style={{ objectFit: "cover" }}
+                        unoptimized={true} // Since we're using Cloudinary URLs
+                      />
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Description Section - Takes full width on mobile, 50% on larger screens */}
@@ -343,7 +466,7 @@ export default function PropertyDetail() {
                 </ul>
               </>
             )}
-            
+            {/* to be removed*/}
             <p className="text-gray-700">
               Whether you&apos;re looking for a family haven or an investment opportunity, this property is the perfect choice for comfort, convenience, and class.
             </p>

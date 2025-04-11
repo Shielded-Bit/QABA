@@ -1,12 +1,21 @@
 "use client";
 
-import { XCircle, AlertCircle, LogOut } from "lucide-react"; // Import the LogOut icon
-import useModal from "./useModal";
-import useLogout from "./useLogout";
+import { XCircle, AlertCircle, LogOut } from "lucide-react";
+import { useState } from "react";
+import useLogout from "../../hooks/useLogout"; 
 
-const LogoutButton = () => {
-  const { isOpen, openModal, closeModal } = useModal();
+const LogoutButton = ({ onClose, className = "", iconSize = 20 }) => {
+  const [isOpen, setIsOpen] = useState(false);
   const { logout } = useLogout();
+
+  const openModal = () => {
+    setIsOpen(true);
+    if (typeof onClose === "function") onClose(); // Close any parent menu if provided
+  };
+
+  const closeModal = () => {
+    setIsOpen(false);
+  };
 
   const handleLogout = () => {
     logout();
@@ -17,10 +26,10 @@ const LogoutButton = () => {
     <>
       <button
         onClick={openModal}
-        className="flex items-center text-black hover:text-white transition duration-200"
+        className={`flex items-center ${className}`}
         aria-label="Open logout confirmation"
       >
-        <LogOut size={20} className="mr-3" /> {/* Add the LogOut icon */}
+        <LogOut size={iconSize} className="mr-2" />
         Log Out
       </button>
 

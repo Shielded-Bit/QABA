@@ -1,11 +1,30 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
-// Import the custom modal instead of toast
-import SuccessModal from "./SuccessModal"; // Make sure path is correct
+// Import the custom modals
+import SuccessModal from "./SuccessModal"; 
+import ConfirmationModal from "./ConfirmationModal";
 
 // We'll assume API_BASE_URL is imported from somewhere or defined here
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://qaba.onrender.com/api/v1";
+
+// Format number with commas
+const formatNumberWithCommas = (value) => {
+  // Remove any non-digit characters
+  const plainNumber = value.replace(/[^\d]/g, '');
+  
+  // Format with commas
+  if (plainNumber) {
+    return plainNumber.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }
+  return '';
+};
+
+// Convert formatted string back to plain number
+const convertToPlainNumber = (formattedValue) => {
+  // Remove all non-digit characters and return as number
+  return formattedValue.replace(/[^\d]/g, '');
+};
 
 // Updated createProperty function to handle both property data and media files in a single request
 const createProperty = async (data, mediaFiles) => {
@@ -14,12 +33,20 @@ const createProperty = async (data, mediaFiles) => {
     
     // Add all property details to FormData
     Object.keys(data).forEach(key => {
-      // Handle arrays specially (like amenities)
-      if (Array.isArray(data[key])) {
+      // Special handling for amenities_ids (array)
+      if (key === 'amenities_ids' && Array.isArray(data[key])) {
+        data[key].forEach(id => {
+          formData.append('amenities_ids', id);
+        });
+      } 
+      // Handle other arrays if needed
+      else if (Array.isArray(data[key])) {
         data[key].forEach(value => {
           formData.append(`${key}`, value);
         });
-      } else {
+      } 
+      // Handle normal fields
+      else {
         formData.append(key, data[key]);
       }
     });
@@ -33,6 +60,12 @@ const createProperty = async (data, mediaFiles) => {
     
     if (!accessToken) {
       throw new Error('No access token found. Please log in.');
+    }
+
+    // For debugging purposes, log what's being sent
+    console.log("Form data being sent:");
+    for (let pair of formData.entries()) {
+      console.log(pair[0] + ': ' + pair[1]);
     }
 
     const response = await axios.post(`${API_BASE_URL}/properties/`, formData, {
@@ -72,8 +105,34 @@ const createProperty = async (data, mediaFiles) => {
   }
 };
 
+// Function to fetch amenities from the API
+const fetchAmenities = async () => {
+  try {
+    const accessToken = localStorage.getItem('access_token');
+    
+    if (!accessToken) {
+      throw new Error('No access token found. Please log in.');
+    }
+
+    const response = await axios.get(`${API_BASE_URL}/amenities/`, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      }
+    });
+
+    if (response.data.success) {
+      return response.data.data;
+    } else {
+      throw new Error(response.data.message || 'Failed to fetch amenities');
+    }
+  } catch (error) {
+    console.error("Error fetching amenities:", error);
+    return [];
+  }
+};
+
 const AddForRent = () => {
-  // Form state
+  // Form state - Updated to use amenities_ids instead of amenities
   const [formData, setFormData] = useState({
     property_name: "",
     description: "",
@@ -86,9 +145,40 @@ const AddForRent = () => {
     area_sqft: 0,
     rent_frequency: "MONTHLY",
     rent_price: "",
-    amenities: [],
+    amenities_ids: [], // Changed from amenities to amenities_ids
     user_type: "owner"
   });
+
+  // Formatted price display state
+  const [displayPrice, setDisplayPrice] = useState('');
+
+  // Amenities state
+  const [amenities, setAmenities] = useState([]);
+  const [isLoadingAmenities, setIsLoadingAmenities] = useState(false);
+
+  // Effect to format the initial price if it exists
+  useEffect(() => {
+    if (formData.rent_price) {
+      setDisplayPrice(formatNumberWithCommas(formData.rent_price));
+    }
+  }, []);
+
+  // Effect to fetch amenities when component mounts
+  useEffect(() => {
+    const getAmenities = async () => {
+      setIsLoadingAmenities(true);
+      try {
+        const amenitiesData = await fetchAmenities();
+        setAmenities(amenitiesData);
+      } catch (error) {
+        console.error("Failed to fetch amenities:", error);
+      } finally {
+        setIsLoadingAmenities(false);
+      }
+    };
+
+    getAmenities();
+  }, []);
 
   // Media files state
   const [mediaFiles, setMediaFiles] = useState({
@@ -100,7 +190,7 @@ const AddForRent = () => {
   // Loading state
   const [isLoading, setIsLoading] = useState(false);
   
-  // Modal state
+  // Modal states
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
   const [isDraft, setIsDraft] = useState(false);
@@ -108,33 +198,52 @@ const AddForRent = () => {
   // Error modal state
   const [errorModalOpen, setErrorModalOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  
+  // Confirmation modal state
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [submissionType, setSubmissionType] = useState(null); // 'draft' or 'review'
 
   // Handle input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value
-    });
+    
+    // Special handling for rent_price
+    if (name === 'rent_price') {
+      // Format the display value with commas
+      const formattedValue = formatNumberWithCommas(value);
+      setDisplayPrice(formattedValue);
+      
+      // Store the plain number in the actual formData
+      setFormData({
+        ...formData,
+        [name]: convertToPlainNumber(formattedValue)
+      });
+    } else {
+      // Normal handling for other fields
+      setFormData({
+        ...formData,
+        [name]: value
+      });
+    }
   };
 
-  // Handle amenities selection
-  const handleAmenityToggle = (amenity) => {
+  // Handle amenities selection - Updated to work with amenities_ids
+  const handleAmenityToggle = (amenityId) => {
     setFormData(prevState => {
-      const currentAmenities = [...prevState.amenities];
+      const currentAmenities = [...prevState.amenities_ids];
       
-      // If amenity is already selected, remove it
-      if (currentAmenities.includes(amenity)) {
+      // If amenity ID is already selected, remove it
+      if (currentAmenities.includes(amenityId)) {
         return {
           ...prevState,
-          amenities: currentAmenities.filter(item => item !== amenity)
+          amenities_ids: currentAmenities.filter(id => id !== amenityId)
         };
       } 
       // Otherwise, add it
       else {
         return {
           ...prevState,
-          amenities: [...currentAmenities, amenity]
+          amenities_ids: [...currentAmenities, amenityId]
         };
       }
     });
@@ -169,7 +278,7 @@ const AddForRent = () => {
         area_sqft: 0,
         rent_frequency: "MONTHLY",
         rent_price: "",
-        amenities: [],
+        amenities_ids: [], // Updated here
         user_type: "owner"
       });
       
@@ -178,6 +287,9 @@ const AddForRent = () => {
         image2: null,
         video: null
       });
+      
+      // Reset display price
+      setDisplayPrice('');
     }
   };
 
@@ -185,10 +297,13 @@ const AddForRent = () => {
   const handleCloseErrorModal = () => {
     setErrorModalOpen(false);
   };
-
-  // Updated handleSubmit function to use the new createProperty function
-  const handleSubmit = async (isDraftSubmission = false) => {
-    // Validate required fields
+  
+  // New function to initiate submission with confirmation
+  const initiateSubmit = (isDraftSubmission) => {
+    // Store the submission type for when user confirms
+    setSubmissionType(isDraftSubmission ? 'draft' : 'review');
+    
+    // First validate required fields before showing confirmation modal
     const requiredFields = [
       'property_name', 
       'description', 
@@ -205,7 +320,22 @@ const AddForRent = () => {
       setErrorModalOpen(true);
       return;
     }
+    
+    // Open confirmation modal if validation passes
+    setConfirmModalOpen(true);
+  };
+  
+  // Function to handle confirmation
+  const confirmSubmit = () => {
+    // Close confirmation modal
+    setConfirmModalOpen(false);
+    
+    // Call the original handleSubmit with the stored submission type
+    handleSubmit(submissionType === 'draft');
+  };
 
+  // Updated handleSubmit function to use the new createProperty function
+  const handleSubmit = async (isDraftSubmission = false) => {
     try {
       setIsLoading(true);
       
@@ -259,23 +389,6 @@ const AddForRent = () => {
     }
   };
 
-  // Available amenities
-  const amenitiesMapping = {
-    CAR_PARK: "Car Park",
-    BIG_COMPOUND: "Big Compound",
-    CCTV_CAMERA: "CCTV Camera",
-    POP_CEILING: "POP Ceiling",
-    TRAFFIC_LIGHT: "Traffic Light",
-    HOUSE_SECURITY: "House Security",
-    SWIMMING_POOL: "Swimming Pool",
-    SECURITY_DOOR: "Security Door",
-    BBOYS_QUARTERS: "Boys Quarters",
-    GYM: "Gym",
-    PARKING: "Parking",
-    GARDEN: "Garden",
-    OTHERS: "Others",
-  };
-  
   return (
     <div className="rounded-lg py-6 md:px-3">
       <h2 className="text-2xl font-normal text-[#014d98] mb-6">Property Details</h2>
@@ -384,13 +497,13 @@ const AddForRent = () => {
           />
         </div>
 
-        {/* Price */}
+        {/* Price - Updated to handle formatting */}
         <div>
           <label className="block text-gray-700">Rent Price</label>
           <input
             type="text"
             name="rent_price"
-            value={formData.rent_price}
+            value={displayPrice}
             onChange={handleInputChange}
             className="w-full border border-gray-300 p-2 rounded-md"
             placeholder="12,000,000"
@@ -503,26 +616,36 @@ const AddForRent = () => {
       {/* Features and Amenities */}
       <div className="mt-8">
         <h3 className="text-xl font-normal text-[#014d98]">Features and Amenities</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
-          {Object.keys(amenitiesMapping).map((amenity) => (
-            <label key={amenity} className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                className="h-4 w-4"
-                checked={formData.amenities.includes(amenity)}
-                onChange={() => handleAmenityToggle(amenity)}
-              />
-              <span>{amenitiesMapping[amenity]}</span>
-            </label>
-          ))}
-        </div>
+        {isLoadingAmenities ? (
+          <div className="text-center py-4">
+            <p>Loading amenities...</p>
+          </div>
+        ) : amenities.length === 0 ? (
+          <div className="text-center py-4">
+            <p>No amenities available. Please try refreshing the page.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+            {amenities.map((amenity) => (
+              <label key={amenity.id} className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4"
+                  checked={formData.amenities_ids.includes(amenity.id)}
+                  onChange={() => handleAmenityToggle(amenity.id)}
+                />
+                <span>{amenity.icon} {amenity.name}</span>
+              </label>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Buttons */}
       <div className="mt-8 flex justify-end gap-4">
         <button
           type="button"
-          onClick={() => handleSubmit(true)}
+          onClick={() => initiateSubmit(true)}
           disabled={isLoading}
           className="border-2 border-blue-500 text-blue-500 py-2 px-6 rounded-md hover:bg-blue-100 disabled:opacity-50"
         >
@@ -530,13 +653,26 @@ const AddForRent = () => {
         </button>
         <button
           type="button"
-          onClick={() => handleSubmit(false)}
+          onClick={() => initiateSubmit(false)}
           disabled={isLoading}
           className="bg-gradient-to-r from-blue-500 to-teal-500 text-white py-2 px-6 rounded-md hover:opacity-90 disabled:opacity-50"
         >
           {isLoading ? 'Submitting...' : 'Submit for review'}
         </button>
       </div>
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal 
+        isOpen={confirmModalOpen}
+        onClose={() => setConfirmModalOpen(false)}
+        onConfirm={confirmSubmit}
+        title={submissionType === 'draft' ? "Save as Draft?" : "Submit Property?"}
+        message={
+          submissionType === 'draft' 
+            ? "Are you sure you want to save this property as a draft? You can edit it later."
+            : "Are you sure you want to submit this property for review? Please verify that all information is correct and complete."
+        }
+      />
 
       {/* Success Modal */}
       <SuccessModal 

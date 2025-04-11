@@ -1,173 +1,694 @@
-"use client"; // Ensure this is at the top
-
-import React, { useState } from "react";
+"use client";
+import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { FaCamera } from "react-icons/fa";
+import { Camera, Edit, Check, X } from "lucide-react";
+import Cookies from 'js-cookie';
+import { useProfile } from "../../../../contexts/ProfileContext";
+import { useNotifications } from "../../../../contexts/NotificationContext";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+// Reusable Input Component with improved mobile styling
+const FormInput = ({ 
+  label, name, register, errors, type = "text", required = false, readOnly = false, value = "", className = "", colSpan = "" 
+}) => {
+  const validationRules = required ? { required: `${label} is required` } : {};
+  return (
+    <div className={`w-full mb-4 ${colSpan}`}>
+      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+      {readOnly ? (
+        <input
+          type={type}
+          value={value || ""}
+          className={`mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 sm:p-3 bg-gray-100 ${className}`}
+          readOnly
+        />
+      ) : (
+        <>
+          <input
+            type={type}
+            {...register(name, validationRules)}
+            className={`mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 sm:p-3 ${className}`}
+          />
+          {errors[name] && <p className="text-red-500 text-sm mt-1">{errors[name].message}</p>}
+        </>
+      )}
+    </div>
+  );
+};
 
 export default function ProfilePage() {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm();
-  const [imagePreview, setImagePreview] = useState(null); // Holds the image URL for preview
+  // Use shared profile context
+  const { userData, profileImage, isLoading, error, fetchProfile, updateProfileImage } = useProfile();
+  
+  // Always set userType to CLIENT for this version
+  const userType = "CLIENT";
+  
+  // Use the notifications hook with fallback
+  const notificationsContext = useNotifications();
+  const createNotification = notificationsContext?.createNotification || (async (msg) => {
+    console.log("Notification would be created (fallback):", msg);
+    return true;
+  });
+  
+  // State Management
+  const [imagePreview, setImagePreview] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [userEmail, setUserEmail] = useState('');
+  const [imgError, setImgError] = useState(false);
+  const [imgLoading, setImgLoading] = useState(true);
+  const [apiUserData, setApiUserData] = useState({
+    id: '',
+    email: '',
+    first_name: '',
+    last_name: '',
+    phone_number: '',
+    user_type: '',
+    is_email_verified: false
+  });
+  const [locationData, setLocationData] = useState({
+    country: '',
+    state: '',
+    city: '',
+    address: ''
+  });
+  const [isEditingLocation, setIsEditingLocation] = useState(false);
+  
+  // Form Management
+  const { register, handleSubmit, setValue, formState: { errors, isSubmitting }, reset } = useForm();
+  
+  // API Configuration
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://qaba.onrender.com';
 
-  const onSubmit = (data) => {
-    console.log("Form Data:", data);
-    if (typeof window !== "undefined") {
-      fetch("/api/save-profile", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      })
-        .then((response) => response.json())
-        .then((result) => {
-          console.log("Success:", result);
-        })
-        .catch((error) => {
-          console.error("Error:", error);
+  // Authentication and API Helpers
+  const getToken = () => {
+    if (typeof window !== 'undefined') {
+      return Cookies.get('access_token') || localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+    }
+    return null;
+  };
+  
+  const getHeaders = (isFormData = false) => {
+    const token = getToken();
+    if (!token) throw new Error("Authentication required");
+    
+    const headers = { "Authorization": `Bearer ${token}`, "Accept": "application/json" };
+    if (!isFormData) headers["Content-Type"] = "application/json";
+    return headers;
+  };
+
+  const apiRequest = async (endpoint, options = {}) => {
+    const { method = 'GET', isFormData = false, body = null } = options;
+    
+    try {
+      const headers = getHeaders(isFormData);
+      const requestOptions = { method, headers, cache: 'no-store' };
+      if (body) requestOptions.body = isFormData ? body : JSON.stringify(body);
+      
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, requestOptions);
+      
+      if (!response.ok) {
+        const status = response.status;
+        if (status === 401) throw new Error("Session expired. Please login again");
+        if (status === 415) throw new Error("Server doesn't support the provided data format");
+        throw new Error(`Request failed (${status})`);
+      }
+      
+      return response;
+    } catch (err) {
+      console.error(`API Request Error (${endpoint}):`, err);
+      throw err;
+    }
+  };
+
+  // Fetch user data from the provided endpoint
+  const fetchUserData = async () => {
+    try {
+      const response = await apiRequest('/api/v1/users/me');
+      const result = await response.json();
+      
+      if (result.success && result.data) {
+        // Update state with the fetched user data
+        setApiUserData(result.data);
+        console.log("User data fetched:", result.data);
+        
+        // Update form values with the fetched data
+        if (result.data.first_name) setValue('first_name', result.data.first_name);
+        if (result.data.last_name) setValue('last_name', result.data.last_name);
+        if (result.data.email) {
+          setValue('email', result.data.email);
+          setUserEmail(result.data.email);
+        }
+        if (result.data.phone_number) setValue('phone_number', result.data.phone_number);
+      } else {
+        console.error("User data not found in response:", result);
+      }
+    } catch (err) {
+      console.error("Error fetching user data:", err);
+    }
+  };
+
+  // Manually check and set email from multiple sources
+  const getEmailFromData = (data) => {
+    // Try all possible places where email might be stored
+    if (data?.email) {
+      return data.email;
+    } else if (data?.agent_profile?.email) {
+      return data.agent_profile.email;
+    } else if (data?.client_profile?.email) {
+      return data.client_profile.email;
+    } else if (typeof window !== 'undefined') {
+      // Try fallback to locally stored email
+      return localStorage.getItem('user_email') || '';
+    }
+    return '';
+  };
+
+  // Function to get complete image URL
+  const getImageUrl = (imageUrl) => {
+    // If the URL is already absolute or a data URL, return it as is
+    if (!imageUrl || imageUrl.startsWith('data:') || imageUrl.startsWith('blob:')) {
+      return imageUrl;
+    }
+    
+    // Check if the URL is already absolute
+    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+      return imageUrl;
+    }
+    
+    // Otherwise, ensure it's properly joined with the API base URL
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://qaba.onrender.com';
+    
+    // Remove leading slash from imageUrl if it exists and the baseUrl ends with slash
+    if (imageUrl.startsWith('/') && baseUrl.endsWith('/')) {
+      imageUrl = imageUrl.substring(1);
+    }
+    
+    // Add slash between baseUrl and imageUrl if needed
+    if (!baseUrl.endsWith('/') && !imageUrl.startsWith('/')) {
+      return `${baseUrl}/${imageUrl}`;
+    }
+    
+    return `${baseUrl}${imageUrl}`;
+  };
+
+  // Fetch profile data including image and location from the profile endpoint
+  const fetchProfileData = async () => {
+    setImgLoading(true);
+    
+    try {
+      // Always use client endpoint in this version
+      const endpoint = '/api/v1/profile/client/';
+      
+      const response = await apiRequest(endpoint);
+      const profileData = await response.json();
+      
+      if (profileData?.success && profileData?.data) {
+        console.log("Profile data fetched:", profileData.data);
+        
+        // Extract location data - handle different possible structures
+        const newLocationData = {
+          country: profileData.data.country || '',
+          state: profileData.data.state || '',
+          city: profileData.data.city || '',
+          address: profileData.data.address || ''
+        };
+        
+        // Update location state
+        setLocationData(newLocationData);
+        
+        // Update form values for location
+        Object.entries(newLocationData).forEach(([field, value]) => {
+          if (value) setValue(field, value);
         });
+        
+        // Handle profile image
+        if (profileData.data.profile_photo_url) {
+          const imageUrl = profileData.data.profile_photo_url;
+          
+          // Add cache-busting parameter
+          const cacheBustUrl = imageUrl.includes('?') 
+            ? `${imageUrl}&_cb=${new Date().getTime()}` 
+            : `${imageUrl}?_cb=${new Date().getTime()}`;
+          
+          console.log("Profile image URL:", cacheBustUrl);
+          
+          // Update state and context
+          setImagePreview(cacheBustUrl);
+          updateProfileImage(cacheBustUrl);
+          
+          // Store in localStorage for persistence
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('profile_image_url', imageUrl);
+          }
+          
+          setImgError(false);
+        } else {
+          console.log("No profile image found in data");
+          setImagePreview(null);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching profile data:", err);
+      // Fallback to stored image if available
+      if (typeof window !== 'undefined') {
+        const savedImage = localStorage.getItem('profile_image_url');
+        if (savedImage && savedImage !== 'null' && savedImage !== 'undefined') {
+          setImagePreview(savedImage);
+        }
+      }
+    } finally {
+      setImgLoading(false);
     }
   };
 
-  const handleImageChange = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      setSelectedImage(file);
-      setImagePreview(URL.createObjectURL(file)); // Create a preview URL for the selected image
-    }
-  };
+  // Fetch user data when component mounts
+  useEffect(() => {
+    fetchUserData();
+    fetchProfileData();
+  }, []);
 
-  const uploadImage = () => {
-    if (!selectedImage) return;
-
-    const formData = new FormData();
-    formData.append("profileImage", selectedImage);
-
-    fetch("/api/upload-image", {
-      method: "POST",
-      body: formData,
-    })
-      .then((response) => response.json())
-      .then((result) => {
-        console.log("Image Upload Success:", result);
-        setSelectedImage(null);
-      })
-      .catch((error) => {
-        console.error("Image Upload Error:", error);
+  // Update form values when userData changes
+  useEffect(() => {
+    if (userData) {
+      console.log("userData received:", userData);
+      
+      // Set form values for user data if not already set by API data
+      if (!apiUserData.first_name && userData.first_name) setValue('first_name', userData.first_name);
+      if (!apiUserData.last_name && userData.last_name) setValue('last_name', userData.last_name);
+      if (!apiUserData.phone_number && userData.phone_number) setValue('phone_number', userData.phone_number);
+      
+      // Handle email if not already set
+      if (!apiUserData.email) {
+        const email = getEmailFromData(userData);
+        console.log("Email found:", email);
+        setValue('email', email);
+        setUserEmail(email);
+      }
+      
+      // Set form values for profile data
+      const profileData = userData.client_profile || {};
+      const newLocationData = {
+        country: profileData.country || locationData.country,
+        state: profileData.state || locationData.state,
+        city: profileData.city || locationData.city,
+        address: profileData.address || locationData.address
+      };
+      
+      setLocationData(newLocationData);
+      
+      Object.entries(newLocationData).forEach(([field, value]) => {
+        if (value) setValue(field, value);
       });
+    }
+  }, [userData, setValue, apiUserData]);
+
+  // Fetch user email if not available in userData or apiUserData
+  useEffect(() => {
+    if (!userEmail && !apiUserData.email && typeof window !== 'undefined') {
+      const storedEmail = localStorage.getItem('user_email');
+      if (storedEmail) {
+        console.log("Using email from localStorage:", storedEmail);
+        setUserEmail(storedEmail);
+        setValue('email', storedEmail);
+      }
+    }
+  }, [userEmail, setValue, apiUserData]);
+
+  // API Operations
+  const updateProfile = async (data, formType) => {
+    try {
+      // Use the new endpoint for contact information updates, otherwise use the standard endpoint
+      const endpoint = formType === 'contact' 
+        ? '/api/v1/users/update'  // New endpoint for contact info
+        : '/api/v1/profile/client/';  // Standard endpoint for other profile updates (like location)
+      
+      // Always use FormData for any profile updates
+      const formData = new FormData();
+      
+      if (formType === 'contact') {
+        // For contact info, add fields to FormData
+        formData.append('first_name', data.first_name);
+        formData.append('last_name', data.last_name);
+        formData.append('phone_number', data.phone_number);
+        
+        console.log("Sending contact update with FormData payload to endpoint:", endpoint);
+        // Show FormData content for debugging
+        for (let [key, value] of formData.entries()) {
+          console.log(`${key}: ${value}`);
+        }
+      } else if (formType === 'location') {
+        // For location info
+        formData.append('country', data.country);
+        formData.append('state', data.state);
+        formData.append('city', data.city);
+        formData.append('address', data.address);
+        
+        console.log("Sending location update with FormData payload to endpoint:", endpoint);
+        // Show FormData content for debugging
+        for (let [key, value] of formData.entries()) {
+          console.log(`${key}: ${value}`);
+        }
+      }
+      
+      const response = await apiRequest(endpoint, {
+        method: 'PATCH',
+        isFormData: true, // Always use FormData
+        body: formData
+      });
+      
+      const result = await response.json();
+      console.log(`${formType} update response:`, result);
+      
+      // Show success notification right away
+      toast.success(`${formType === 'contact' ? 'Contact' : 'Location'} information updated successfully`);
+      
+      // Create notification
+      await createNotification(`${formType === 'contact' ? 'Contact' : 'Location'} information updated successfully on ${new Date().toLocaleDateString()}`);
+      
+      // Update global context
+      await fetchProfile();
+      
+      // Only fetch profile data after location update (more efficient)
+      if (formType === 'location') {
+        await fetchProfileData();
+        setIsEditingLocation(false);
+      }
+    } catch (err) {
+      toast.error(err.message);
+      console.error("Update error:", err);
+    }
   };
 
+  // Function to handle starting the edit mode for location
+  const startLocationEdit = () => {
+    // Make sure form has the latest location data
+    Object.entries(locationData).forEach(([field, value]) => {
+      setValue(field, value);
+    });
+    setIsEditingLocation(true);
+  };
+
+  // Function to cancel editing location
+  const cancelLocationEdit = () => {
+    // Reset form values to the current location data
+    Object.entries(locationData).forEach(([field, value]) => {
+      setValue(field, value);
+    });
+    setIsEditingLocation(false);
+  };
+
+  // Updated method to upload profile image - still using the client profile endpoint
+  const uploadProfileImage = async () => {
+    if (!selectedImage) return;
+    
+    try {
+      // Show upload in progress notification
+      toast.info("Uploading profile photo...");
+      
+      // Create FormData object for multipart/form-data
+      const formData = new FormData();
+      
+      // Append file with the correct field name
+      formData.append('profile_photo', selectedImage);
+      
+      // Use the client profile endpoint for image uploads
+      const endpoint = '/api/v1/profile/client/';
+      
+      // Send PATCH request to update profile photo
+      const response = await apiRequest(endpoint, {
+        method: 'PATCH',
+        isFormData: true,
+        body: formData
+      });
+      
+      const result = await response.json();
+      console.log("Image upload response:", result);
+      
+      // Reset selected image state
+      setSelectedImage(null);
+      
+      // Fetch updated profile data after successful upload
+      await fetchProfileData();
+      
+      // Update global context
+      await fetchProfile();
+      
+      // Create notification
+      await createNotification(`Profile photo updated successfully on ${new Date().toLocaleDateString()}`);
+      
+      // Show success notification
+      toast.success("Profile photo updated successfully");
+    } catch (err) {
+      toast.error(`Failed to upload profile photo: ${err.message}`);
+      console.error("Profile photo upload error:", err);
+    }
+  };
+
+  // Loading, Error and Empty States
+  if (isLoading && !userData && !apiUserData.id) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-blue-500"></div>
+      </div>
+    );
+  }
+  
+  if (error && !userData && !apiUserData.id) {
+    return <div className="text-red-500 p-4 text-center">Error: {error}</div>;
+  }
+  
+  if (!userData && !apiUserData.id) return null;
+
+  // Render Component
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto sm:p-6">
+      {/* Toast Container */}
+      <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
+      
+      <h1 className="text-2xl font-bold mb-6 pl-1">
+        Profile Settings
+      </h1>
+
       {/* Profile Image Section */}
-      <div className="mb-8 ">
+      <div className="mb-6 pl-1">
         <div className="relative inline-block">
-          <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-200 border-2 border-gray-300">
-            {imagePreview ? (
+          <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full overflow-hidden bg-gray-200 border-2 border-gray-300">
+            {imagePreview && !imgError ? (
               <img
-                src={imagePreview}
-                alt="Profile Preview"
+                src={getImageUrl(imagePreview)}
+                alt="Profile"
                 className="object-cover w-full h-full"
+                crossOrigin="anonymous"
+                onError={(e) => {
+                  console.log("Image loading error", e);
+                  setImgError(true);
+                  e.target.onerror = null;
+                }}
               />
             ) : (
-              <p className="text-gray-500 text-sm flex items-center justify-center h-full">
-                No Image
-              </p>
+              <div className="flex items-center justify-center h-full">
+                {imgLoading ? (
+                  <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-2 border-blue-500 border-t-transparent"></div>
+                ) : (
+                  <span className="text-gray-500 text-xs sm:text-sm">
+                    {imgError ? "Unable to load image" : "No Image"}
+                  </span>
+                )}
+              </div>
             )}
           </div>
           <label
-            htmlFor="uploadProfileImage"
-            className="absolute bottom-0 right-0 bg-blue-500 p-2 rounded-full text-white cursor-pointer shadow-lg hover:bg-blue-600"
+            htmlFor="profile-image"
+            className="absolute bottom-0 right-0 bg-blue-500 p-1 sm:p-2 rounded-full text-white cursor-pointer shadow-lg hover:bg-blue-600"
           >
-            <FaCamera />
+            <Camera size={16} className="sm:w-5 sm:h-5" />
           </label>
           <input
             type="file"
-            id="uploadProfileImage"
+            id="profile-image"
             className="hidden"
-            onChange={handleImageChange}
+            onChange={(e) => {
+              const file = e.target.files[0];
+              if (file) {
+                setSelectedImage(file);
+                setImagePreview(URL.createObjectURL(file));
+                setImgError(false);
+              }
+            }}
+            accept="image/*"
           />
         </div>
         {selectedImage && (
           <button
-            onClick={uploadImage}
-            className="mt-4 px-4 py-2 rounded-md bg-gradient-to-r from-blue-500 to-teal-500 text-white hover:opacity-90"
+            onClick={uploadProfileImage}
+            className="mt-4 px-3 py-1 sm:px-4 sm:py-2 text-sm sm:text-base rounded-md bg-gradient-to-r from-blue-500 to-teal-500 text-white hover:opacity-90"
           >
             Upload Image
           </button>
         )}
+        {imgError && (
+          <button
+            onClick={fetchProfileData}
+            className="mt-2 px-2 py-1 text-xs sm:text-sm rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300"
+          >
+            Reload Image
+          </button>
+        )}
       </div>
 
-      {/* General Settings Section */}
-      <h1 className="text-2xl font-bold mb-6">General Settings</h1>
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              First Name
-            </label>
-            <input
-              type="text"
-              {...register("firstName", { required: "First Name is required" })}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+      {/* Contact Information Section */}
+      <div className="mb-6 border-b pb-4">
+        <h2 className="text-lg sm:text-xl font-semibold mb-3 pl-1">Contact Information</h2>
+        
+        <form onSubmit={handleSubmit((data) => updateProfile(data, 'contact'))} className="mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-4">
+            <FormInput 
+              label="First Name" 
+              name="first_name" 
+              register={register} 
+              errors={errors} 
+              required={true} 
             />
-            {errors.firstName && (
-              <p className="text-red-500 text-sm">{errors.firstName.message}</p>
-            )}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Last Name
-            </label>
-            <input
-              type="text"
-              {...register("lastName", { required: "Last Name is required" })}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+            
+            <FormInput 
+              label="Last Name" 
+              name="last_name" 
+              register={register} 
+              errors={errors} 
+              required={true} 
             />
-            {errors.lastName && (
-              <p className="text-red-500 text-sm">{errors.lastName.message}</p>
-            )}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Email
-            </label>
-            <input
-              type="email"
-              {...register("email", { required: "Email is required" })}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+            
+            <FormInput 
+              label="Email" 
+              name="email" 
+              type="email" 
+              readOnly={true} 
+              value={apiUserData.email || userEmail || userData?.email || (typeof window !== 'undefined' ? localStorage.getItem('user_email') : '') || ''} 
             />
-            {errors.email && (
-              <p className="text-red-500 text-sm">{errors.email.message}</p>
-            )}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Phone
-            </label>
-            <input
-              type="text"
-              {...register("phone", { required: "Phone is required" })}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+            
+            <FormInput 
+              label="Phone Number" 
+              name="phone_number" 
+              type="tel" 
+              register={register} 
+              errors={errors} 
+              required={true} 
             />
-            {errors.phone && (
-              <p className="text-red-500 text-sm">{errors.phone.message}</p>
-            )}
           </div>
+
+          <div className="mt-4 flex justify-end">
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full sm:w-auto bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white px-4 py-2 rounded-md hover:from-[#3ab7b1] hover:to-[#014d98] disabled:opacity-50"
+            >
+              {isSubmitting ? 'Saving...' : 'Save Contact Info'}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* Location Information Section */}
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-3">
+          <h2 className="text-lg sm:text-xl font-semibold pl-1">Location Information</h2>
+          
+          {!isEditingLocation && (
+            <button
+              onClick={startLocationEdit}
+              className="flex items-center text-blue-500 hover:text-blue-700"
+            >
+              <Edit size={16} className="mr-1" /> Edit
+            </button>
+          )}
         </div>
-        <div className="mt-8 flex justify-end">
-          <button
-            type="submit"
-            className="ml-2 bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white px-4 py-2 rounded-md transition-all duration-300 hover:from-[#3ab7b1] hover:to-[#014d98]"
-          >
-            Save Changes
-          </button>
+        
+        {isEditingLocation ? (
+          <form onSubmit={handleSubmit((data) => updateProfile(data, 'location'))} className="mt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-4">
+              <FormInput 
+                label="Country" 
+                name="country" 
+                register={register} 
+                errors={errors} 
+              />
+              
+              <FormInput 
+                label="State" 
+                name="state" 
+                register={register} 
+                errors={errors} 
+              />
+              
+              <FormInput 
+                label="City" 
+                name="city" 
+                register={register} 
+                errors={errors} 
+              />
+              
+              <FormInput 
+                label="Address" 
+                name="address" 
+                register={register} 
+                errors={errors} 
+                colSpan="md:col-span-2" 
+              />
+            </div>
+
+            <div className="mt-4 flex justify-end space-x-3">
+              <button
+                type="button"
+                onClick={cancelLocationEdit}
+                className="px-4 py-2 rounded-md border border-gray-300 hover:bg-gray-100 flex items-center"
+              >
+                <X size={16} className="mr-1" /> Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white px-4 py-2 rounded-md hover:from-[#3ab7b1] hover:to-[#014d98] disabled:opacity-50 flex items-center"
+              >
+                {isSubmitting ? 'Saving...' : (
+                  <>
+                    <Check size={16} className="mr-1" /> Save Location
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <div className="mt-4 bg-gray-50 p-4 rounded-md">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Country</p>
+                <p className="mt-1">{locationData.country || 'Not specified'}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500">State</p>
+                <p className="mt-1">{locationData.state || 'Not specified'}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500">City</p>
+                <p className="mt-1">{locationData.city || 'Not specified'}</p>
+              </div>
+              <div className="md:col-span-2">
+                <p className="text-sm font-medium text-gray-500">Address</p>
+                <p className="mt-1">{locationData.address || 'Not specified'}</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+      
+      {/* Error message */}
+      {error && (
+        <div className="p-3 sm:p-4 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-700 mb-6">
+          <p>There was an issue connecting to the server: {error}</p>
+          <p className="mt-1">Your profile is currently displaying locally saved data. Changes may not be saved until connection is restored.</p>
         </div>
-      </form>
+      )}
     </div>
   );
 }

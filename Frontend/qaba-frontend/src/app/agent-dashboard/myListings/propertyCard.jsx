@@ -185,81 +185,105 @@ export default function OurWork() {
     return price;
   };
 
+  // Function to format properties data
+  const formatProperties = (data) => {
+    return data.map(property => {
+      // Extract price using our improved function
+      const price = extractPrice(property);
+      
+      // Get image with direct field access first, then fallbacks
+      const image = property.thumbnail || 
+                   (property.images && property.images.length > 0 ? property.images[0].image_url : null) ||
+                   "/api/placeholder/400/320";
+      
+      return {
+        id: property.id,
+        name: property.property_name || 'Unnamed Property',
+        location: property.location || 'Location not specified',
+        amount: price, 
+        image: image,
+        type: (property.listing_type === "SALE" || property.listing_type === "sale") ? "Buy" : "Rent",
+        listing_status: property.listing_status,
+        rent_frequency: property.rent_frequency,
+        rent_frequency_display: property.rent_frequency_display
+      };
+    });
+  };
+
   useEffect(() => {
-    const fetchPendingProperties = async () => {
+    const fetchProperties = async () => {
       try {
         setLoading(true);
-        // Use the specific endpoint for pending properties
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API}/api/v1/properties/?listing_status=PENDING`, {
+        
+        // Fetch both pending and published properties in parallel
+        const [pendingResponse, publishedResponse] = await Promise.all([
+          fetch(`${process.env.NEXT_PUBLIC_API}/api/v1/properties/?listing_status=PENDING`, {
             method: 'GET',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
             },
-        });
+          }),
+          fetch(`${process.env.NEXT_PUBLIC_API}/api/v1/properties/?listing_status=APPROVED`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+            },
+          })
+        ]);
         
-        if (!response.ok) {
-          throw new Error(`API request failed with status ${response.status}`);
+        // Check responses
+        if (!pendingResponse.ok) {
+          throw new Error(`Pending properties API request failed with status ${pendingResponse.status}`);
         }
         
-        const rawData = await response.json();
+        if (!publishedResponse.ok) {
+          throw new Error(`Published properties API request failed with status ${publishedResponse.status}`);
+        }
         
-        // Check if the response has the expected structure and extract the array
-        const data = Array.isArray(rawData) ? rawData : 
-                     rawData.results ? rawData.results : 
-                     rawData.data ? rawData.data : 
-                     rawData.properties ? rawData.properties : [];
+        // Parse JSON responses
+        const pendingRawData = await pendingResponse.json();
+        const publishedRawData = await publishedResponse.json();
         
-        // Verify that data is an array before mapping
-        if (!Array.isArray(data)) {
-          console.error("API response is not an array:", rawData);
+        // Extract arrays from responses
+        const pendingData = Array.isArray(pendingRawData) ? pendingRawData : 
+                          pendingRawData.results ? pendingRawData.results : 
+                          pendingRawData.data ? pendingRawData.data : 
+                          pendingRawData.properties ? pendingRawData.properties : [];
+        
+        const publishedData = Array.isArray(publishedRawData) ? publishedRawData : 
+                            publishedRawData.results ? publishedRawData.results : 
+                            publishedRawData.data ? publishedRawData.data : 
+                            publishedRawData.properties ? publishedRawData.properties : [];
+        
+        // Verify data format
+        if (!Array.isArray(pendingData) || !Array.isArray(publishedData)) {
+          console.error("API response is not an array:", { pendingRawData, publishedRawData });
           throw new Error("Invalid API response format");
         }
         
-        // Process and transform the data with direct field access
-        const formattedProperties = data.map(property => {
-          // Extract price using our improved function
-          const price = extractPrice(property);
-          
-          // Get image with direct field access first, then fallbacks
-          const image = property.thumbnail || 
-                       (property.images && property.images.length > 0 ? property.images[0].image_url : null) ||
-                       "/api/placeholder/400/320";
-          
-          return {
-            id: property.id,
-            name: property.property_name || 'Unnamed Property',
-            location: property.location || 'Location not specified',
-            amount: price, 
-            image: image,
-            type: (property.listing_type === "SALE" || property.listing_type === "sale") ? "Buy" : "Rent",
-            listing_status: property.listing_status,
-            rent_frequency: property.rent_frequency,
-            rent_frequency_display: property.rent_frequency_display
-          };
-        });
+        // Format the properties data
+        const formattedPendingProperties = formatProperties(pendingData);
+        const formattedPublishedProperties = formatProperties(publishedData);
         
-        // Use console.table for clearer debugging
-        console.table(formattedProperties.slice(0, 3).map(p => ({
-          id: p.id,
-          name: p.name,
-          type: p.type,
-          amount: p.amount,
-          listing_status: p.listing_status
-        })));
+        // Debug logging
+        console.log(`Fetched ${formattedPendingProperties.length} pending properties`);
+        console.log(`Fetched ${formattedPublishedProperties.length} published properties`);
         
-        // Set pending properties directly from the filtered API response
-        setPendingProperties(formattedProperties);
+        // Set state with formatted data
+        setPendingProperties(formattedPendingProperties);
+        setPublishedProperties(formattedPublishedProperties);
         
       } catch (err) {
-        console.error("Failed to fetch pending properties:", err);
+        console.error("Failed to fetch properties:", err);
         setError(err.message);
       } finally {
         setLoading(false);
       }
     };
     
-    fetchPendingProperties();
+    fetchProperties();
   }, []);
 
   if (loading) {
@@ -291,6 +315,12 @@ export default function OurWork() {
           <PropertySection 
               title="Pending Listed Properties" 
               properties={pendingProperties} 
+              className="text-sm md:text-3xl" 
+          />
+          
+          <PropertySection 
+              title="Published Properties" 
+              properties={publishedProperties} 
               className="text-sm md:text-3xl" 
           />
       </div>

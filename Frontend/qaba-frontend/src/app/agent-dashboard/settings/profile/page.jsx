@@ -1,26 +1,26 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { Camera } from "lucide-react";
+import { Camera, Edit, Check, X } from "lucide-react";
 import Cookies from 'js-cookie';
 import { useProfile } from "../../../../contexts/ProfileContext";
 import { useNotifications } from "../../../../contexts/NotificationContext";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-// Reusable Input Component
+// Reusable Input Component with improved mobile styling
 const FormInput = ({ 
   label, name, register, errors, type = "text", required = false, readOnly = false, value = "", className = "", colSpan = "" 
 }) => {
   const validationRules = required ? { required: `${label} is required` } : {};
   return (
-    <div className={colSpan}>
-      <label className="block text-sm font-medium text-gray-700">{label}</label>
+    <div className={`w-full mb-4 ${colSpan}`}>
+      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
       {readOnly ? (
         <input
           type={type}
           value={value || ""}
-          className={`mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-gray-100 ${className}`}
+          className={`mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 sm:p-3 bg-gray-100 ${className}`}
           readOnly
         />
       ) : (
@@ -28,9 +28,9 @@ const FormInput = ({
           <input
             type={type}
             {...register(name, validationRules)}
-            className={`mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 ${className}`}
+            className={`mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 sm:p-3 ${className}`}
           />
-          {errors[name] && <p className="text-red-500 text-sm">{errors[name].message}</p>}
+          {errors[name] && <p className="text-red-500 text-sm mt-1">{errors[name].message}</p>}
         </>
       )}
     </div>
@@ -54,9 +54,25 @@ export default function ProfilePage() {
   const [userEmail, setUserEmail] = useState('');
   const [imgError, setImgError] = useState(false);
   const [imgLoading, setImgLoading] = useState(true);
+  const [apiUserData, setApiUserData] = useState({
+    id: '',
+    email: '',
+    first_name: '',
+    last_name: '',
+    phone_number: '',
+    user_type: '',
+    is_email_verified: false
+  });
+  const [locationData, setLocationData] = useState({
+    country: '',
+    state: '',
+    city: '',
+    address: ''
+  });
+  const [isEditingLocation, setIsEditingLocation] = useState(false);
   
   // Form Management
-  const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm();
+  const { register, handleSubmit, setValue, formState: { errors, isSubmitting }, reset } = useForm();
   
   // API Configuration
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://qaba.onrender.com';
@@ -102,6 +118,33 @@ export default function ProfilePage() {
     }
   };
 
+  // Fetch user data from the provided endpoint
+  const fetchUserData = async () => {
+    try {
+      const response = await apiRequest('/api/v1/users/me');
+      const result = await response.json();
+      
+      if (result.success && result.data) {
+        // Update state with the fetched user data
+        setApiUserData(result.data);
+        console.log("User data fetched:", result.data);
+        
+        // Update form values with the fetched data
+        if (result.data.first_name) setValue('first_name', result.data.first_name);
+        if (result.data.last_name) setValue('last_name', result.data.last_name);
+        if (result.data.email) {
+          setValue('email', result.data.email);
+          setUserEmail(result.data.email);
+        }
+        if (result.data.phone_number) setValue('phone_number', result.data.phone_number);
+      } else {
+        console.error("User data not found in response:", result);
+      }
+    } catch (err) {
+      console.error("Error fetching user data:", err);
+    }
+  };
+
   // Manually check and set email from multiple sources
   const getEmailFromData = (data) => {
     // Try all possible places where email might be stored
@@ -118,12 +161,40 @@ export default function ProfilePage() {
     return '';
   };
 
-  // Fetch profile image directly from the specific endpoint
-  const fetchProfileImageDirectly = async () => {
+  // Function to get complete image URL
+  const getImageUrl = (imageUrl) => {
+    // If the URL is already absolute or a data URL, return it as is
+    if (!imageUrl || imageUrl.startsWith('data:') || imageUrl.startsWith('blob:')) {
+      return imageUrl;
+    }
+    
+    // Check if the URL is already absolute
+    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+      return imageUrl;
+    }
+    
+    // Otherwise, ensure it's properly joined with the API base URL
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://qaba.onrender.com';
+    
+    // Remove leading slash from imageUrl if it exists and the baseUrl ends with slash
+    if (imageUrl.startsWith('/') && baseUrl.endsWith('/')) {
+      imageUrl = imageUrl.substring(1);
+    }
+    
+    // Add slash between baseUrl and imageUrl if needed
+    if (!baseUrl.endsWith('/') && !imageUrl.startsWith('/')) {
+      return `${baseUrl}/${imageUrl}`;
+    }
+    
+    return `${baseUrl}${imageUrl}`;
+  };
+
+  // Fetch profile data including image and location from the profile endpoint
+  const fetchProfileData = async () => {
     setImgLoading(true);
     
     try {
-      // Use the specific profile endpoint based on user type
+      // Determine the correct endpoint based on user type
       const endpoint = userType === "AGENT" 
         ? '/api/v1/profile/agent/' 
         : '/api/v1/profile/client/';
@@ -131,68 +202,109 @@ export default function ProfilePage() {
       const response = await apiRequest(endpoint);
       const profileData = await response.json();
       
-      // Handle image URL from response
-      if (profileData?.data?.profile_photo_url) {
-        // Get the raw URL from the API response
-        const imageUrl = profileData.data.profile_photo_url;
-        console.log("Got image URL from direct profile API:", imageUrl);
+      if (profileData?.success && profileData?.data) {
+        console.log("Profile data fetched:", profileData.data);
         
-        // Update states and context with the raw URL
-        setImagePreview(imageUrl);
-        updateProfileImage(imageUrl);
+        // Extract location data - handle different possible structures
+        const newLocationData = {
+          country: profileData.data.country || '',
+          state: profileData.data.state || '',
+          city: profileData.data.city || '',
+          address: profileData.data.address || ''
+        };
         
-        // Store the raw URL in localStorage
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('profile_image_url', imageUrl);
+        // Update location state
+        setLocationData(newLocationData);
+        
+        // Update form values for location
+        Object.entries(newLocationData).forEach(([field, value]) => {
+          if (value) setValue(field, value);
+        });
+        
+        // Handle profile image
+        if (profileData.data.profile_photo_url) {
+          const imageUrl = profileData.data.profile_photo_url;
+          
+          // Add cache-busting parameter
+          const cacheBustUrl = imageUrl.includes('?') 
+            ? `${imageUrl}&_cb=${new Date().getTime()}` 
+            : `${imageUrl}?_cb=${new Date().getTime()}`;
+          
+          console.log("Profile image URL:", cacheBustUrl);
+          
+          // Update state and context
+          setImagePreview(cacheBustUrl);
+          updateProfileImage(cacheBustUrl);
+          
+          // Store in localStorage for persistence
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('profile_image_url', imageUrl);
+          }
+          
+          setImgError(false);
+        } else {
+          console.log("No profile image found in data");
+          setImagePreview(null);
         }
-        
-        setImgError(false);
-      } else {
-        console.log("No profile image found in profile data");
-        setImagePreview(null);
       }
     } catch (err) {
-      console.error("Error fetching profile image:", err);
-      // Try fallback to locally stored URL if direct fetch fails
-      const savedImage = localStorage.getItem('profile_image_url');
-      if (savedImage && savedImage !== 'null' && savedImage !== 'undefined') {
-        setImagePreview(savedImage);
+      console.error("Error fetching profile data:", err);
+      // Fallback to stored image if available
+      if (typeof window !== 'undefined') {
+        const savedImage = localStorage.getItem('profile_image_url');
+        if (savedImage && savedImage !== 'null' && savedImage !== 'undefined') {
+          setImagePreview(savedImage);
+        }
       }
     } finally {
       setImgLoading(false);
     }
   };
 
+  // Fetch user data when component mounts
+  useEffect(() => {
+    fetchUserData();
+    fetchProfileData();
+  }, []);
+
   // Update form values when userData changes
   useEffect(() => {
     if (userData) {
       console.log("userData received:", userData);
       
-      // Set form values for user data
-      ['first_name', 'last_name', 'phone_number'].forEach(field => {
-        if (userData[field]) setValue(field, userData[field]);
-      });
+      // Set form values for user data if not already set by API data
+      if (!apiUserData.first_name && userData.first_name) setValue('first_name', userData.first_name);
+      if (!apiUserData.last_name && userData.last_name) setValue('last_name', userData.last_name);
+      if (!apiUserData.phone_number && userData.phone_number) setValue('phone_number', userData.phone_number);
       
-      // Specifically handle email
-      const email = getEmailFromData(userData);
-      console.log("Email found:", email);
-      setValue('email', email);
-      setUserEmail(email);
+      // Handle email if not already set
+      if (!apiUserData.email) {
+        const email = getEmailFromData(userData);
+        console.log("Email found:", email);
+        setValue('email', email);
+        setUserEmail(email);
+      }
       
       // Set form values for profile data
       const profileData = userData.agent_profile || userData.client_profile || {};
-      ['country', 'state', 'city', 'address'].forEach(field => {
-        if (profileData[field]) setValue(field, profileData[field]);
-      });
+      const newLocationData = {
+        country: profileData.country || locationData.country,
+        state: profileData.state || locationData.state,
+        city: profileData.city || locationData.city,
+        address: profileData.address || locationData.address
+      };
       
-      // Fetch the image directly from the specific endpoint
-      fetchProfileImageDirectly();
+      setLocationData(newLocationData);
+      
+      Object.entries(newLocationData).forEach(([field, value]) => {
+        if (value) setValue(field, value);
+      });
     }
-  }, [userData, setValue]);
+  }, [userData, setValue, apiUserData]);
 
-  // Fetch user email if not available in userData
+  // Fetch user email if not available in userData or apiUserData
   useEffect(() => {
-    if (!userEmail && typeof window !== 'undefined') {
+    if (!userEmail && !apiUserData.email && typeof window !== 'undefined') {
       const storedEmail = localStorage.getItem('user_email');
       if (storedEmail) {
         console.log("Using email from localStorage:", storedEmail);
@@ -200,95 +312,144 @@ export default function ProfilePage() {
         setValue('email', storedEmail);
       }
     }
-  }, [userEmail, setValue]);
-
-  // Initial load of profile image on component mount
-  useEffect(() => {
-    if (!isLoading && (imgError || !imagePreview)) {
-      fetchProfileImageDirectly();
-    }
-  }, [isLoading, imgError]);
+  }, [userEmail, setValue, apiUserData]);
 
   // API Operations
   const updateProfile = async (data, formType) => {
     try {
-      let payload;
+      // Use the new endpoint for contact information updates, otherwise use the standard endpoint
+      const endpoint = formType === 'contact' 
+        ? '/api/v1/users/update'  // New endpoint for contact info
+        : userType === "AGENT" 
+          ? '/api/v1/profile/agent/' 
+          : '/api/v1/profile/client/';  // Standard endpoints for other profile updates (like location)
+      
+      // Always use FormData for any profile updates
+      const formData = new FormData();
       
       if (formType === 'contact') {
-        payload = { 
-          first_name: data.first_name,
-          last_name: data.last_name,
-          phone_number: data.phone_number
-        };
+        // For contact info, add fields to FormData
+        formData.append('first_name', data.first_name);
+        formData.append('last_name', data.last_name);
+        formData.append('phone_number', data.phone_number);
+        
+        console.log("Sending contact update with FormData payload to endpoint:", endpoint);
+        // Show FormData content for debugging
+        for (let [key, value] of formData.entries()) {
+          console.log(`${key}: ${value}`);
+        }
       } else if (formType === 'location') {
-        const profileType = userType === "AGENT" ? "agent_profile" : "client_profile";
-        payload = {
-          [profileType]: {
-            country: data.country,
-            state: data.state,
-            city: data.city,
-            address: data.address
-          }
-        };
+        // For location info
+        formData.append('country', data.country);
+        formData.append('state', data.state);
+        formData.append('city', data.city);
+        formData.append('address', data.address);
+        
+        console.log("Sending location update with FormData payload to endpoint:", endpoint);
+        // Show FormData content for debugging
+        for (let [key, value] of formData.entries()) {
+          console.log(`${key}: ${value}`);
+        }
       }
       
-      const response = await apiRequest('/api/v1/users/update', {
+      const response = await apiRequest(endpoint, {
         method: 'PATCH',
-        body: payload
+        isFormData: true, // Always use FormData
+        body: formData
       });
       
-      await response.json();
+      const result = await response.json();
+      console.log(`${formType} update response:`, result);
+      
+      // Show success notification right away
+      toast.success(`${formType === 'contact' ? 'Contact' : 'Location'} information updated successfully`);
+      
+      // Create notification
+      await createNotification(`${formType === 'contact' ? 'Contact' : 'Location'} information updated successfully on ${new Date().toLocaleDateString()}`);
       
       // Update global context
       await fetchProfile();
       
-      // Create a notification
-      await createNotification(`${formType === 'contact' ? 'Contact' : 'Location'} information updated successfully on ${new Date().toLocaleDateString()}`);
-      
-      toast.success(`${formType === 'contact' ? 'Contact' : 'Location'} information updated successfully`);
+      // Only fetch profile data after location update (more efficient)
+      if (formType === 'location') {
+        await fetchProfileData();
+        setIsEditingLocation(false);
+      }
     } catch (err) {
       toast.error(err.message);
       console.error("Update error:", err);
     }
   };
 
-  const uploadImage = async () => {
+  // Function to handle starting the edit mode for location
+  const startLocationEdit = () => {
+    // Make sure form has the latest location data
+    Object.entries(locationData).forEach(([field, value]) => {
+      setValue(field, value);
+    });
+    setIsEditingLocation(true);
+  };
+
+  // Function to cancel editing location
+  const cancelLocationEdit = () => {
+    // Reset form values to the current location data
+    Object.entries(locationData).forEach(([field, value]) => {
+      setValue(field, value);
+    });
+    setIsEditingLocation(false);
+  };
+
+  // Updated method to upload profile image
+  const uploadProfileImage = async () => {
     if (!selectedImage) return;
     
     try {
-      // First, upload the image using the standard update endpoint
-      const formData = new FormData();
-      const profileType = userType === "AGENT" ? "agent_profile" : "client_profile";
-      formData.append(`${profileType}.profile_photo`, selectedImage);
+      // Show upload in progress notification
+      toast.info("Uploading profile photo...");
       
-      const response = await apiRequest('/api/v1/users/update', {
+      // Create FormData object for multipart/form-data
+      const formData = new FormData();
+      
+      // Append file with the correct field name
+      formData.append('profile_photo', selectedImage);
+      
+      // Determine the correct endpoint based on user type
+      const endpoint = userType === "AGENT" 
+        ? '/api/v1/profile/agent/' 
+        : '/api/v1/profile/client/';
+      
+      // Send PATCH request to update profile photo
+      const response = await apiRequest(endpoint, {
         method: 'PATCH',
         isFormData: true,
         body: formData
       });
       
       const result = await response.json();
-      console.log("Image upload result:", result);
+      console.log("Image upload response:", result);
       
-      // After uploading, fetch the fresh image URL from the specific endpoint
-      await fetchProfileImageDirectly();
+      // Reset selected image state
+      setSelectedImage(null);
       
-      // Refresh profile data in the context
+      // Fetch updated profile data after successful upload
+      await fetchProfileData();
+      
+      // Update global context
       await fetchProfile();
       
-      // Create a notification
+      // Create notification
       await createNotification(`Profile photo updated successfully on ${new Date().toLocaleDateString()}`);
       
-      setSelectedImage(null);
+      // Show success notification
       toast.success("Profile photo updated successfully");
     } catch (err) {
-      toast.error(err.message);
-      console.error("Image upload error:", err);
+      toast.error(`Failed to upload profile photo: ${err.message}`);
+      console.error("Profile photo upload error:", err);
     }
   };
 
   // Loading, Error and Empty States
-  if (isLoading && !userData) {
+  if (isLoading && !userData && !apiUserData.id) {
     return (
       <div className="flex justify-center items-center h-screen">
         <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-blue-500"></div>
@@ -296,46 +457,44 @@ export default function ProfilePage() {
     );
   }
   
-  if (error && !userData) {
+  if (error && !userData && !apiUserData.id) {
     return <div className="text-red-500 p-4 text-center">Error: {error}</div>;
   }
   
-  if (!userData) return null;
-
-  // Helper for UI
-  const profileType = userType === "AGENT" ? "Agent" : "Client";
+  if (!userData && !apiUserData.id) return null;
 
   // Render Component
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="max-w-4xl mx-auto sm:p-6">
       {/* Toast Container */}
       <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
       
-      <h1 className="text-2xl font-bold mb-8">{profileType} Profile Settings</h1>
+      <h1 className="text-2xl font-bold mb-6 pl-1">
+        Profile Settings
+      </h1>
 
       {/* Profile Image Section */}
-      <div className="mb-8">
+      <div className="mb-6 pl-1">
         <div className="relative inline-block">
-          <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-200 border-2 border-gray-300">
+          <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full overflow-hidden bg-gray-200 border-2 border-gray-300">
             {imagePreview && !imgError ? (
               <img
-                src={imagePreview}
+                src={getImageUrl(imagePreview)}
                 alt="Profile"
                 className="object-cover w-full h-full"
-                crossOrigin="anonymous" // Add this to handle potential CORS issues
+                crossOrigin="anonymous"
                 onError={(e) => {
                   console.log("Image loading error", e);
                   setImgError(true);
-                  // Don't use the cached version when there's an error
-                  e.target.onerror = null; // Prevent infinite error loop
+                  e.target.onerror = null;
                 }}
               />
             ) : (
               <div className="flex items-center justify-center h-full">
                 {imgLoading ? (
-                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-500 border-t-transparent"></div>
+                  <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-2 border-blue-500 border-t-transparent"></div>
                 ) : (
-                  <span className="text-gray-500 text-sm">
+                  <span className="text-gray-500 text-xs sm:text-sm">
                     {imgError ? "Unable to load image" : "No Image"}
                   </span>
                 )}
@@ -344,9 +503,9 @@ export default function ProfilePage() {
           </div>
           <label
             htmlFor="profile-image"
-            className="absolute bottom-0 right-0 bg-blue-500 p-2 rounded-full text-white cursor-pointer shadow-lg hover:bg-blue-600"
+            className="absolute bottom-0 right-0 bg-blue-500 p-1 sm:p-2 rounded-full text-white cursor-pointer shadow-lg hover:bg-blue-600"
           >
-            <Camera size={20} />
+            <Camera size={16} className="sm:w-5 sm:h-5" />
           </label>
           <input
             type="file"
@@ -357,7 +516,7 @@ export default function ProfilePage() {
               if (file) {
                 setSelectedImage(file);
                 setImagePreview(URL.createObjectURL(file));
-                setImgError(false); 
+                setImgError(false);
               }
             }}
             accept="image/*"
@@ -365,18 +524,16 @@ export default function ProfilePage() {
         </div>
         {selectedImage && (
           <button
-            onClick={uploadImage}
-            className="mt-4 px-4 py-2 rounded-md bg-gradient-to-r from-blue-500 to-teal-500 text-white hover:opacity-90"
+            onClick={uploadProfileImage}
+            className="mt-4 px-3 py-1 sm:px-4 sm:py-2 text-sm sm:text-base rounded-md bg-gradient-to-r from-blue-500 to-teal-500 text-white hover:opacity-90"
           >
             Upload Image
           </button>
         )}
         {imgError && (
           <button
-            onClick={() => {
-              fetchProfileImageDirectly();
-            }}
-            className="mt-2 px-3 py-1 text-sm rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300"
+            onClick={fetchProfileData}
+            className="mt-2 px-2 py-1 text-xs sm:text-sm rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300"
           >
             Reload Image
           </button>
@@ -385,10 +542,10 @@ export default function ProfilePage() {
 
       {/* Contact Information Section */}
       <div className="mb-6 border-b pb-4">
-        <h2 className="text-xl font-semibold mb-4">Contact Information</h2>
+        <h2 className="text-lg sm:text-xl font-semibold mb-3 pl-1">Contact Information</h2>
         
         <form onSubmit={handleSubmit((data) => updateProfile(data, 'contact'))} className="mt-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-4">
             <FormInput 
               label="First Name" 
               name="first_name" 
@@ -410,7 +567,7 @@ export default function ProfilePage() {
               name="email" 
               type="email" 
               readOnly={true} 
-              value={userEmail || userData?.email || (typeof window !== 'undefined' ? localStorage.getItem('user_email') : '') || ''} 
+              value={apiUserData.email || userEmail || userData?.email || (typeof window !== 'undefined' ? localStorage.getItem('user_email') : '') || ''} 
             />
             
             <FormInput 
@@ -427,7 +584,7 @@ export default function ProfilePage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white px-4 py-2 rounded-md hover:from-[#3ab7b1] hover:to-[#014d98] disabled:opacity-50"
+              className="w-full sm:w-auto bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white px-4 py-2 rounded-md hover:from-[#3ab7b1] hover:to-[#014d98] disabled:opacity-50"
             >
               {isSubmitting ? 'Saving...' : 'Save Contact Info'}
             </button>
@@ -437,55 +594,100 @@ export default function ProfilePage() {
 
       {/* Location Information Section */}
       <div className="mb-6">
-        <h2 className="text-xl font-semibold mb-4">Location Information</h2>
-        
-        <form onSubmit={handleSubmit((data) => updateProfile(data, 'location'))} className="mt-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormInput 
-              label="Country" 
-              name="country" 
-              register={register} 
-              errors={errors} 
-            />
-            
-            <FormInput 
-              label="State" 
-              name="state" 
-              register={register} 
-              errors={errors} 
-            />
-            
-            <FormInput 
-              label="City" 
-              name="city" 
-              register={register} 
-              errors={errors} 
-            />
-            
-            <FormInput 
-              label="Address" 
-              name="address" 
-              register={register} 
-              errors={errors} 
-              colSpan="md:col-span-2" 
-            />
-          </div>
-
-          <div className="mt-4 flex justify-end">
+        <div className="flex justify-between items-center mb-3">
+          <h2 className="text-lg sm:text-xl font-semibold pl-1">Location Information</h2>
+          
+          {!isEditingLocation && (
             <button
-              type="submit"
-              disabled={isSubmitting}
-              className="bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white px-4 py-2 rounded-md hover:from-[#3ab7b1] hover:to-[#014d98] disabled:opacity-50"
+              onClick={startLocationEdit}
+              className="flex items-center text-blue-500 hover:text-blue-700"
             >
-              {isSubmitting ? 'Saving...' : 'Save Location Info'}
+              <Edit size={16} className="mr-1" /> Edit
             </button>
+          )}
+        </div>
+        
+        {isEditingLocation ? (
+          <form onSubmit={handleSubmit((data) => updateProfile(data, 'location'))} className="mt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-4">
+              <FormInput 
+                label="Country" 
+                name="country" 
+                register={register} 
+                errors={errors} 
+              />
+              
+              <FormInput 
+                label="State" 
+                name="state" 
+                register={register} 
+                errors={errors} 
+              />
+              
+              <FormInput 
+                label="City" 
+                name="city" 
+                register={register} 
+                errors={errors} 
+              />
+              
+              <FormInput 
+                label="Address" 
+                name="address" 
+                register={register} 
+                errors={errors} 
+                colSpan="md:col-span-2" 
+              />
+            </div>
+
+            <div className="mt-4 flex justify-end space-x-3">
+              <button
+                type="button"
+                onClick={cancelLocationEdit}
+                className="px-4 py-2 rounded-md border border-gray-300 hover:bg-gray-100 flex items-center"
+              >
+                <X size={16} className="mr-1" /> Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white px-4 py-2 rounded-md hover:from-[#3ab7b1] hover:to-[#014d98] disabled:opacity-50 flex items-center"
+              >
+                {isSubmitting ? 'Saving...' : (
+                  <>
+                    <Check size={16} className="mr-1" /> Save Location
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <div className="mt-4 bg-gray-50 p-4 rounded-md">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Country</p>
+                <p className="mt-1">{locationData.country || 'Not specified'}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500">State</p>
+                <p className="mt-1">{locationData.state || 'Not specified'}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500">City</p>
+                <p className="mt-1">{locationData.city || 'Not specified'}</p>
+              </div>
+              <div className="md:col-span-2">
+                <p className="text-sm font-medium text-gray-500">Address</p>
+                <p className="mt-1">{locationData.address || 'Not specified'}</p>
+              </div>
+            </div>
           </div>
-        </form>
+        )}
       </div>
       
       {/* Error message */}
       {error && (
-        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-700 mb-6">
+        <div className="p-3 sm:p-4 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-700 mb-6">
           <p>There was an issue connecting to the server: {error}</p>
           <p className="mt-1">Your profile is currently displaying locally saved data. Changes may not be saved until connection is restored.</p>
         </div>
