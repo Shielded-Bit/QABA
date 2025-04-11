@@ -1,5 +1,5 @@
 "use client";
-
+import Link from 'next/link';
 import { useState, useEffect } from "react";
 import {
   Menu,
@@ -62,16 +62,18 @@ export default function Sidebar() {
         isSidebarCollapsed ? "w-16" : "w-64"
       }`}
     >
-      <div className="px-6 sm:px-6 py-3 sm:py-7 flex items-center justify-between border-b">
-        <div className={`text-xl font-bold text-gradient ${isSidebarCollapsed ? "hidden" : "block"}`}>
-          QABA
-        </div>
-        {isMobile && (
-          <button onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} className="px-0 hover:bg-gray-100 rounded">
-            <Menu />
-          </button>
-        )}
-      </div>
+   <div className="px-6 sm:px-6 py-3 sm:py-7 flex items-center justify-between border-b">
+  <div className={`text-xl font-bold ${isSidebarCollapsed ? "hidden" : "block"}`}>
+    <Link href="/" className="text-gradient hover:opacity-80 transition-opacity">
+      QABA
+    </Link>
+  </div>
+  {isMobile && (
+    <button onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} className="px-0 hover:bg-gray-100 rounded">
+      <Menu />
+    </button>
+  )}
+</div>
       
       <nav className="flex-1 p-4 space-y-4">
         {renderLink("/agent-dashboard", "Dashboard", pathname, LayoutDashboard, isSidebarCollapsed)}
@@ -94,7 +96,7 @@ export default function Sidebar() {
 
       <div className="p-4 space-y-2 border-t">
         {renderLink("/agent-dashboard/help-support", "Help & Support", pathname, HelpCircle, isSidebarCollapsed)}
-        {renderLink("/agent-dashboard/settings", "Settings", pathname, Settings, isSidebarCollapsed)}
+        {renderLink("/agent-dashboard/settings/profile", "Settings", pathname, Settings, isSidebarCollapsed)}
         <div className={getLinkClass(pathname, "/agent-dashboard/logout", isSidebarCollapsed)}>
           <LogoutButton />
         </div>

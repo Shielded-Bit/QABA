@@ -3,30 +3,51 @@ import qs from 'qs';
 export const API_BASE_URL = `${process.env.NEXT_PUBLIC_API}/api/v1`;
 
 // Register a new client
+// Helper function to handle API errors properly
+const handleApiError = (error) => {
+  if (error.response && error.response.data) {
+    // Return the error response from the API
+    throw error.response.data;
+  }
+  throw new Error('Network error occurred');
+};
+
 export const registerClient = async (data) => {
   try {
-    const response = await axios.post(`${API_BASE_URL}/auth/register/client/`, data, {
+    // Include confirmPassword as password_confirm in the API request
+    const requestData = {
+      ...data,
+      password_confirm: data.confirmPassword
+    };
+    
+    const response = await axios.post(`${API_BASE_URL}/auth/register/client/`, requestData, {
       headers: {
         'Content-Type': 'application/json',
       },
     });
     return response.data;
   } catch (error) {
-    throw new Error('Failed to register client');
+    return handleApiError(error);
   }
 };
 
 // Register a new agent
 export const registerAgent = async (data) => {
   try {
-    const response = await axios.post(`${API_BASE_URL}/auth/register/agent/`, data, {
+    // Include confirmPassword as password_confirm in the API request
+    const requestData = {
+      ...data,
+      password_confirm: data.confirmPassword
+    };
+    
+    const response = await axios.post(`${API_BASE_URL}/auth/register/agent/`, requestData, {
       headers: {
         'Content-Type': 'application/json',
       },
     });
     return response.data;
   } catch (error) {
-    throw new Error('Failed to register agent');
+    return handleApiError(error);
   }
 };
 
@@ -40,7 +61,7 @@ export const sendVerificationEmail = async (email) => {
     });
     return response.data;
   } catch (error) {
-    throw new Error('Failed to send verification email');
+    return handleApiError(error);
   }
 };
 

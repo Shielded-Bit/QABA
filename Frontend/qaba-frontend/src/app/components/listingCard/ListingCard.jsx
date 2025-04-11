@@ -4,11 +4,11 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Bookmark } from 'lucide-react';
-import Button from '../shared/Button';
 
 const ListingCard = ({ id, title, price, description, image, type }) => {
   const router = useRouter();
   const [isFavorited, setIsFavorited] = useState(false);
+  const [isButtonHovered, setIsButtonHovered] = useState(false);
 
   const handleCardClick = () => {
     router.push(`/details/${id}`);
@@ -21,17 +21,19 @@ const ListingCard = ({ id, title, price, description, image, type }) => {
   };
 
   return (
-    <div className="max-w-md bg-white rounded-lg overflow-hidden shadow-md relative" onClick={handleCardClick}>
+    <div className="max-w-md bg-white rounded-lg overflow-hidden shadow-md relative h-full" onClick={handleCardClick}>
       {/* Image */}
       <div className="relative p-4">
-        <Image
-          className="w-full rounded-lg object-cover"
-          src={image}
-          alt={title}
-          width={400}
-          height={250}
-        />
-        
+        <div className="h-64 relative">
+          <Image
+            className="w-full h-full rounded-lg object-cover"
+            src={image}
+            alt={title}
+            layout="fill"
+            objectFit="cover"
+          />
+        </div>
+
         {/* Type Badge */}
         <span
           className={`absolute top-6 left-6 px-3 py-1 rounded-full text-xs font-semibold text-white ${
@@ -40,7 +42,7 @@ const ListingCard = ({ id, title, price, description, image, type }) => {
         >
           {type === 'rent' ? 'Rent' : 'Buy'}
         </span>
-        
+
         {/* Favorite Icon */}
         <button
           className="absolute top-6 right-6 p-2 bg-white rounded-full shadow-md hover:bg-gray-200"
@@ -53,19 +55,21 @@ const ListingCard = ({ id, title, price, description, image, type }) => {
       {/* Card Content */}
       <div className="p-4">
         {/* Title */}
-        <h2 className="font-semibold text-lg flex items-center">
-          {title}
+        <div className="flex items-center">
+          <h2 className="font-semibold text-lg truncate flex-1">{title}</h2>
           <Image
             src="https://res.cloudinary.com/dqbbm0guw/image/upload/v1734106397/Vector_4_ec0tid.png"
             alt="Verified"
             width={20}
             height={20}
-            className="ml-2"
+            className="ml-2 flex-shrink-0"
           />
-        </h2>
+        </div>
 
         {/* Description */}
-        <p className="text-gray-600 text-sm mt-2">{description}</p>
+        <div className="h-12 overflow-hidden">
+          <p className="text-gray-600 text-sm mt-2">{description}</p>
+        </div>
 
         {/* Price */}
         <p className="text-gray-900 font-bold mt-3">{price}</p>
@@ -81,9 +85,24 @@ const ListingCard = ({ id, title, price, description, image, type }) => {
         </div>
       </div>
 
-      {/* Action Button */}
+      {/* Action Button with Gradient Border and Text */}
       <div className="flex justify-center items-center p-4">
-        <Button label="Learn More" onClick={handleCardClick} bgColor="white" className="w-40 h-14" />
+        <div className="rounded-md p-0.5 bg-gradient-to-r from-blue-900 to-green-600">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleCardClick();
+            }}
+            onMouseEnter={() => setIsButtonHovered(true)}
+            onMouseLeave={() => setIsButtonHovered(false)}
+            className="w-40 h-14 bg-white rounded-md flex items-center justify-center transition-transform duration-300 ease-in-out"
+            style={{ transform: isButtonHovered ? 'scale(1.02)' : 'scale(1)' }}
+          >
+            <span className="font-medium text-transparent bg-clip-text bg-gradient-to-r from-blue-900 to-green-600">
+              Learn More
+            </span>
+          </button>
+        </div>
       </div>
     </div>
   );

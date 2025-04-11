@@ -15,14 +15,11 @@ export default function TopNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileImageUrl, setProfileImageUrl] = useState("");
   
-  // Use the shared profile context and provide default values if needed
-  const { userData = {}, profileImage, isLoading, userType } = useProfile();
+  // Use the shared profile context
+  const { userData, profileImage, isLoading, userType } = useProfile();
   
-  // Explicitly set user data for development/testing
-  // This ensures we have the actual user data when testing the component
+  // For debugging - you can remove this in production
   useEffect(() => {
-    // You can remove this effect in production
-    // This is just to ensure we're using the actual user data during development
     console.log("Current user data:", userData);
   }, [userData]);
 
@@ -32,12 +29,14 @@ export default function TopNav() {
       setProfileImageUrl(profileImage);
     } else if (userData) {
       // Try to get from userData as backup
-      const photoUrl = userData.agent_profile?.profile_photo_url || userData.client_profile?.profile_photo_url;
+      const photoUrl = userData?.profile_photo_url || 
+                      userData?.agent_profile?.profile_photo_url || 
+                      userData?.client_profile?.profile_photo_url;
       if (photoUrl) {
         setProfileImageUrl(photoUrl);
       } else {
         // Try to get from localStorage as final backup
-        const savedImage = localStorage.getItem('profile_image_url');
+        const savedImage = localStorage.getItem('profile_photo_url');
         if (savedImage) {
           setProfileImageUrl(savedImage);
         } else {
@@ -60,12 +59,11 @@ export default function TopNav() {
     );
   };
 
-  // Format user display name - directly using data properties if they exist
+  // Get user display name based on the structure from /api/v1/users/me/ endpoint
   const getUserDisplayName = () => {
-    // Check if we have valid userData first
     if (!userData) return "Guest";
-
-    // Check for existing first_name/last_name properties
+    
+    // Access directly from userData or from the data property
     const firstName = userData.first_name || userData.data?.first_name || "";
     const lastName = userData.last_name || userData.data?.last_name || "";
     
@@ -75,38 +73,35 @@ export default function TopNav() {
       return firstName;
     } else if (lastName) {
       return lastName;
-    } else {
-      // Last resort: use email or return "User"
-      const email = userData.email || userData.data?.email;
-      return email ? email.split('@')[0] : "User";
     }
+    
+    // Last resort: use email
+    return userData.email ? userData.email.split('@')[0] : "User";
   };
 
   // Get short name for mobile display
   const getShortName = () => {
     const firstName = userData?.first_name || userData?.data?.first_name;
-    if (!firstName) return "Guest";
-    return firstName;
+    return firstName || "User";
   };
 
   // Get user role based on user_type
   const getUserRole = () => {
     const type = userType || userData?.user_type || userData?.data?.user_type;
-    if (!type) return "User";
     return type === "AGENT" ? "Agent" : "Client";
   };
 
   // Determine the settings page URL based on user type
   const getSettingsUrl = () => {
     const type = userType || userData?.user_type || userData?.data?.user_type;
-    return type === "AGENT" ? "/agent-dashboard/settings" : "/dashboard/settings";
+    return type === "AGENT" ? "/agent-dashboard/settings/profile" : "/dashboard/settings";
   };
 
   // Get the first initial for the avatar fallback
   const getInitial = () => {
     const firstName = userData?.first_name || userData?.data?.first_name;
     if (firstName) {
-      return firstName.charAt(0);
+      return firstName.charAt(0).toUpperCase();
     }
     return "U"; // Default to "U" for User
   };
@@ -169,9 +164,8 @@ export default function TopNav() {
                   width={40}
                   height={40}
                   className="rounded-full object-cover"
-                  key={profileImageUrl} // Use actual URL as key to force re-render
+                  key={profileImageUrl}
                   onError={(e) => {
-                    // If image fails to load, fall back to default
                     setProfileImageUrl("https://i.pravatar.cc/150");
                   }}
                 />
@@ -226,7 +220,7 @@ export default function TopNav() {
                 width={32}
                 height={32}
                 className="rounded-full object-cover"
-                key={profileImageUrl} // Use actual URL as key to force re-render
+                key={profileImageUrl}
                 onError={() => setProfileImageUrl("https://i.pravatar.cc/150")}
               />
             ) : (

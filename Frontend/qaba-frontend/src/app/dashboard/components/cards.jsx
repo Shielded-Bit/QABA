@@ -1,14 +1,6 @@
-// file: components/Dashboard.js
-
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { useSwipeable } from "react-swipeable";
-
-const properties = [
-  { id: 1, name: "Dream Family Home", address: "555 W Madison St, Abakiliki, Ebonyi State.", price: "₦1,250,000", status: "Available for rent", image: "https://res.cloudinary.com/ddzaww11y/image/upload/v1740503241/house3_nrrvak.png" },
-  { id: 2, name: "Luxury Villa", address: "No 23, Lekki Phase 1, Lagos.", price: "₦11,000,000", status: "Listed for Sale", image: "https://res.cloudinary.com/ddzaww11y/image/upload/v1740503241/house1_drcxcq.png" },
-  { id: 3, name: "Modern Duplex", address: "100 Unity Estate, Enugu.", price: "₦1,250,000", status: "Available for rent", image: "https://res.cloudinary.com/ddzaww11y/image/upload/v1740503241/house2_x3rfh6.png" },
-];
 
 const notifications = [
   { id: 1, title: "Price Drop Alert", message: "Good news! The price of Luxury Villa has dropped by 10%. Check it out now" },
@@ -17,22 +9,63 @@ const notifications = [
   { id: 4, title: "New Message from Agent", message: "You have a new message from Ekene regarding Modern Duplex." },
 ];
 
-const Dashboard = () => (
-  <div className="px-2 py-1">
-    <div className="hidden md:grid md:grid-cols-2 gap-4">
-      <PropertiesSection />
-      <NotificationsSection />
-    </div>
+const Dashboard = () => {
+  const [properties, setProperties] = useState([]);
 
-    {/* Mobile Swiper */}
-    <div className="flex flex-col space-y-4 md:hidden">
-      <MobileSwiper items={[
-        { id: 'properties', content: <PropertiesList /> },
-        { id: 'notifications', content: <NotificationsList /> }
-      ]} />
+  useEffect(() => {
+    const fetchProperties = async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API}/api/v1/properties/?listing_status=APPROVED`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+          },
+        });
+
+        if (!res.ok) throw new Error('Failed to fetch properties');
+
+        const data = await res.json();
+
+        const latest = data.data
+          .sort((a, b) => new Date(b.listed_date) - new Date(a.listed_date))
+          .slice(0, 3)
+          .map((item) => ({
+            id: item.id,
+            name: item.property_name,
+            address: item.location,
+            price: item.listing_type === 'RENT'
+              ? `₦${Number(item.rent_price).toLocaleString()} / ${item.rent_frequency?.toLowerCase()}`
+              : `₦${Number(item.sale_price).toLocaleString()}`,
+            status: item.listing_type === 'RENT' ? 'Available for Rent' : 'Listed for Sale',
+            image: item.thumbnail || 'https://via.placeholder.com/150',
+          }));
+
+        setProperties(latest);
+      } catch (error) {
+        console.error("Error fetching properties:", error);
+      }
+    };
+
+    fetchProperties();
+  }, []);
+
+  return (
+    <div className="px-2 py-1">
+      <div className="hidden md:grid md:grid-cols-2 gap-4">
+        <PropertiesSection properties={properties} />
+        <NotificationsSection />
+      </div>
+
+      <div className="flex flex-col space-y-4 md:hidden">
+        <MobileSwiper items={[
+          { id: 'properties', content: <PropertiesList properties={properties} /> },
+          { id: 'notifications', content: <NotificationsList /> }
+        ]} />
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const MobileSwiper = ({ items }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -56,9 +89,9 @@ const MobileSwiper = ({ items }) => {
   );
 };
 
-const PropertiesSection = () => (
+const PropertiesSection = ({ properties }) => (
   <div className="bg-white shadow-md rounded-lg p-4 text-gray-600">
-    <Header title="Recent Added Properties  " />
+    <Header title="Recent Added Properties" />
     <div className="space-y-3 mt-7">
       {properties.map((property) => (
         <PropertyCard key={property.id} {...property} />
@@ -78,9 +111,9 @@ const NotificationsSection = () => (
   </div>
 );
 
-const PropertiesList = () => (
+const PropertiesList = ({ properties }) => (
   <div className="bg-white shadow-md rounded-lg p-4 w-full">
-    <h2 className="text-lg font-semibold mb-4  text-gray-600">Recent Added Properties</h2>
+    <h2 className="text-lg font-semibold mb-4 text-gray-600">Recent Added Properties</h2>
     <div className="space-y-3">
       {properties.map((property) => (
         <PropertyCard key={property.id} {...property} />
@@ -104,20 +137,14 @@ const NotificationsList = () => (
 
 const PropertyCard = ({ image, name, address, status, price }) => (
   <div className="flex items-start gap-2 border-b pb-3 last:border-b-0 w-full cursor-pointer hover:bg-gray-50 transition">
-    {/* Image */}
     <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-md overflow-hidden flex-shrink-0">
       <Image src={image} alt={name} width={80} height={80} className="object-cover w-full h-full" />
     </div>
-
-    {/* Text Block - Reduced Gap */}
     <div className="flex-1 min-w-0 space-y-1">
-      {/* Top Row: Name and Price */}
       <div className="flex justify-between items-center">
         <h3 className="font-semibold text-sm sm:text-base text-gray-800 truncate">{name}</h3>
         <p className="text-sm sm:text-base font-semibold text-[#014d98] whitespace-nowrap">{price}</p>
       </div>
-
-      {/* Address and Status directly underneath */}
       <p className="text-xs sm:text-sm text-gray-500 truncate">{address}</p>
       <p className="text-xs text-green-600">{status}</p>
     </div>

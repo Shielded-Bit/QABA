@@ -25,11 +25,11 @@ const bgpict = [
   },
 ];
 
-
 const SignIn = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({ email: "", password: "" });
-  const [error, setError] = useState("");
+  const [errors, setErrors] = useState({ email: "", password: "" });
+  const [generalError, setGeneralError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -38,15 +38,55 @@ const SignIn = () => {
   };
 
   const handleChange = (e) => {
+    const { id, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.id]: e.target.value,
+      [id]: value,
     });
+    
+    // Clear error for this field when user types
+    if (errors[id]) {
+      setErrors({
+        ...errors,
+        [id]: ""
+      });
+    }
+  };
+
+  const validateForm = () => {
+    let valid = true;
+    const newErrors = { email: "", password: "" };
+    
+    // Email validation
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required";
+      valid = false;
+    } else if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
+      newErrors.email = "Email format is invalid";
+      valid = false;
+    }
+    
+    // Password validation
+    if (!formData.password) {
+      newErrors.password = "Password is required";
+      valid = false;
+    } else if (formData.password.length < 8) {
+      newErrors.password = "Password must be at least 8 characters";
+      valid = false;
+    }
+    
+    setErrors(newErrors);
+    return valid;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
+    setGeneralError("");
+    
+    if (!validateForm()) {
+      return;
+    }
+    
     setLoading(true);
 
     const requestData = {
@@ -54,18 +94,12 @@ const SignIn = () => {
       password: formData.password,
     };
 
-    console.log("Request Data:", requestData);
-
     try {
       const response = await signIn(requestData);
-      console.log("Response:", response);
-
+      
       // Extract token and user details
       const accessToken = response.data?.access;
-      const userType = response.data?.user?.user_type; // No need to lowercase since backend is consistent
-
-      console.log("Access Token:", accessToken);
-      console.log("User Type:", userType);
+      const userType = response.data?.user?.user_type;
 
       if (!accessToken || !userType) {
         throw new Error("Invalid login response: Missing token or user type.");
@@ -77,20 +111,30 @@ const SignIn = () => {
 
       // Redirect based on role
       if (userType === "AGENT") {
-        router.push("/agent-dashboard"); // Redirect to agent dashboard
+        router.push("/agent-dashboard");
       } else if (userType === "CLIENT") {
-        router.push("/dashboard"); // Redirect to client dashboard
+        router.push("/dashboard");
       } else {
-        alert("Unknown user role: " + userType);
+        setGeneralError("Unknown user role: " + userType);
       }
     } catch (error) {
       console.error("Sign-in failed", error);
-      setError(error.response?.data?.message || "Sign-in failed");
+      const errorMessage = error.response?.data?.message || 
+                           error.response?.data?.non_field_errors?.[0] || 
+                           "Sign-in failed. Please check your credentials.";
+      setGeneralError(errorMessage);
+      
+      // Handle specific errors from backend if available
+      if (error.response?.data?.email) {
+        setErrors(prev => ({ ...prev, email: error.response.data.email[0] }));
+      }
+      if (error.response?.data?.password) {
+        setErrors(prev => ({ ...prev, password: error.response.data.password[0] }));
+      }
     } finally {
       setLoading(false);
     }
   };
-
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-800 py-10">
@@ -119,17 +163,44 @@ const SignIn = () => {
               your convenience
             </p>
 
-            <form className="mt-6" onSubmit={handleSubmit}>
-              {error && <p className="text-red-500">{error}</p>}
+            <form className="mt-6" onSubmit={handleSubmit} noValidate aria-label="Sign in form">
+              {generalError && (
+                <div className="mb-4 p-2 bg-red-50 border border-red-400 text-red-700 rounded">
+                  {generalError}
+                </div>
+              )}
+              
               <div className="mt-1 pt-1">
-              <TextInput type="email" id="email" placeholder="Email Address" value={formData.email} handleChange={handleChange} />
-
+                <label htmlFor="email" className="sr-only">Email Address</label>
+                <TextInput 
+                  type="email" 
+                  id="email" 
+                  placeholder="Email Address" 
+                  value={formData.email} 
+                  handleChange={handleChange}
+                  aria-invalid={errors.email ? "true" : "false"}
+                  aria-describedby={errors.email ? "email-error" : undefined}
+                />
+                {errors.email && (
+                  <p id="email-error" className="text-red-500 text-xs mt-1">{errors.email}</p>
+                )}
               </div>
 
               <div className="relative mt-1 pt-7">
-              <PasswordInput id="password" showPassword={showPassword} togglePasswordVisibility={togglePasswordVisibility} value={formData.password} handleChange={handleChange} bgpict={bgpict} />
-
-              
+                <label htmlFor="password" className="sr-only">Password</label>
+                <PasswordInput 
+                  id="password" 
+                  showPassword={showPassword} 
+                  togglePasswordVisibility={togglePasswordVisibility} 
+                  value={formData.password} 
+                  handleChange={handleChange} 
+                  bgpict={bgpict}
+                  aria-invalid={errors.password ? "true" : "false"}
+                  aria-describedby={errors.password ? "password-error" : undefined}
+                />
+                {errors.password && (
+                  <p id="password-error" className="text-red-500 text-xs mt-1">{errors.password}</p>
+                )}
               </div>
 
               <div className="mt-2 text-left">
@@ -137,14 +208,14 @@ const SignIn = () => {
                   Forgot password?
                 </a>
               </div>
+              
               <button
-  type="submit"
-  className="mt-6 w-full rounded-md bg-gradient-to-r from-[#014d98] to-[#3ab7b1] px-4 py-2 text-white transition-all duration-300 hover:from-[#3ab7b1] hover:to-[#014d98] disabled:opacity-50 disabled:cursor-not-allowed"
-  disabled={loading}
->
-  {loading ? "Signing In..." : "Sign In"}
-</button>
-
+                type="submit"
+                className="mt-6 w-full rounded-md bg-gradient-to-r from-[#014d98] to-[#3ab7b1] px-4 py-2 text-white transition-all duration-300 hover:from-[#3ab7b1] hover:to-[#014d98] disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={loading}
+              >
+                {loading ? "Signing In..." : "Sign In"}
+              </button>
             </form>
 
             <p className="mt-9 text-left text-sm text-gray-600">
@@ -184,6 +255,7 @@ const SignIn = () => {
             </p>
           </div>
         </div>
+        
         {/* Mobile and Small Screens Section */}
         <div className="lg:hidden w-full">
           {/* Image Section */}
@@ -206,16 +278,44 @@ const SignIn = () => {
               Sign in so that you can buy and rent with us conveniently.
             </p>
 
-            <form className="mt-6" onSubmit={handleSubmit}>
-              {error && <p className="text-red-500">{error}</p>}
+            <form className="mt-6" onSubmit={handleSubmit} noValidate aria-label="Sign in form - mobile">
+              {generalError && (
+                <div className="mb-4 p-2 bg-red-50 border border-red-400 text-red-700 rounded">
+                  {generalError}
+                </div>
+              )}
+              
               <div className="mt-4">
-              <TextInput type="email" id="email" placeholder="Email Address" value={formData.email} handleChange={handleChange} />
-
+                <label htmlFor="mobile-email" className="sr-only">Email Address</label>
+                <TextInput 
+                  type="email" 
+                  id="email" 
+                  placeholder="Email Address" 
+                  value={formData.email} 
+                  handleChange={handleChange}
+                  aria-invalid={errors.email ? "true" : "false"}
+                  aria-describedby={errors.email ? "mobile-email-error" : undefined}
+                />
+                {errors.email && (
+                  <p id="mobile-email-error" className="text-red-500 text-xs mt-1">{errors.email}</p>
+                )}
               </div>
 
               <div className="relative mt-9">
-              <PasswordInput id="password" showPassword={showPassword} togglePasswordVisibility={togglePasswordVisibility} value={formData.password} handleChange={handleChange} bgpict={bgpict} />
-
+                <label htmlFor="mobile-password" className="sr-only">Password</label>
+                <PasswordInput 
+                  id="password" 
+                  showPassword={showPassword} 
+                  togglePasswordVisibility={togglePasswordVisibility} 
+                  value={formData.password} 
+                  handleChange={handleChange} 
+                  bgpict={bgpict}
+                  aria-invalid={errors.password ? "true" : "false"}
+                  aria-describedby={errors.password ? "mobile-password-error" : undefined}
+                />
+                {errors.password && (
+                  <p id="mobile-password-error" className="text-red-500 text-xs mt-1">{errors.password}</p>
+                )}
               </div>
 
               <div className="mt-3 text-left">
@@ -224,15 +324,13 @@ const SignIn = () => {
                 </a>
               </div>
 
-           
               <button
-  type="submit"
-  className="mt-6 w-full rounded-md bg-gradient-to-r from-[#014d98] to-[#3ab7b1] px-4 py-2 text-white transition-all duration-300 hover:from-[#3ab7b1] hover:to-[#014d98] disabled:opacity-50 disabled:cursor-not-allowed"
-  disabled={loading}
->
-  {loading ? "Signing In..." : "Sign In"}
-</button>
-
+                type="submit"
+                className="mt-6 w-full rounded-md bg-gradient-to-r from-[#014d98] to-[#3ab7b1] px-4 py-2 text-white transition-all duration-300 hover:from-[#3ab7b1] hover:to-[#014d98] disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={loading}
+              >
+                {loading ? "Signing In..." : "Sign In"}
+              </button>
             </form>
 
             <p className="mt-7 text-left text-sm text-gray-600">

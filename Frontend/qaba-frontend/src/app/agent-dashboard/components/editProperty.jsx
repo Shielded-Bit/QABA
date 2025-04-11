@@ -91,7 +91,10 @@ const EditProperty = () => {
                     rawData.data ? rawData.data : 
                     rawData;
         
-        // Populate form data
+        // Log the raw data to debug
+        console.log("Raw property data received:", data);
+        
+        // Populate form data - Fixed rent_price and sale_price to handle all values properly
         setFormData({
           property_name: data.property_name || "",
           description: data.description || "",
@@ -103,8 +106,8 @@ const EditProperty = () => {
           bathrooms: data.bathrooms || 1,
           area_sqft: data.area_sqft || 0,
           rent_frequency: data.rent_frequency || "MONTHLY",
-          rent_price: data.rent_price || "",
-          sale_price: data.sale_price || "",
+          rent_price: data.rent_price !== undefined ? data.rent_price : "",
+          sale_price: data.sale_price !== undefined ? data.sale_price : "",
           amenities: Array.isArray(data.amenities) 
             ? data.amenities.map(amenity => typeof amenity === 'string' ? amenity : amenity.name)
             : [],

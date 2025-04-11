@@ -42,40 +42,84 @@ export function ProfileProvider({ children }) {
     return response;
   };
 
-  // Fetch user profile
-  const fetchProfile = useCallback(async () => {
-    if (typeof window === 'undefined') return; // Don't run on server
+  // Fetch user basic info (including name)
+  const fetchUserInfo = useCallback(async () => {
+    if (typeof window === 'undefined') return null;
     
     try {
-      setProfileData(prev => ({ ...prev, isLoading: true }));
+      const headers = getJsonHeaders();
+      if (!headers) return null;
+
+      const response = await fetch(`${API_BASE_URL}/api/v1/users/me/`, { headers });
+      const userData = await handleApiError(response).json();
+      
+      return userData.data; // Extract the data object that contains user info
+    } catch (err) {
+      console.error("User info fetch error:", err);
+      return null;
+    }
+  }, [API_BASE_URL, getJsonHeaders]);
+
+  // Fetch profile data (including profile image)
+  const fetchProfileData = useCallback(async () => {
+    if (typeof window === 'undefined') return null;
+    
+    try {
       const headers = getJsonHeaders();
       const currentUserType = getUserType();
-
-      if (!headers) {
-        setProfileData(prev => ({ ...prev, isLoading: false }));
-        return;
-      }
+      if (!headers) return null;
 
       const endpoint = currentUserType === "AGENT" 
         ? `${API_BASE_URL}/api/v1/profile/agent/`
         : `${API_BASE_URL}/api/v1/profile/client/`;
 
       const response = await fetch(endpoint, { headers });
-      const data = await handleApiError(response).json();
+      return await handleApiError(response).json();
+    } catch (err) {
+      console.error("Profile fetch error:", err);
+      return null;
+    }
+  }, [API_BASE_URL, getJsonHeaders, getUserType]);
 
-      localStorage.setItem('user_data', JSON.stringify(data));
-      if (data.email) localStorage.setItem('user_email', data.email);
+  // Fetch both user info and profile data
+  const fetchProfile = useCallback(async () => {
+    if (typeof window === 'undefined') return;
+    
+    try {
+      setProfileData(prev => ({ ...prev, isLoading: true }));
+      
+      // Fetch both user info and profile data in parallel
+      const [userInfo, profileInfo] = await Promise.all([
+        fetchUserInfo(),
+        fetchProfileData()
+      ]);
+      
+      // If both requests failed, try to use cached data
+      if (!userInfo && !profileInfo) {
+        throw new Error("Failed to fetch user data");
+      }
+      
+      // Merge data from both endpoints
+      const mergedData = {
+        ...userInfo,
+        ...profileInfo,
+      };
+      
+      // Save to localStorage
+      localStorage.setItem('user_data', JSON.stringify(mergedData));
+      if (mergedData.email) localStorage.setItem('user_email', mergedData.email);
 
-      const profilePhotoUrl = data?.profile_photo_url || 
-                             data?.agent_profile?.profile_photo_url || 
-                             data?.client_profile?.profile_photo_url;
+      // Get profile photo URL
+      const profilePhotoUrl = profileInfo?.profile_photo_url || 
+                             profileInfo?.agent_profile?.profile_photo_url || 
+                             profileInfo?.client_profile?.profile_photo_url;
 
       if (profilePhotoUrl) {
         localStorage.setItem('profile_photo_url', profilePhotoUrl);
       }
 
       setProfileData({
-        userData: data,
+        userData: mergedData,
         profileImage: profilePhotoUrl ? `${profilePhotoUrl}?t=${new Date().getTime()}` : null,
         isLoading: false,
         error: null,
@@ -107,7 +151,7 @@ export function ProfileProvider({ children }) {
         }
       }
     }
-  }, [API_BASE_URL, getJsonHeaders, getUserType]);
+  }, [fetchUserInfo, fetchProfileData]);
 
   // Update profile data correctly
   const updateProfileData = useCallback((newData) => {

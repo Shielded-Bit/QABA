@@ -1,29 +1,17 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ListingCard from '../components/listingCard/ListingCard';
 import Button from '../components/shared/Button';
 import { IoMdArrowDropdown } from "react-icons/io";
 
 export default function Rent() {
-  const allListings = [
-    { id: 1, title: 'The Dream Family Home', price: '₦700,000 Per Year', type: 'rent', location: 'Lagos', city: 'Ikeja' },
-    { id: 2, title: 'Spacious Apartment in Abuja', price: '₦1,000,000 Per Year', type: 'rent', location: 'Abuja', city: 'Wuse' },
-    { id: 3, title: 'Modern 3-Bedroom in Lekki', price: '₦1,500,000 Per Year', type: 'rent', location: 'Lagos', city: 'Lekki' },
-    { id: 4, title: 'Luxury Villa in Ikeja', price: '₦3,500,000 Per Year', type: 'rent', location: 'Lagos', city: 'Ikeja' },
-    { id: 5, title: 'Cozy 2-Bedroom in Lekki', price: '₦1,200,000 Per Year', type: 'rent', location: 'Lagos', city: 'Lekki' },
-    { id: 6, title: 'Spacious 1-Bedroom in Wuse', price: '₦800,000 Per Year', type: 'rent', location: 'Abuja', city: 'Wuse' },
-    { id: 7, title: 'Modern 3-Bedroom in Lekki', price: '₦1,500,000 Per Year', type: 'rent', location: 'Lagos', city: 'Lekki' },
-    { id: 8, title: 'Luxury Penthouse in Lagos', price: '₦5,000,000 Per Year', type: 'rent', location: 'Lagos', city: 'Ikeja' },
-    { id: 9, title: 'Family Home in Lekki', price: '₦2,500,000 Per Year', type: 'rent', location: 'Lagos', city: 'Lekki' }, 
-  ];
-
-  const ebonyiListings = [
-    { id: 10, title: 'Charming Duplex in Abakaliki', price: '₦600,000 Per Year', type: 'rent', location: 'Ebonyi', city: 'Abakaliki' },
-    { id: 11, title: 'Modern Apartment in Afikpo', price: '₦750,000 Per Year', type: 'rent', location: 'Ebonyi', city: 'Afikpo' },
-    { id: 12, title: 'Luxury Bungalow in Onueke', price: '₦900,000 Per Year', type: 'rent', location: 'Ebonyi', city: 'Onueke' },
-  ];
-
+  const [properties, setProperties] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [visibleListings, setVisibleListings] = useState(6);
+  const [lastUpdated] = useState('April 10, 2025');
+  
   const [filters, setFilters] = useState({
     location: '',
     city: '',
@@ -31,22 +19,83 @@ export default function Rent() {
     purpose: '',
   });
 
-  const [filteredListings, setFilteredListings] = useState(allListings);
-  const [visibleListings, setVisibleListings] = useState(6);
-  const [lastUpdated] = useState('November 10, 2024');
-
-  // Filter listings based on selected filters
-  const handleSearch = () => {
-    const results = allListings.filter((listing) =>
-      listing.type === filters.type &&
-      (filters.location ? listing.location === filters.location : true) &&
-      (filters.city ? listing.city === filters.city : true) &&
-      (filters.purpose ? listing.type === filters.purpose : true)
-    );
-    setFilteredListings(results);
+  // Function to extract and format price from property data
+  const extractPrice = (property) => {
+    let price = null;
+    let formattedPrice = "";
+    
+    if (property.listing_type === "RENT") {
+      price = property.rent_price;
+      if (price) {
+        formattedPrice = `₦${Number(price).toLocaleString()} ${property.rent_frequency === "MONTHLY" ? "Per Month" : "Per Year"}`;
+      }
+    }
+    
+    return formattedPrice || "Price on request";
   };
 
-  // Load more listings
+  // Fetch approved rental properties from API
+  useEffect(() => {
+    const fetchProperties = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('https://qaba.onrender.com/api/v1/properties/?listing_status=APPROVED&listing_type=RENT', {
+          headers: {
+            'accept': 'application/json',
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch properties');
+        }
+
+        const responseData = await response.json();
+        
+        // Extract the data array based on the actual API response structure
+        const propertiesData = responseData.data || [];
+        
+        // Map API data to our component's expected format
+        const formattedProperties = propertiesData.map(property => ({
+          id: property.id,
+          title: property.property_name || 'Beautiful Property',
+          price: extractPrice(property),
+          description: `${property.bedrooms || 0} bed, ${property.bathrooms || 0} bath property in ${property.location || 'premium location'}`,
+          image: property.thumbnail || 'https://res.cloudinary.com/dqbbm0guw/image/upload/v1734105941/Cliff_house_design_by_THE_LINE_visualization_1_1_ghvctf.png',
+          type: 'rent',
+          location: property.location || '',
+          city: property.city || '',
+        }));
+        
+        setProperties(formattedProperties);
+      } catch (err) {
+        console.error('Error fetching properties:', err);
+        setError('Failed to load properties. Please try again later.');
+        setProperties([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProperties();
+  }, []);
+
+  // Get unique locations and cities for filters
+  const uniqueLocations = [...new Set(properties.map(property => property.location).filter(Boolean))];
+  const uniqueCities = [...new Set(properties.map(property => property.city).filter(Boolean))];
+
+  // Filter properties based on selected filters
+  const handleSearch = () => {
+    // Implementation remains in the client-side for now
+    const results = properties.filter((property) =>
+      (filters.location ? property.location === filters.location : true) &&
+      (filters.city ? property.city === filters.city : true) &&
+      (filters.purpose ? filters.purpose.toLowerCase() === 'rent' : true)
+    );
+    
+    setVisibleListings(6); // Reset to show first 6 when filtering
+  };
+
+  // Load more properties
   const handleLoadMore = () => setVisibleListings((prev) => prev + 6);
 
   // Dropdown filter component
@@ -65,19 +114,25 @@ export default function Rent() {
     </div>
   );
 
+  // Get filtered properties
+  const filteredProperties = properties.filter((property) =>
+    (filters.location ? property.location === filters.location : true) &&
+    (filters.city ? property.city === filters.city : true)
+  );
+
   return (
     <div className="px-2 sm:px-14 py-4">
-      <div className=" pt-6">
+      <div className="pt-6">
         {/* Filters */}
         <div className="flex flex-wrap gap-4 mb-4 md:mb-6">
           <FilterDropdown
             label="Location"
-            options={['Lagos', 'Abuja']}
+            options={uniqueLocations}
             onChange={(value) => setFilters({ ...filters, location: value })}
           />
           <FilterDropdown
             label="City"
-            options={['Ikeja', 'Wuse', 'Lekki']}
+            options={uniqueCities}
             onChange={(value) => setFilters({ ...filters, city: value })}
           />
           <FilterDropdown
@@ -87,7 +142,7 @@ export default function Rent() {
           />
           <FilterDropdown
             label="Purpose"
-            options={['Rent', 'Buy', 'Shortlet']}
+            options={['Rent']}
             onChange={(value) => setFilters({ ...filters, purpose: value })}
           />
           <Button
@@ -97,12 +152,7 @@ export default function Rent() {
             className="h-10"
           />
         </div>
-  
-        {/* Rest of your content here */}
       </div>
-    
-
-  
 
       {/* Heading */}
       <h1 className="text-3xl font-light mb-4 md:mb-6 ">
@@ -114,65 +164,95 @@ export default function Rent() {
         </span>
       </h1>
 
-      <p className="text-gray-500 mb-4 md:mb-6">{filteredListings.length} rentals</p>
-      <p className="text-sm text-gray-400 mb-4">Last updated: {lastUpdated}</p>
-
-      {/* Grid Layout */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {filteredListings.slice(0, visibleListings).map((listing) => (
-          <ListingCard
-            key={listing.id}
-            id={listing.id}
-            title={listing.title}
-            price={listing.price}
-            description={listing.description || 'Beautiful home description'}
-            image="https://res.cloudinary.com/dqbbm0guw/image/upload/v1734105941/Cliff_house_design_by_THE_LINE_visualization_1_1_ghvctf.png"
-            type={listing.type}
-          />
-        ))}
-      </div>
-
-      {/* Load More Button */}
-      {visibleListings < filteredListings.length && (
-        <div className="mt-6 flex flex-col items-center">
-          <p className="text-gray-600 mb-2">
-            Showing {visibleListings} - {Math.min(filteredListings.length, visibleListings + 6)} of {filteredListings.length} results
-          </p>
-          <Button
-            label="Load More"
-            onClick={handleLoadMore}
-            className="h-10"
-          />
+      {/* Loading State */}
+      {loading && (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
         </div>
       )}
 
-      {/* Other Cities Section */}
-      <div className="mt-20">
-        <h2 className="text-3xl font-light mb-4 md:mb-6">
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#014d98] to-[#014d98]">
-            Other Cities
-          </span>{' '}
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#014d98] via-[#3ab7b1] to-[#3ab7b1]">
-            to Explore in Ebonyi
-          </span>
-        </h2>
-        <p className="text-gray-600 mb-6">
-          Explore available rental homes in these vibrant cities across Ebonyi State.
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {ebonyiListings.map((listing) => (
-            <ListingCard
-              key={listing.id}
-              id={listing.id}
-              title={listing.title}
-              price={listing.price}
-              description={listing.description || 'Beautiful home description'}
-              image="https://res.cloudinary.com/dqbbm0guw/image/upload/v1734105941/Cliff_house_design_by_THE_LINE_visualization_1_1_ghvctf.png"
-              type={listing.type}
-            />
-          ))}
+      {/* Error State */}
+      {error && !loading && (
+        <div className="text-center text-red-500 mb-4">
+          {error}
         </div>
-      </div>
+      )}
+
+      {!loading && (
+        <>
+          <p className="text-gray-500 mb-4 md:mb-6">{filteredProperties.length} rentals</p>
+          <p className="text-sm text-gray-400 mb-4">Last updated: {lastUpdated}</p>
+
+          {/* Grid Layout */}
+          {filteredProperties.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {filteredProperties.slice(0, visibleListings).map((property) => (
+                <ListingCard
+                  key={property.id}
+                  id={property.id}
+                  title={property.title}
+                  price={property.price}
+                  description={property.description}
+                  image={property.image}
+                  type={property.type}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-xl text-gray-600">No properties found matching your criteria.</p>
+            </div>
+          )}
+
+          {/* Load More Button */}
+          {visibleListings < filteredProperties.length && (
+            <div className="mt-6 flex flex-col items-center">
+              <p className="text-gray-600 mb-2">
+                Showing {Math.min(filteredProperties.length, visibleListings)} of {filteredProperties.length} results
+              </p>
+              <Button
+                label="Load More"
+                onClick={handleLoadMore}
+                className="h-10"
+              />
+            </div>
+          )}
+
+          {/* Other Cities Section - Only show if main results loaded successfully */}
+          {properties.length > 0 && (
+            <div className="mt-20">
+              <h2 className="text-3xl font-light mb-4 md:mb-6">
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#014d98] to-[#014d98]">
+                  Other Cities
+                </span>{' '}
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#014d98] via-[#3ab7b1] to-[#3ab7b1]">
+                  to Explore
+                </span>
+              </h2>
+              <p className="text-gray-600 mb-6">
+                Explore available rental homes in these vibrant cities across Nigeria.
+              </p>
+              {/* Show some properties from cities that aren't in the current filter */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {properties
+                  .filter(property => !filters.city || property.city !== filters.city)
+                  .slice(0, 3)
+                  .map((property) => (
+                    <ListingCard
+                      key={property.id}
+                      id={property.id}
+                      title={property.title}
+                      price={property.price}
+                      description={property.description}
+                      image={property.image}
+                      type={property.type}
+                    />
+                  ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

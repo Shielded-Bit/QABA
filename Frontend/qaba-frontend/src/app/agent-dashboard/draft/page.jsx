@@ -1,7 +1,6 @@
 "use client";
 import PropertiesNumber from '../components/propertiesnumber';
 import Draft from '../components/draft';
-import Search from '../shared/search';
 
 export default function FavouritesPage() {
   return (
@@ -19,13 +18,8 @@ export default function FavouritesPage() {
         </section>
       </div>
 
-      {/* Search Bar */}
-      <div className="dashboard-header">
-        <Search />
-      </div>
-
       {/* Draft Section */}
-      <div className="space-y-4">
+      <div className="space-y-2">
         <Draft />
       </div>
 
