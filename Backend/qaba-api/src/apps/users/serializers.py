@@ -145,8 +145,8 @@ class SendEmailVerificationSerializer(serializers.Serializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    client_profile = ClientProfileSerializer(read_only=True)
-    agent_profile = AgentProfileSerializer(read_only=True)
+    clientprofile = ClientProfileSerializer(read_only=True)
+    agentprofile = AgentProfileSerializer(read_only=True)
 
     class Meta:
         model = User
@@ -157,8 +157,8 @@ class UserSerializer(serializers.ModelSerializer):
             "last_name",
             "phone_number",
             "user_type",
-            "client_profile",
-            "agent_profile",
+            "clientprofile",
+            "agentprofile",
             "is_email_verified",
         ]
         read_only_fields = ["is_email_verified"]

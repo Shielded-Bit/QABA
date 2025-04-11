@@ -6,8 +6,10 @@ from .views import (
     AgentRegistrationView,
     ClientProfileView,
     ClientRegistrationView,
+    CurrentUserView,
     EmailVerificationView,
     LoginView,
+    LogoutView,
     NotificationListView,
     NotificationMarkReadView,
     PasswordChangeView,
@@ -15,13 +17,13 @@ from .views import (
     PasswordResetRequestView,
     RefreshTokenView,
     SendEmailVerificationView,
-    UserList,
-    CurrentUserView,
     UpdateUserView,
+    UserList,
 )
 
 auth_patterns = [
     path("auth/login/", LoginView.as_view(), name="login"),
+    path("auth/logout/", LogoutView.as_view(), name="logout"),
     path(
         "auth/register/client/",
         ClientRegistrationView.as_view(),

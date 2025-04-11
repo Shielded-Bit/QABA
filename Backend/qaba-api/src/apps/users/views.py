@@ -51,6 +51,24 @@ class LoginView(APIView):
         APIResponse.unauthorized(message=serializer.errors)
 
 
+@extend_schema(
+    tags=["Authentication"],
+    request={"application/json": {"properties": {"refresh_token": {"type": "string"}}}},
+)
+class LogoutView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def post(self, request):
+        try:
+            refresh_token = request.data.get("refresh_token")
+            if refresh_token:
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+            return APIResponse.success(message="Logout successful")
+        except Exception as e:
+            return APIResponse.bad_request(message=str(e))
+
+
 @extend_schema(tags=["Authentication"])
 class ClientRegistrationView(generics.CreateAPIView):
     permission_classes = (permissions.AllowAny,)
@@ -80,10 +98,8 @@ class AgentRegistrationView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
-        # Send verification email
         send_verification_email(user)
 
-        # Still return success even if email fails (but log it)
         return APIResponse.success(
             data={"user": UserSerializer(user).data},
             message="Registration successful. Please check your email to verify your account.",
