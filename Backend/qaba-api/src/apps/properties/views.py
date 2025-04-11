@@ -7,20 +7,21 @@ from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema
-from rest_framework import filters, permissions, serializers, viewsets
+from rest_framework import filters, generics, permissions, serializers, viewsets
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.views import APIView
 
-from .models import Amenity, Property, PropertyImage, PropertyVideo
+from .models import Amenity, Favorite, Property
+from .permissions import IsClient
 from .serializers import (
     AmenitySerializer,
+    FavoriteSerializer,
     PropertyCreateSerializer,
     PropertyDetailSerializer,
-    PropertyImageSerializer,
+    PropertyFavoriteToggleSerializer,
     PropertyListSerializer,
     PropertyUpdateSerializer,
-    PropertyVideoSerializer,
 )
 
 
@@ -73,7 +74,10 @@ class PropertyViewSet(viewsets.ModelViewSet):
         queryset = super().get_queryset()
 
         # Filter by user type
-        if self.request.user.is_authenticated and self.request.user.user_type == "AGENT":
+        if (
+            self.request.user.is_authenticated
+            and self.request.user.user_type == "AGENT"
+        ):
             return queryset.filter(listed_by=self.request.user)
 
         # Filter by property status for non-agents
@@ -209,69 +213,6 @@ class PropertyViewSet(viewsets.ModelViewSet):
                 )
 
 
-@extend_schema(tags=["Property Images"])
-class PropertyImageViewSet(viewsets.ModelViewSet):
-    serializer_class = PropertyImageSerializer
-    parser_classes = (MultiPartParser, FormParser)
-
-    def get_queryset(self):
-        return PropertyImage.objects.filter(property_id=self.kwargs["property_pk"])
-
-    def get_permissions(self):
-        if self.action in ["create"]:
-            permission_classes = [IsAgentOrAdmin]
-        elif self.action in ["destroy"]:
-            permission_classes = [IsOwnerOrReadOnly]
-        else:
-            permission_classes = [permissions.AllowAny]
-        return [permission() for permission in permission_classes]
-
-    def perform_create(self, serializer):
-        try:
-            property = Property.objects.get(pk=self.kwargs["property_pk"])
-        except Property.DoesNotExist:
-            return APIResponse.not_found("Property not found")
-        if property.listed_by != self.request.user and not self.request.user.is_staff:
-            return APIResponse.forbidden(
-                "You don't have permission to add images to this property"
-            )
-
-        if PropertyImage.objects.filter(property=property).count() >= 5:
-            return APIResponse.bad_request("This property already has 5 images")
-
-        serializer.save(property_id=self.kwargs["property_pk"])
-
-
-@extend_schema(tags=["Property Videos"])
-class PropertyVideoViewSet(viewsets.ModelViewSet):
-    serializer_class = PropertyVideoSerializer
-    parser_classes = (MultiPartParser, FormParser)
-
-    def get_queryset(self):
-        return PropertyVideo.objects.filter(property_id=self.kwargs["property_pk"])
-
-    def get_permissions(self):
-        if self.action in ["create"]:
-            permission_classes = [IsAgentOrAdmin]
-        elif self.action in ["destroy"]:
-            permission_classes = [IsOwnerOrReadOnly]
-        else:
-            permission_classes = [permissions.AllowAny]
-        return [permission() for permission in permission_classes]
-
-    def perform_create(self, serializer):
-        property = Property.objects.get(pk=self.kwargs["property_pk"])
-        if property.listed_by != self.request.user and not self.request.user.is_staff:
-            return APIResponse.forbidden(
-                "You don't have permission to add videos to this property"
-            )
-
-        if PropertyVideo.objects.filter(property=property).exists():
-            return APIResponse.bad_request("This property already has a video")
-
-        serializer.save(property_id=self.kwargs["property_pk"])
-
-
 # Add this view to your existing views
 @extend_schema(tags=["Amenities"])
 class AmenityView(APIView):
@@ -288,3 +229,66 @@ class AmenityView(APIView):
         return APIResponse.success(
             data=serializer.data, message="Amenities retrieved successfully"
         )
+
+
+@extend_schema(tags=["Favorites"])
+class FavoriteListView(generics.ListAPIView):
+    """
+    View to list all favorited properties for the current user
+    """
+
+    serializer_class = FavoriteSerializer
+    permission_classes = [IsClient]
+
+    def get_queryset(self):
+        return Favorite.objects.filter(user=self.request.user)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(queryset, many=True)
+        return APIResponse.success(
+            data=serializer.data, message="Favorites retrieved successfully"
+        )
+
+
+@extend_schema(tags=["Favorites"])
+class FavoriteToggleView(APIView):
+    """
+    View to toggle favorite status for a property
+    """
+
+    permission_classes = [IsClient]
+
+    @extend_schema(
+        request=PropertyFavoriteToggleSerializer,
+        responses={
+            200: {"type": "object", "properties": {"is_favorited": {"type": "boolean"}}}
+        },
+    )
+    def post(self, request):
+        serializer = PropertyFavoriteToggleSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        property_id = serializer.validated_data["property_id"]
+
+        try:
+            property = Property.objects.get(id=property_id)
+        except Property.DoesNotExist:
+            return APIResponse.not_found("Property not found")
+
+        # Check if property is already favorited
+        favorite, created = Favorite.objects.get_or_create(
+            user=request.user,
+            property=property,
+            defaults={"user": request.user, "property": property},
+        )
+
+        if not created:
+            favorite.delete()
+            is_favorited = False
+            message = "Property removed from favorites"
+        else:
+            is_favorited = True
+            message = "Property added to favorites"
+
+        return APIResponse.success(data={"is_favorited": is_favorited}, message=message)

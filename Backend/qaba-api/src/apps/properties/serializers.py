@@ -7,7 +7,7 @@ from django.utils.html import strip_tags
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from .models import Amenity, Property, PropertyImage, PropertyVideo
+from .models import Amenity, Favorite, Property, PropertyImage, PropertyVideo
 
 
 class PropertyImageSerializer(serializers.ModelSerializer):
@@ -39,6 +39,8 @@ class PropertyVideoSerializer(serializers.ModelSerializer):
 
 
 class PropertyListSerializer(serializers.ModelSerializer):
+    is_favorited = serializers.SerializerMethodField()
+
     property_type_display = serializers.CharField(
         source="get_property_type_display", read_only=True
     )
@@ -78,6 +80,7 @@ class PropertyListSerializer(serializers.ModelSerializer):
             "listed_date",
             "listed_by",
             "thumbnail",
+            "is_favorited",
         ]
 
     @extend_schema_field(serializers.URLField(allow_null=True))
@@ -86,6 +89,13 @@ class PropertyListSerializer(serializers.ModelSerializer):
         if image and hasattr(image.image, "url"):
             return self.context["request"].build_absolute_uri(image.image.url)
         return None
+
+    @extend_schema_field(serializers.BooleanField())
+    def get_is_favorited(self, obj):
+        request = self.context.get("request", None)
+        if request and request.user.is_authenticated and request.user.is_client:
+            return obj.favorited_by.filter(user=request.user).exists()
+        return False
 
 
 class AmenitySerializer(serializers.ModelSerializer):
@@ -298,3 +308,19 @@ class PropertyUpdateSerializer(serializers.ModelSerializer):
             PropertyVideo.objects.create(property=instance, video=video_data)
 
         return instance
+
+
+# Add this with your other serializers
+
+
+class FavoriteSerializer(serializers.ModelSerializer):
+    property = PropertyListSerializer(read_only=True)
+
+    class Meta:
+        model = Favorite
+        fields = ["id", "property", "created_at"]
+        read_only_fields = ["user"]
+
+
+class PropertyFavoriteToggleSerializer(serializers.Serializer):
+    property_id = serializers.IntegerField()

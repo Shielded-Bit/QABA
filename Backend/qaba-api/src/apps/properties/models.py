@@ -112,7 +112,7 @@ class Property(models.Model):
 
     def __str__(self):
         return f"{self.property_name} - {self.location} ({self.get_property_type_display()})"
-    
+
     class Meta:
         verbose_name = "Property"
         verbose_name_plural = "Properties"
@@ -157,3 +157,26 @@ class PropertyVideo(models.Model):
 
     def __str__(self):
         return f"Video for {self.property.property_name}"
+
+
+class Favorite(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="favorites",
+        limit_choices_to={"user_type": "CLIENT"},  # Only clients can have favorites
+    )
+    property = models.ForeignKey(
+        Property, on_delete=models.CASCADE, related_name="favorited_by"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Favorite Property"
+        verbose_name_plural = "Favorite Properties"
+        # Ensure a user can't favorite the same property twice
+        unique_together = ["user", "property"]
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.user.email} favorited {self.property.property_name}"

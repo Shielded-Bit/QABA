@@ -3,8 +3,8 @@ from rest_framework_nested import routers
 
 from .views import (
     AmenityView,
-    PropertyImageViewSet,
-    PropertyVideoViewSet,
+    FavoriteListView,
+    FavoriteToggleView,
     PropertyViewSet,
 )
 
@@ -30,11 +30,11 @@ router.register(r"properties", PropertyViewSet, basename="property")
 properties_router = routers.NestedDefaultRouter(
     router, r"properties", lookup="property"
 )
-properties_router.register(r"images", PropertyImageViewSet, basename="property-images")
-properties_router.register(r"videos", PropertyVideoViewSet, basename="property-videos")
 
 urlpatterns = [
     path("", include(router.urls)),
     path("", include(properties_router.urls)),
     path("amenities/", AmenityView.as_view(), name="amenities-list"),
+    path("favorites/", FavoriteListView.as_view(), name="favorites-list"),
+    path("favorites/toggle/", FavoriteToggleView.as_view(), name="favorites-toggle"),
 ]

@@ -4,7 +4,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
-from .models import Amenity, Property, PropertyImage, PropertyVideo
+from .models import Amenity, Favorite, Property, PropertyImage, PropertyVideo
 
 
 @admin.register(Amenity)
@@ -281,3 +281,16 @@ class PropertyVideoAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         return super().get_queryset(request).select_related("property")
+
+
+@admin.register(Favorite)
+class FavoriteAdmin(admin.ModelAdmin):
+    list_display = ("user", "property_name", "created_at")
+    list_filter = ("created_at",)
+    search_fields = ("user__email", "property__property_name")
+    date_hierarchy = "created_at"
+
+    def property_name(self, obj):
+        return obj.property.property_name
+
+    property_name.short_description = "Property"
