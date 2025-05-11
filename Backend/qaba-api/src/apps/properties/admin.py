@@ -4,7 +4,14 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
-from .models import Amenity, Favorite, Property, PropertyImage, PropertyVideo
+from .models import (
+    Amenity,
+    Favorite,
+    Property,
+    PropertyDocument,
+    PropertyImage,
+    PropertyVideo,
+)
 
 
 @admin.register(Amenity)
@@ -60,6 +67,34 @@ class PropertyImageInline(admin.TabularInline):
         return "No image"
 
     image_preview.short_description = "Preview"
+
+
+class PropertyDocumentInline(admin.TabularInline):
+    model = PropertyDocument
+    extra = 0
+    fields = (
+        "document_type",
+        "file_preview",
+        "uploaded_by",
+        "is_verified",
+        "uploaded_at",
+    )
+    readonly_fields = ("file_preview", "uploaded_by", "uploaded_at")
+
+    def file_preview(self, obj):
+        if obj.file:
+            file_url = obj.file.url
+            if file_url.lower().endswith(("jpg", "jpeg", "png", "gif")):
+                return format_html(
+                    '<img src="{}" width="100" height="100" style="object-fit: cover;" />',
+                    file_url,
+                )
+            return format_html(
+                '<a href="{}" target="_blank">View Document</a>', file_url
+            )
+        return "No file"
+
+    file_preview.short_description = "Preview"
 
 
 class PropertyVideoInline(admin.TabularInline):
@@ -119,7 +154,12 @@ class PropertyAdmin(admin.ModelAdmin):
         "listed_by__last_name",
     )
     readonly_fields = ("listed_date",)
-    inlines = [PropertyImageInline, PropertyVideoInline, AmenitiesInline]
+    inlines = [
+        PropertyImageInline,
+        PropertyVideoInline,
+        AmenitiesInline,
+        PropertyDocumentInline,
+    ]
     date_hierarchy = "listed_date"
     filter_horizontal = ("amenities",)  # Better UI for many-to-many relationships
 
@@ -294,3 +334,55 @@ class FavoriteAdmin(admin.ModelAdmin):
         return obj.property.property_name
 
     property_name.short_description = "Property"
+
+
+@admin.register(PropertyDocument)
+class PropertyDocumentAdmin(admin.ModelAdmin):
+    list_display = (
+        "property_link",
+        "document_type",
+        "uploaded_by",
+        "is_verified",
+        "uploaded_at",
+    )
+    list_filter = ("document_type", "is_verified", "uploaded_at")
+    search_fields = ("property__property_name",)
+    readonly_fields = ("file_preview", "uploaded_at")
+    actions = ["verify_documents"]
+
+    fieldsets = (
+        (None, {"fields": ("property",)}),
+        ("Document", {"fields": ("document_type", "file", "file_preview")}),
+        ("Status", {"fields": ("is_verified", "uploaded_by", "uploaded_at")}),
+    )
+
+    def property_link(self, obj):
+        if obj.property:
+            return format_html(
+                '<a href="{}">{}</a>',
+                f"/admin/properties/property/{obj.property.id}/change/",
+                obj.property.property_name,
+            )
+        return "-"
+
+    property_link.short_description = "Property"
+
+    def file_preview(self, obj):
+        if obj.file:
+            file_url = obj.file.url
+            if file_url.lower().endswith(("jpg", "jpeg", "png", "gif")):
+                return format_html(
+                    '<img src="{}" width="200" height="200" style="object-fit: cover;" />',
+                    file_url,
+                )
+            return format_html(
+                '<a href="{}" target="_blank">View Document</a>', file_url
+            )
+        return "No file"
+
+    file_preview.short_description = "Preview"
+
+    @admin.action(description="Verify selected documents")
+    def verify_documents(self, request, queryset):
+        updated = queryset.update(is_verified=True)
+        self.message_user(request, f"{updated} documents were verified.")

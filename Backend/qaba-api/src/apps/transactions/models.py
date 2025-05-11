@@ -9,14 +9,12 @@ class Transaction(models.Model):
     """Model to track all payment transactions"""
 
     class Status(models.TextChoices):
-        PENDING = "pending", "Pending"
         SUCCESSFUL = "successful", "Successful"
         FAILED = "failed", "Failed"
 
     class PaymentType(models.TextChoices):
         PROPERTY_PURCHASE = "purchase", "Property Purchase"
         PROPERTY_RENT = "rent", "Property Rent"
-        OTHER = "other", "Other Payment"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(
@@ -30,7 +28,7 @@ class Transaction(models.Model):
         blank=True,
     )
     payment_type = models.CharField(
-        max_length=20, choices=PaymentType.choices, default=PaymentType.OTHER
+        max_length=20, choices=PaymentType.choices, default=PaymentType.PROPERTY_RENT
     )
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     currency = models.CharField(max_length=3, default="NGN")
@@ -38,7 +36,7 @@ class Transaction(models.Model):
     tx_ref = models.CharField(max_length=100, unique=True)
     flw_ref = models.CharField(max_length=100, null=True, blank=True)
     status = models.CharField(
-        max_length=10, choices=Status.choices, default=Status.PENDING
+        max_length=10, choices=Status.choices, default=Status.FAILED
     )
     description = models.CharField(max_length=255, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

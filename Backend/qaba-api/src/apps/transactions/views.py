@@ -87,11 +87,11 @@ class VerifyPaymentView(APIView):
         # Get the transaction
         transaction = get_object_or_404(Transaction, tx_ref=tx_ref, user=request.user)
 
-        # Skip verification if already verified
-        if transaction.status != Transaction.Status.PENDING:
+        # Skip verification if already successful
+        if transaction.status == Transaction.Status.SUCCESSFUL:
             return APIResponse.success(
                 data=TransactionSerializer(transaction).data,
-                message=f"Transaction already {transaction.status}",
+                message="Transaction already successful",
             )
 
         # Verify with Flutterwave
@@ -110,14 +110,14 @@ class VerifyPaymentView(APIView):
 
                     if (
                         transaction.payment_type
-                        == Transaction.PaymentType.PROPERTY_PURCHASE
+                        is Transaction.PaymentType.PROPERTY_PURCHASE
                     ):
                         property_obj.property_status = Property.PropertyStatus.SOLD
                         property_obj.save()
 
                     elif (
                         transaction.payment_type
-                        == Transaction.PaymentType.PROPERTY_RENT
+                        is Transaction.PaymentType.PROPERTY_RENT
                     ):
                         property_obj.property_status = Property.PropertyStatus.RENTED
                         property_obj.save()
@@ -129,23 +129,19 @@ class VerifyPaymentView(APIView):
                     message="Payment successful",
                 )
 
-            elif flw_status == "failed":
-                transaction.status = Transaction.Status.FAILED
-                transaction.save()
+            # Any non-successful status is treated as failed
+            transaction.status = Transaction.Status.FAILED
+            transaction.save()
 
-                return APIResponse.bad_request(
-                    data=TransactionSerializer(transaction).data,
-                    message="Payment failed",
-                )
-
-            # Still pending
-            return APIResponse.success(
+            return APIResponse.bad_request(
                 data=TransactionSerializer(transaction).data,
-                message="Payment is still pending",
+                message="Payment failed",
             )
 
+        # Verification call failed - treat as transaction failure
         return APIResponse.bad_request(
-            message=f"Failed to verify payment: {verification.get('error')}"
+            message=f"Payment verification failed: {verification.get('error')}",
+            data=TransactionSerializer(transaction).data,
         )
 
 

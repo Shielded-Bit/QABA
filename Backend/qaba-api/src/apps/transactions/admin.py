@@ -107,7 +107,6 @@ class TransactionAdmin(admin.ModelAdmin):
 
     def status_badge(self, obj):
         status_colors = {
-            Transaction.Status.PENDING: "#FFA500",  # Orange
             Transaction.Status.SUCCESSFUL: "#28a745",  # Green
             Transaction.Status.FAILED: "#dc3545",  # Red
         }

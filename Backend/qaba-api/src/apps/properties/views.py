@@ -3,6 +3,7 @@ from core.utils.permissions import IsAgentOrAdmin, IsOwnerOrReadOnly
 from core.utils.response import APIResponse
 from django.conf import settings
 from django.core.mail import send_mail
+from django.shortcuts import get_object_or_404
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django_filters.rest_framework import DjangoFilterBackend
@@ -12,13 +13,15 @@ from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.views import APIView
 
-from .models import Amenity, Favorite, Property
+from .models import Amenity, Favorite, Property, PropertyDocument
 from .permissions import IsClient
 from .serializers import (
     AmenitySerializer,
     FavoriteSerializer,
     PropertyCreateSerializer,
     PropertyDetailSerializer,
+    PropertyDocumentSerializer,
+    PropertyDocumentUploadSerializer,
     PropertyFavoriteToggleSerializer,
     PropertyListSerializer,
     PropertyUpdateSerializer,
@@ -85,7 +88,10 @@ class PropertyViewSet(viewsets.ModelViewSet):
             self.request.user.is_authenticated
             and self.request.user.user_type == "AGENT"
         ):
-            queryset = queryset.filter(listing_status=Property.ListingStatus.APPROVED)
+            queryset = queryset.filter(
+                listing_status=Property.ListingStatus.APPROVED,
+                property_status=Property.PropertyStatus.AVAILABLE,
+            )
 
         return queryset
 
@@ -142,6 +148,24 @@ class PropertyViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(queryset, many=True)
         return APIResponse.success(data=serializer.data)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        # Pass the request context to the serializer
+        property_instance = serializer.save(listed_by=request.user)
+
+        # Create notification for admin review
+        self._create_review_notification(property_instance)
+
+        # Return the property data with the newly created documents
+        return APIResponse.success(
+            data=PropertyDetailSerializer(
+                property_instance, context={"request": request}
+            ).data,
+            message="Property created successfully and pending review",
+        )
 
     @action(
         detail=True,
@@ -257,38 +281,135 @@ class FavoriteToggleView(APIView):
     View to toggle favorite status for a property
     """
 
-    permission_classes = [IsClient]
+    permission_classes = (permissions.IsAuthenticated,)  # Update permissions if needed
 
-    @extend_schema(
-        request=PropertyFavoriteToggleSerializer,
-        responses={
-            200: {"type": "object", "properties": {"is_favorited": {"type": "boolean"}}}
-        },
-    )
     def post(self, request):
         serializer = PropertyFavoriteToggleSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        if serializer.is_valid():
+            property_id = serializer.validated_data["property_id"]
+            property_obj = get_object_or_404(Property, id=property_id)
 
-        property_id = serializer.validated_data["property_id"]
+            # Check if the property is already favorited
+            favorite, created = Favorite.objects.get_or_create(
+                user=request.user, property=property_obj
+            )
 
-        try:
-            property = Property.objects.get(id=property_id)
-        except Property.DoesNotExist:
-            return APIResponse.not_found("Property not found")
+            if not created:
+                # If favorite already exists, delete it
+                favorite.delete()
+                return APIResponse.success(message="Property removed from favorites")
 
-        # Check if property is already favorited
-        favorite, created = Favorite.objects.get_or_create(
-            user=request.user,
-            property=property,
-            defaults={"user": request.user, "property": property},
+            return APIResponse.success(message="Property added to favorites")
+
+        return APIResponse.bad_request(serializer.errors)
+
+
+@extend_schema(tags=["Property Documents"])
+class PropertyDocumentView(APIView):
+    """
+    Simple API for managing property documents
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def get(self, request, property_id):
+        """List all documents for a property"""
+        property_obj = get_object_or_404(Property, id=property_id)
+
+        # Determine which documents to show based on user permissions
+        if request.user.is_staff or property_obj.listed_by == request.user:
+            # Admins and property owners see all documents
+            documents = PropertyDocument.objects.filter(property=property_obj)
+        else:
+            # Others only see verified documents
+            documents = PropertyDocument.objects.filter(
+                property=property_obj, is_verified=True
+            )
+
+        serializer = PropertyDocumentSerializer(documents, many=True)
+        return APIResponse.success(
+            data=serializer.data, message="Documents retrieved successfully"
         )
 
-        if not created:
-            favorite.delete()
-            is_favorited = False
-            message = "Property removed from favorites"
-        else:
-            is_favorited = True
-            message = "Property added to favorites"
+    @extend_schema(
+        request=PropertyDocumentUploadSerializer,
+        responses=PropertyDocumentSerializer,
+        description="Upload a new document for a property",
+    )
+    def post(self, request, property_id):
+        """Add a new document to a property"""
+        property_obj = get_object_or_404(Property, id=property_id)
 
-        return APIResponse.success(data={"is_favorited": is_favorited}, message=message)
+        # Only property owner or admin can add documents
+        if not (request.user.is_staff or property_obj.listed_by == request.user):
+            return APIResponse.forbidden(
+                message="You don't have permission to add documents to this property"
+            )
+
+        serializer = PropertyDocumentUploadSerializer(data=request.data)
+        if serializer.is_valid():
+            document = serializer.save(property=property_obj, uploaded_by=request.user)
+
+            return APIResponse.success(
+                data=PropertyDocumentSerializer(document).data,
+                message="Document added successfully",
+            )
+
+        return APIResponse.bad_request(serializer.errors)
+
+
+@extend_schema(tags=["Property Documents"])
+class PropertyDocumentDetailView(APIView):
+    """
+    API for managing a specific property document
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    @extend_schema(
+        request=PropertyDocumentUploadSerializer,
+        responses=PropertyDocumentSerializer,
+        description="Update an existing document for a property",
+    )
+    def put(self, request, property_id, document_id):
+        """Update a document"""
+        property_obj = get_object_or_404(Property, id=property_id)
+        document = get_object_or_404(
+            PropertyDocument, id=document_id, property=property_obj
+        )
+
+        # Only the owner or admin can update documents
+        if not (request.user.is_staff or property_obj.listed_by == request.user):
+            return APIResponse.forbidden(
+                message="You don't have permission to update this document"
+            )
+
+        serializer = PropertyDocumentUploadSerializer(
+            document, data=request.data, partial=True
+        )
+        if serializer.is_valid():
+            document = serializer.save()
+            return APIResponse.success(
+                data=PropertyDocumentSerializer(document).data,
+                message="Document updated successfully",
+            )
+
+        return APIResponse.bad_request(serializer.errors)
+
+    def delete(self, request, property_id, document_id):
+        """Delete a document"""
+        property_obj = get_object_or_404(Property, id=property_id)
+        document = get_object_or_404(
+            PropertyDocument, id=document_id, property=property_obj
+        )
+
+        # Only the owner or admin can delete documents
+        if not (request.user.is_staff or property_obj.listed_by == request.user):
+            return APIResponse.forbidden(
+                message="You don't have permission to delete this document"
+            )
+
+        document.delete()
+        return APIResponse.success(message="Document deleted successfully")

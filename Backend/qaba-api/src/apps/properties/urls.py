@@ -5,6 +5,8 @@ from .views import (
     AmenityView,
     FavoriteListView,
     FavoriteToggleView,
+    PropertyDocumentDetailView,
+    PropertyDocumentView,
     PropertyViewSet,
 )
 
@@ -31,10 +33,21 @@ properties_router = routers.NestedDefaultRouter(
     router, r"properties", lookup="property"
 )
 
+
 urlpatterns = [
     path("", include(router.urls)),
     path("", include(properties_router.urls)),
     path("amenities/", AmenityView.as_view(), name="amenities-list"),
     path("favorites/", FavoriteListView.as_view(), name="favorites-list"),
     path("favorites/toggle/", FavoriteToggleView.as_view(), name="favorites-toggle"),
+    path(
+        "properties/<uuid:property_id>/documents/",
+        PropertyDocumentView.as_view(),
+        name="property-documents",
+    ),
+    path(
+        "properties/<uuid:property_id>/documents/<uuid:document_id>/",
+        PropertyDocumentDetailView.as_view(),
+        name="property-document-detail",
+    ),
 ]

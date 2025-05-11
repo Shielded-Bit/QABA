@@ -7,7 +7,14 @@ from django.utils.html import strip_tags
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from .models import Amenity, Favorite, Property, PropertyImage, PropertyVideo
+from .models import (
+    Amenity,
+    Favorite,
+    Property,
+    PropertyDocument,
+    PropertyImage,
+    PropertyVideo,
+)
 
 
 class PropertyImageSerializer(serializers.ModelSerializer):
@@ -35,6 +42,30 @@ class PropertyVideoSerializer(serializers.ModelSerializer):
     def get_video_url(self, obj):
         if obj.video:
             return obj.video.url
+        return None
+
+
+class PropertyDocumentSerializer(serializers.ModelSerializer):
+    document_type_display = serializers.CharField(
+        source="get_document_type_display", read_only=True
+    )
+    file_url = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = PropertyDocument
+        fields = [
+            "id",
+            "document_type",
+            "document_type_display",
+            "file_url",
+            "is_verified",
+            "uploaded_at",
+        ]
+        read_only_fields = ["is_verified", "uploaded_at"]
+
+    def get_file_url(self, obj):
+        if obj.file:
+            return obj.file.url
         return None
 
 
@@ -111,6 +142,7 @@ class PropertyDetailSerializer(PropertyListSerializer):
         source="get_rent_frequency_display", read_only=True
     )
     amenities = AmenitySerializer(many=True, read_only=True)
+    documents = PropertyDocumentSerializer(many=True, read_only=True)
 
     class Meta(PropertyListSerializer.Meta):
         fields = PropertyListSerializer.Meta.fields + [
@@ -121,7 +153,23 @@ class PropertyDetailSerializer(PropertyListSerializer):
             "rent_frequency",
             "rent_frequency_display",
             "rent_price",
+            "documents",
         ]
+
+    def get_documents(self, obj):
+        request = self.context.get("request")
+        if not request or not request.user.is_authenticated:
+            # For unauthenticated users, return no documents
+            return []
+
+        # For staff or property owner, return all documents
+        if request.user.is_staff or obj.listed_by == request.user:
+            documents = obj.documents.all()
+        else:
+            # For other authenticated users, return only verified documents
+            documents = obj.documents.filter(is_verified=True)
+
+        return PropertyDocumentSerializer(documents, many=True).data
 
 
 class PropertyCreateSerializer(serializers.ModelSerializer):
@@ -147,6 +195,17 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
         help_text="List of amenity IDs for this property",
     )
 
+    # Add documents field
+    documents = serializers.ListField(
+        child=serializers.FileField(), write_only=True, required=False
+    )
+    # Add document metadata
+    document_types = serializers.ListField(
+        child=serializers.ChoiceField(choices=PropertyDocument.DocumentType.choices),
+        required=False,
+        write_only=True,
+    )
+
     class Meta:
         model = Property
         fields = [
@@ -165,6 +224,8 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
             "video",
             "rent_frequency",
             "rent_price",
+            "documents",
+            "document_types",
         ]
 
     def validate_images(self, value):
@@ -187,6 +248,32 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {"sale_price": "Sale price is required for sale listings"}
                 )
+        # Validate document metadata if documents are provided
+        documents = attrs.get("documents", [])
+        document_types = attrs.get("document_types", [])
+
+        if documents and document_types and len(documents) != len(document_types):
+            raise serializers.ValidationError(
+                {"document_types": "You must provide a type for each document"}
+            )
+
+        # Check document file types
+        for doc in documents:
+            ext = doc.name.split(".")[-1].lower()
+            allowed_extensions = ["pdf", "doc", "docx", "jpg", "jpeg", "png"]
+
+            if ext not in allowed_extensions:
+                raise serializers.ValidationError(
+                    {
+                        "documents": f"Unsupported file type: {ext}. Allowed types: {', '.join(allowed_extensions)}"
+                    }
+                )
+
+            # Check file size (limit to 10MB)
+            if doc.size > 10 * 1024 * 1024:
+                raise serializers.ValidationError(
+                    {"documents": f"File '{doc.name}' exceeds the maximum size of 10MB"}
+                )
 
         return attrs
 
@@ -195,6 +282,8 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
         video_data = validated_data.pop("video", None)
         submit_for_review = validated_data.pop("submit_for_review", False)
         amenities_ids = validated_data.pop("amenities_ids", [])
+        documents_data = validated_data.pop("documents", [])
+        document_types = validated_data.pop("document_types", [])
 
         if submit_for_review:
             validated_data["listing_status"] = Property.ListingStatus.PENDING
@@ -216,6 +305,17 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
 
         if video_data:
             PropertyVideo.objects.create(property=property_instance, video=video_data)
+
+        for i, document in enumerate(documents_data):
+            if i < len(document_types):
+                PropertyDocument.objects.create(
+                    property=property_instance,
+                    document_type=document_types[i]
+                    if i < len(document_types)
+                    else PropertyDocument.DocumentType.OTHER,
+                    file=document,
+                    uploaded_by=self.context["request"].user,
+                )
 
         # Handle notifications as before
         if submit_for_review:
@@ -310,9 +410,6 @@ class PropertyUpdateSerializer(serializers.ModelSerializer):
         return instance
 
 
-# Add this with your other serializers
-
-
 class FavoriteSerializer(serializers.ModelSerializer):
     property = PropertyListSerializer(read_only=True)
 
@@ -324,3 +421,29 @@ class FavoriteSerializer(serializers.ModelSerializer):
 
 class PropertyFavoriteToggleSerializer(serializers.Serializer):
     property_id = serializers.IntegerField()
+
+
+class PropertyDocumentUploadSerializer(serializers.ModelSerializer):
+    file = serializers.FileField(write_only=True)
+
+    class Meta:
+        model = PropertyDocument
+        fields = ["document_type", "file"]
+
+    def validate_file(self, value):
+        # Get file extension
+        ext = value.name.split(".")[-1].lower()
+
+        # List of allowed file extensions
+        allowed_extensions = ["pdf", "doc", "docx", "jpg", "jpeg", "png"]
+
+        if ext not in allowed_extensions:
+            raise serializers.ValidationError(
+                f"Unsupported file type. Allowed types: {', '.join(allowed_extensions)}"
+            )
+
+        # Check file size (limit to 10MB)
+        if value.size > 10 * 1024 * 1024:
+            raise serializers.ValidationError("File size cannot exceed 10MB")
+
+        return value
