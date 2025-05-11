@@ -8,7 +8,7 @@ import {
   Heart,
   CreditCard,
   HousePlug,
-  Mail,
+  // Mail,
   Settings,
   HelpCircle,
   ChevronDown,
@@ -91,7 +91,7 @@ export default function Sidebar() {
         {renderLink("/agent-dashboard/favourites", "Favourite", pathname, Heart, isSidebarCollapsed)}
         {renderLink("/agent-dashboard/transactions", "Transactions", pathname, CreditCard, isSidebarCollapsed)}
         {renderLink("/agent-dashboard/propertyOverview", "Property Overview", pathname, ChartNoAxesCombined, isSidebarCollapsed)}
-        {renderLink("/agent-dashboard/messages", "Message", pathname, Mail, isSidebarCollapsed)}
+        {/* {renderLink("/agent-dashboard/messages", "Message", pathname, Mail, isSidebarCollapsed)} */}
       </nav>
 
       <div className="p-4 space-y-2 border-t">

@@ -180,13 +180,13 @@ const Section3 = () => {
 
       {/* Button */}
       <div className="flex justify-center mt-8">
-        <div className="p-4">
+        {/* <div className="p-4">
           <Button
             label="Load More"
             bgColor="white"
             className="w-64 h-24"
           />
-        </div>
+        </div> */}
       </div>
     </section>
   );

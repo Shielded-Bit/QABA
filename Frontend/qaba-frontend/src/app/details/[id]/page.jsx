@@ -1,7 +1,4 @@
 'use client';
-import { FaCar, FaShieldAlt, FaSwimmer, FaHome, FaTrafficLight } from 'react-icons/fa';
-import { MdMeetingRoom } from 'react-icons/md';
-import { BiSolidCctv } from "react-icons/bi";
 import Button from '@/app/components/shared/Button';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
@@ -12,20 +9,13 @@ import ListingCard from '@/app/components/listingCard/ListingCard';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination, Autoplay } from 'swiper/modules'; 
 import { useRouter } from 'next/navigation';
+import GoogleMap from '@/app/components/GoogleMap';
+import PaymentButton from '@/app/components/PaymentButton';
+import PaymentVerifier from '@/app/components/PaymentVerifier';
 import 'swiper/css';
 import 'swiper/css/pagination';
+import PropertyVerifications from '@/app/components/PropertyVerifications';
 
-const featureIcons = {
-  "Car Park": <FaCar className="text-2xl text-blue-600" />,
-  "House Security": <FaShieldAlt className="text-2xl text-blue-600" />,
-  "CCTV Camera": <BiSolidCctv className="text-2xl text-blue-600" />,
-  "Swimming Pool": <FaSwimmer className="text-2xl text-blue-600" />,
-  "POP Ceiling": <FaHome className="text-2xl text-blue-600" />,
-  "Security Door": <MdMeetingRoom className="text-2xl text-blue-600" />,
-  "Big Compound": <FaHome className="text-2xl text-blue-600" />,
-  "Traffic Light": <FaTrafficLight className="text-2xl text-blue-600" />,
-  "Boys Quarters": <FaHome className="text-2xl text-blue-600" />,
-};
 
 // Example similar listings (should be fetched from API in production)
 const similarListings = [
@@ -33,27 +23,6 @@ const similarListings = [
   { id: 12, title: 'Contemporary Apartment in Afikpo', price: '₦90,000,000', type: 'buy', location: 'Ebonyi', city: 'Afikpo' },
   { id: 13, title: 'Luxury Bungalow in Onueke', price: '₦80,000,000', type: 'buy', location: 'Ebonyi', city: 'Onueke' },
 ];
-
-// Helper function to get icon based on amenity name
-const getAmenityIcon = (amenity) => {
-  const name = typeof amenity === 'string' ? amenity : amenity.name || '';
-  
-  if (name.toLowerCase().includes("car") || name.toLowerCase().includes("park")) {
-    return <FaCar className="text-2xl text-blue-600" />;
-  } else if (name.toLowerCase().includes("security") || name.toLowerCase().includes("secure")) {
-    return <FaShieldAlt className="text-2xl text-blue-600" />;
-  } else if (name.toLowerCase().includes("cctv") || name.toLowerCase().includes("camera")) {
-    return <BiSolidCctv className="text-2xl text-blue-600" />;
-  } else if (name.toLowerCase().includes("swim")) {
-    return <FaSwimmer className="text-2xl text-blue-600" />;
-  } else if (name.toLowerCase().includes("door")) {
-    return <MdMeetingRoom className="text-2xl text-blue-600" />;
-  } else if (name.toLowerCase().includes("compound")) {
-    return <FaHome className="text-2xl text-blue-600" />;
-  } else {
-    return <FaHome className="text-2xl text-blue-600" />;
-  }
-};
 
 const PropertyDetails = ({ params }) => {
   const router = useRouter();
@@ -63,6 +32,7 @@ const PropertyDetails = ({ params }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [unwrappedParams, setUnwrappedParams] = useState(null);
   const [similarProperties, setSimilarProperties] = useState(similarListings);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
 
   useEffect(() => {
     const unwrapParams = async () => {
@@ -98,48 +68,33 @@ const PropertyDetails = ({ params }) => {
                      rawData.data ? rawData.data : 
                      rawData;
         
+        // Format agent data from the listed_by field if available
+        if (data.listed_by) {
+          const listedBy = data.listed_by;
+          data.agent = {
+            id: listedBy.id,
+            name: `${listedBy.first_name} ${listedBy.last_name}`,
+            email: listedBy.email,
+            phone: listedBy.phone_number,
+            userType: listedBy.user_type,
+            company: listedBy.user_type === "AGENT" ? "Real Estate Agent" : "Property Owner",
+            image: listedBy.agentprofile?.profile_photo_url || "/assets/images/default-user.png",
+            rating: 4, // Default rating if not provided
+            country: listedBy.agentprofile?.country,
+            state: listedBy.agentprofile?.state,
+            city: listedBy.agentprofile?.city,
+            address: listedBy.agentprofile?.address,
+            location: listedBy.agentprofile ? 
+              `${listedBy.agentprofile.city || ''}, ${listedBy.agentprofile.state || ''}`.trim() : 
+              "Nigeria"
+          };
+        }
+        
         setProperty(data);
         console.log('Property data:', data);
       } catch (err) {
         console.error("Failed to fetch property details:", err);
         setError(err.message);
-        
-        // Fallback to mock data in case of error
-        // This should be removed in production
-        setProperty({
-          property_name: "The Dream Family Home",
-          description: "Step into luxury and comfort with Dream Homes, a stunning property designed to cater to your every need.",
-          location: "555 W Madison St, Abakiliki, Ebonyi State.",
-          rent_price: "700,000",
-          sale_price: null,
-          rent_frequency: "Yearly",
-          listing_type: "RENT",
-          bedrooms: 2,
-          bathrooms: 2,
-          area_sqft: "1,101",
-          amenities: [
-            "Car Park",
-            "House Security",
-            "CCTV Camera",
-            "Swimming Pool",
-            "POP Ceiling",
-            "Security Door"
-          ],
-          images: [
-            "https://res.cloudinary.com/dqbbm0guw/image/upload/v1734105941/Cliff_house_design_by_THE_LINE_visualization_1_1_ghvctf.png",
-            "https://res.cloudinary.com/dqbbm0guw/image/upload/v1737719217/houses5_yfrk9y.webp",
-            "https://res.cloudinary.com/dqbbm0guw/image/upload/v1734105941/Cliff_house_design_by_THE_LINE_visualization_1_1_ghvctf.png",
-            "https://res.cloudinary.com/dqbbm0guw/image/upload/w_1000,ar_1:1,c_fill,g_auto,e_art:hokusai/v1737719216/housee4_hxpaex.jpg"
-          ],
-          rating: 4.0,
-          rating_count: 80,
-          agent: {
-            name: "Chijioke Prince",
-            company: "Homeland Real-estate",
-            image: "https://res.cloudinary.com/dqbbm0guw/image/upload/v1738312518/jooj_bzdu1r.png",
-            rating: 4
-          }
-        });
       } finally {
         setLoading(false);
       }
@@ -181,13 +136,67 @@ const PropertyDetails = ({ params }) => {
     router.back(); // Go back to previous page
   };
 
+  const handlePaymentSuccess = () => {
+    setPaymentSuccess(true);
+    // Refresh property data to reflect new payment status
+    if (unwrappedParams?.id) {
+      // Refetch property detail to show updated status
+      const fetchPropertyDetail = async () => {
+        try {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API}/api/v1/properties/${unwrappedParams.id}/`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          if (!response.ok) {
+            throw new Error(`API request failed with status ${response.status}`);
+          }
+          
+          const rawData = await response.json();
+          const data = rawData.property ? rawData.property : 
+                      rawData.data ? rawData.data : 
+                      rawData;
+          
+          if (data.listed_by) {
+            const listedBy = data.listed_by;
+            data.agent = {
+              id: listedBy.id,
+              name: `${listedBy.first_name} ${listedBy.last_name}`,
+              email: listedBy.email,
+              phone: listedBy.phone_number,
+              userType: listedBy.user_type,
+              company: listedBy.user_type === "AGENT" ? "Real Estate Agent" : "Property Owner",
+              image: listedBy.agentprofile?.profile_photo_url || "/assets/images/default-user.png",
+              rating: 4,
+              country: listedBy.agentprofile?.country,
+              state: listedBy.agentprofile?.state,
+              city: listedBy.agentprofile?.city,
+              address: listedBy.agentprofile?.address,
+              location: listedBy.agentprofile ? 
+                `${listedBy.agentprofile.city || ''}, ${listedBy.agentprofile.state || ''}`.trim() : 
+                "Nigeria"
+            };
+          }
+          
+          setProperty(data);
+        } catch (err) {
+          console.error("Failed to refresh property details:", err);
+        }
+      };
+      
+      fetchPropertyDetail();
+    }
+  };
+
   // Helper function to get image URL
   const getImageUrl = (image) => {
     if (typeof image === 'string') {
       return image;
     } else if (image && typeof image === 'object' && image.image_url) {
       return image.image_url;
-    } else if (property.thumbnail && typeof property.thumbnail === 'string') {
+    } else if (property?.thumbnail && typeof property.thumbnail === 'string') {
       return property.thumbnail;
     } else {
       return "/api/placeholder/400/320";
@@ -254,9 +263,15 @@ const PropertyDetails = ({ params }) => {
   const hasVideo = property.video && property.video.video_url;
 
   return (
-    <div className="w-full mx-auto p-2 sm:p-4 bg-slate-50">
+    <div className="w-full mx-auto p-2 sm:p-4 bg-slate-50 ">
+      {/* Payment verification component */}
+      <PaymentVerifier 
+        onSuccess={handlePaymentSuccess}
+        onError={(message) => console.error("Payment verification error:", message)}
+      />
+
       {/* Header Section */}
-      <div className="mb-4">
+      <div className="mb-4 px-2 sm:px-7">
         <button 
           onClick={handleBack}
           className="mb-4 px-3 py-1.5 bg-white border border-gray-300 rounded-md hover:bg-gray-50 flex items-center gap-2"
@@ -264,7 +279,7 @@ const PropertyDetails = ({ params }) => {
           <span>←</span> Back
         </button>
         
-        <h1 className="text-3xl sm:text-4xl font-bold mb-2">
+        <h1 className="text-3xl sm:text-4xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-900 to-green-600">
           {property.property_name} {property.listing_status === 'APPROVED' && <span className="text-blue-500">✔</span>}
         </h1>
         
@@ -389,20 +404,21 @@ const PropertyDetails = ({ params }) => {
 
             {/* Home Description */}
             <div className="mb-8">
-              <h2 className="text-2xl sm:text-3xl font-bold mb-4">Home Description</h2>
+              <h2 className="text-2xl sm:text-3xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-900 to-green-600">Home Description</h2>
               <p className="text-gray-600">
                 {property.description}
               </p>
             </div>
 
-            {/* Key Features Section */}
+            {/* Key Features Section with icons from backend */}
             {property.amenities && property.amenities.length > 0 && (
               <section className="mt-8">
-                <h2 className="text-2xl font-bold mb-4">Key Features</h2>
+                <h2 className="text-2xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-900 to-green-600">Key Features</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
                   {property.amenities.map((amenity, index) => (
                     <div key={index} className="flex items-center gap-3">
-                      {getAmenityIcon(amenity)}
+                      {/* Use the emoji icon from the backend data */}
+                      <span className="text-2xl">{amenity.icon || ''}</span>
                       <span className="text-gray-800 font-medium">
                         {typeof amenity === 'string' ? amenity : amenity.name}
                       </span>
@@ -414,37 +430,61 @@ const PropertyDetails = ({ params }) => {
 
             {/* Listed By Section */}
             <div className="mt-24">
-              <h4>Listed By <span>:</span></h4>
+              <h4 className="font-semibold bg-clip-text text-transparent bg-gradient-to-r from-blue-900 to-green-600">Listed By <span>:</span></h4>
               {property.agent ? (
                 <ListedByCard agent={property.agent} />
-              ) : (
+              ) : property.listed_by ? (
                 <ListedByCard 
                   agent={{
-                    name: "Chijioke Prince",
-                    company: "Homeland Real-estate",
-                    image: "https://res.cloudinary.com/dqbbm0guw/image/upload/v1738312518/jooj_bzdu1r.png",
+                    name: `${property.listed_by.first_name} ${property.listed_by.last_name}`,
+                    company: property.listed_by.user_type === "AGENT" ? "Real Estate Agent" : "Property Owner",
+                    image: property.listed_by.agentprofile?.profile_photo_url || "/assets/images/default-user.png",
                     rating: 4,
+                    email: property.listed_by.email,
+                    phone: property.listed_by.phone_number,
+                    location: property.listed_by.agentprofile ? 
+                      `${property.listed_by.agentprofile.city || ''}, ${property.listed_by.agentprofile.state || ''}`.trim() : 
+                      "Nigeria"
                   }} 
                 />
-              )}
+              ) : null}
 
               {/* Verified Property & CTA */}
-              <div className="mt-4 p-4 border border-gray-300 rounded-lg bg-white shadow-sm">
-                <div className="flex items-start gap-2">
-                  <div className="bg-blue-600 text-white rounded-full p-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-5 h-5">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 17.75l-4.03 2.39a.75.75 0 01-1.12-.79l.77-4.49-3.26-3.19a.75.75 0 01.41-1.28l4.51-.66 2.02-4.08a.75.75 0 011.34 0l2.02 4.08 4.51.66a.75.75 0 01.41 1.28l-3.26 3.19.77 4.49a.75.75 0 01-1.12.79L12 17.75z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-900">Property is verified by us</h4>
-                    <p className="text-sm text-gray-500">If reported as fake, we&apos;ll investigate to confirm if this listing isn&apos;t real.</p>
-                  </div>
-                </div>
-                <button className="mt-4 w-full bg-gradient-to-r from-blue-700 to-teal-500 text-white py-2 px-4 rounded-lg font-medium shadow-md hover:opacity-90">
-                  Proceed for Payment
-                </button>
-              </div>
+       
+{/* Existing "Verified Property & CTA" section */}
+<div className="mt-4 p-4 border border-gray-300 rounded-lg bg-white shadow-sm">
+  <div className="flex items-start gap-2">
+    <div className="bg-blue-600 text-white rounded-full p-2">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-5 h-5">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 17.75l-4.03 2.39a.75.75 0 01-1.12-.79l.77-4.49-3.26-3.19a.75.75 0 01.41-1.28l4.51-.66 2.02-4.08a.75.75 0 011.34 0l2.02 4.08 4.51.66a.75.75 0 01.41 1.28l-3.26 3.19.77 4.49a.75.75 0 01-1.12.79L12 17.75z" />
+      </svg>
+    </div>
+    <div>
+      <h4 className="font-semibold text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-blue-900 to-green-600">Property is verified by us</h4>
+    </div>
+  </div>
+  
+  {/* Payment Button Component */}
+  <div className="mt-4">
+    {paymentSuccess ? (
+      <div className="bg-green-50 p-4 rounded-lg text-green-700 flex items-center">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+        </svg>
+        Payment successful! Thank you for your purchase.
+      </div>
+    ) : (
+      <PaymentButton 
+        propertyId={property.id} 
+        propertyType={property.listing_type}
+        price={property.listing_type === "SALE" ? property.sale_price : property.rent_price}
+      />
+    )}
+  </div>
+</div>
+
+{/* NEW: Add the Property Verifications component here */}
+<PropertyVerifications propertyId={property.id} />
             </div>
           </div>
 
@@ -452,20 +492,24 @@ const PropertyDetails = ({ params }) => {
           <div className="w-full sm:w-1/2">
             {/* Property Location Map */}
             <div className="mb-8">
-              <h2 className="text-2xl sm:text-3xl font-bold mb-4">Location</h2>
-              {/* Map Integration - Using iframe if available or fallback */}
-              {property.map_embed ? (
-                <div dangerouslySetInnerHTML={{ __html: property.map_embed }} />
+              <h2 className="text-2xl sm:text-3xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-900 to-green-600">Location</h2>
+              
+              {/* Google Map Integration */}
+              {property.location ? (
+                <GoogleMap 
+                  address={property.location} 
+                  apiKey={"AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8"} 
+                />
               ) : (
                 <div className="w-full h-64 bg-gray-200 flex items-center justify-center rounded-lg">
-                  <p>Map not available</p>
+                  <p>Address information not available</p>
                 </div>
               )}
               
               {/* Video Display if available */}
               {hasVideo && (
                 <div className="mt-6">
-                  <h3 className="text-xl font-bold mb-3">Property Video</h3>
+                  <h3 className="text-xl font-bold mb-3 bg-clip-text text-transparent bg-gradient-to-r from-blue-900 to-green-600">Property Video</h3>
                   <div className="w-full h-64 relative rounded-lg overflow-hidden">
                     <video 
                       controls
@@ -502,10 +546,10 @@ const PropertyDetails = ({ params }) => {
       {/* Similar Properties Section */}
       <div className="p-4 sm:p-8 py-7">
         <h2 className="text-xl font-light mb-4 md:mb-6 sm:text-3xl">
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#014d98] to-[#014d98]">
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-900 to-green-600">
             Similar homes
           </span>{' '}
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#014d98] via-[#3ab7b1] to-[#3ab7b1]">
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-900 to-green-600">
             you may like
           </span>
         </h2>
