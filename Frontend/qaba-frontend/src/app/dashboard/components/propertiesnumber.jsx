@@ -24,7 +24,7 @@ const PropertyStatsDesktop = () => (
 
 // Mobile version - 2 columns
 const PropertyStatsMobile = () => (
-  <div className="grid grid-cols-2 gap-3 justify-center px-5 w-full md:hidden">
+  <div className="grid grid-cols-2 gap-3 justify-center px-0 w-full md:hidden">
     {stats.map((stat, index) => (
       <StatCard key={index} stat={stat} />
     ))}

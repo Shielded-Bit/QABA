@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, Car, Shield, Video, PlayCircle, BookImage } from "lucide-react";
+import { ChevronLeft, ChevronRight, PlayCircle, BookImage } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -139,13 +139,12 @@ export default function PropertyDetail() {
     else if (status === 'APPROVED') {
       return (
         <div className="flex gap-2 mt-2 md:mt-0">
-       <button 
-  className="px-3 py-1.5 bg-gradient-to-r from-blue-900 to-green-400 text-white rounded-md hover:opacity-90 transition-all duration-300"
-  onClick={handleBack}
->
-  Back to Listings
-</button>
-
+          <button 
+            className="px-3 py-1.5 bg-gradient-to-r from-blue-900 to-green-400 text-white rounded-md hover:opacity-90 transition-all duration-300"
+            onClick={handleBack}
+          >
+            Back to Listings
+          </button>
         </div>
       );
     }
@@ -221,7 +220,7 @@ export default function PropertyDetail() {
         <button 
           onClick={handleBack}
           className="px-3 py-1.5 bg-gradient-to-r from-blue-900 to-green-400 text-white rounded-md hover:opacity-90 transition-all duration-300"
-          >
+        >
           Back to Properties
         </button>
       </div>
@@ -245,30 +244,9 @@ export default function PropertyDetail() {
   const images = property.images && Array.isArray(property.images) && property.images.length > 0 
     ? property.images 
     : ["/api/placeholder/400/320"];
-  
-  // Handle amenities with appropriate icons
-  const getAmenityIcon = (amenity) => {
-    const name = amenity.name || amenity;
-    const icon = amenity.icon || null;
-    
-    if (icon === "Car" || name.toLowerCase().includes("car") || name.toLowerCase().includes("park")) {
-      return <Car className="w-4 h-4 md:w-5 md:h-5" />;
-    } else if (icon === "Shield" || name.toLowerCase().includes("security")) {
-      return <Shield className="w-4 h-4 md:w-5 md:h-5" />;
-    } else if (icon === "Video" || name.toLowerCase().includes("cctv") || name.toLowerCase().includes("camera")) {
-      return <Video className="w-4 h-4 md:w-5 md:h-5" />;
-    } else {
-      return <span className="text-lg md:text-xl">🏠</span>;
-    }
-  };
 
   const amount = property.rent_price || property.sale_price || 'N/A';
   const propertyType = property.listing_type === "SALE" ? "Buy" : "Rent";
-  
-  // Helper function to safely check string methods
-  const isStringStartingWith = (value, prefix) => {
-    return typeof value === 'string' && value.startsWith(prefix);
-  };
 
   // Add status indicator badge
   const getStatusBadge = () => {
@@ -339,9 +317,8 @@ export default function PropertyDetail() {
         <div className="flex flex-wrap gap-4 md:gap-6 mb-6">
           {property.amenities && property.amenities.slice(0, 3).map((amenity, index) => (
             <div key={index} className="flex items-center gap-2 text-gray-500">
-              <div className="text-blue-500">
-                {getAmenityIcon(amenity)}
-              </div>
+              {/* Use the emoji icon directly from the backend data */}
+              <span className="text-2xl">{amenity.icon || '🏠'}</span>
               <span>{typeof amenity === 'string' ? amenity : amenity.name}</span>
             </div>
           ))}
@@ -358,7 +335,7 @@ export default function PropertyDetail() {
                   <button
                     onClick={toggleVideo}
                     className="flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-blue-900 to-green-400 text-white rounded-md hover:opacity-90 transition-all duration-300"
-                    >
+                  >
                     {showVideo ? (
                       <>
                         <BookImage className="w-4 h-4" /> View Photos
@@ -453,23 +430,6 @@ export default function PropertyDetail() {
             <p className="text-gray-700 mb-4">
               {property.description}
             </p>
-            
-            {property.amenities && property.amenities.length > 0 && (
-              <>
-                <h3 className="font-medium mb-2">Key features include:</h3>
-                <ul className="list-disc pl-6 mb-4 space-y-1">
-                  {property.amenities.map((amenity, index) => (
-                    <li key={index}>
-                      <span className="font-medium">{typeof amenity === 'string' ? amenity : amenity.name}</span>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
-            {/* to be removed*/}
-            <p className="text-gray-700">
-              Whether you&apos;re looking for a family haven or an investment opportunity, this property is the perfect choice for comfort, convenience, and class.
-            </p>
           </div>
         </div>
 
@@ -507,9 +467,8 @@ export default function PropertyDetail() {
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
               {property.amenities.map((amenity, index) => (
                 <div key={index} className="flex items-center gap-2 md:gap-3">
-                  <div className="text-blue-500">
-                    {getAmenityIcon(amenity)}
-                  </div>
+                  {/* Display the icon directly from the backend data */}
+                  <span className="text-2xl">{amenity.icon || '🏠'}</span>
                   <span className="text-sm md:text-base font-medium">
                     {typeof amenity === 'string' ? amenity : amenity.name}
                   </span>

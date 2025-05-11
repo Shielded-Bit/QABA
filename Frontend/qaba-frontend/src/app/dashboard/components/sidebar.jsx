@@ -8,7 +8,6 @@ import {
   Home,
   Heart,
   CreditCard,
-  Mail,
   Settings,
   HelpCircle,
   ChevronDown,
@@ -23,6 +22,9 @@ export default function Sidebar() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const pathname = usePathname();
+  
+  // Check if we're on a dashboard page
+  const isDashboardPage = pathname.startsWith('/dashboard');
 
   useEffect(() => {
     if (pathname.startsWith('/dashboard/properties')) {
@@ -32,13 +34,14 @@ export default function Sidebar() {
 
   useEffect(() => {
     const handleResize = () => {
-      const isMobileSize = window.innerWidth < 768;
+      const isMobileSize = window.innerWidth <= 1023;
       setIsMobile(isMobileSize);
 
-      // Automatically collapse the sidebar on mobile
+      // Only auto-collapse on mobile screens
       if (isMobileSize) {
         setIsSidebarCollapsed(true);
       } else {
+        // Always expanded on large screens
         setIsSidebarCollapsed(false);
       }
     };
@@ -48,9 +51,18 @@ export default function Sidebar() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Define the toggle function - only works on mobile screens
   const toggleSidebar = () => {
-    setIsSidebarCollapsed(!isSidebarCollapsed);
+    if (isMobile) {
+      setIsSidebarCollapsed(!isSidebarCollapsed);
+    }
+    // On large screens, do nothing (sidebar should always be expanded)
   };
+  
+  // Hide sidebar completely if we're not on a dashboard page
+  if (!isDashboardPage) {
+    return null;
+  }
 
   return (
     <div
@@ -58,15 +70,26 @@ export default function Sidebar() {
         isSidebarCollapsed ? 'w-16' : 'w-64'
       }`}
     >
-      <div className="p-4 flex items-center justify-between border-b">
-        <div className={`text-xl font-bold text-gradient ${isSidebarCollapsed ? 'hidden' : 'block'}`}>
-        <Link href="/" className="text-gradient hover:opacity-80 transition-opacity">
-      QABA
-    </Link>
-        </div>
+      <div className="p-4 flex items-center justify-between border-b px-6 py-7">
+        {/* Logo - always shown on large screens, only shown when expanded on mobile */}
+        {(!isMobile || (isMobile && !isSidebarCollapsed)) && (
+          <div className="flex items-center justify-start">
+            <Link 
+              href="/" 
+              className="font-bold text-xl transition-all duration-300 bg-gradient-to-r from-[#014d98] to-[#3ab7b1] bg-clip-text text-transparent hover:opacity-80"
+            >
+              QABA
+            </Link>
+          </div>
+        )}
+        
+        {/* Only show toggle button on mobile screens */}
         {isMobile && (
-          <button onClick={toggleSidebar} className="p-2 hover:bg-gray-100 rounded">
-            <Menu />
+          <button 
+            onClick={toggleSidebar} 
+            className={`p-1 hover:bg-gray-100 rounded-full ${isSidebarCollapsed ? 'mx-auto' : ''}`}
+          >
+            <Menu size={20} />
           </button>
         )}
       </div>
@@ -79,7 +102,7 @@ export default function Sidebar() {
             onClick={() => setIsPropertiesOpen(!isPropertiesOpen)}
             className={`w-full flex items-center ${
               isSidebarCollapsed ? 'justify-center px-2' : 'justify-between px-3'
-            } py-2 rounded-md hover:bg-gradient-to-r from-[#014d98] to-[#3ab7b1] hover:text-white`}
+            } py-2 rounded-md hover:bg-gradient-to-r from-[#014d98] to-[#3ab7b1] hover:text-white transition-all duration-200`}
           >
             <div className="flex items-center">
               <Building2 className={getIconClass(isSidebarCollapsed)} />
@@ -94,7 +117,7 @@ export default function Sidebar() {
 
           <div
             className={`ml-4 mt-1 space-y-1 overflow-hidden transition-all duration-300 text-gray-400 ${
-              isPropertiesOpen ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'
+              isPropertiesOpen && !isSidebarCollapsed ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'
             }`}
           >
             {renderSubLink('/rent', 'Rent Properties', pathname, Key, isSidebarCollapsed)}
@@ -104,16 +127,15 @@ export default function Sidebar() {
 
         {renderLink('/dashboard/favourites', 'Favourite', pathname, Heart, isSidebarCollapsed)}
         {renderLink('/dashboard/transactions', 'Transactions', pathname, CreditCard, isSidebarCollapsed)}
-        {renderLink('/dashboard/messages', 'Message', pathname, Mail, isSidebarCollapsed)}
       </nav>
 
       <div className="p-4 space-y-2 border-t">
         {renderLink('/dashboard/help-support', 'Help & Support', pathname, HelpCircle, isSidebarCollapsed)}
         {renderLink('/dashboard/settings', 'Settings', pathname, Settings, isSidebarCollapsed)}
 
-        {/* Replace the logout link with the LogoutButton */}
+        {/* Logout button with consistent styling */}
         <div className={getLinkClass(pathname, '/dashboard/logout', isSidebarCollapsed)}>
-          <LogoutButton />
+          <LogoutButton collapsed={isSidebarCollapsed} />
         </div>
       </div>
     </div>
@@ -122,7 +144,7 @@ export default function Sidebar() {
 
 function getLinkClass(pathname, href, isCollapsed) {
   const isActive = checkActiveLink(pathname, href);
-  return `flex items-center ${isCollapsed ? 'justify-center px-2' : 'px-3'} py-2 rounded-md ${
+  return `flex items-center ${isCollapsed ? 'justify-center px-2' : 'px-3'} py-2 rounded-md transition-all duration-200 ${
     isActive
       ? 'bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white'
       : 'hover:bg-gradient-to-r from-[#014d98] to-[#3ab7b1] hover:text-white'
@@ -146,18 +168,20 @@ function getTextClass(isCollapsed) {
 
 function renderLink(href, label, pathname, Icon, isCollapsed) {
   return (
-    <a href={href} className={getLinkClass(pathname, href, isCollapsed)}>
-      <Icon className={getIconClass(isCollapsed)} />
+    <Link href={href} className={getLinkClass(pathname, href, isCollapsed)}>
+      <Icon className={getIconClass(isCollapsed)} size={isCollapsed ? 20 : 18} />
       <span className={getTextClass(isCollapsed)}>{label}</span>
-    </a>
+    </Link>
   );
 }
 
 function renderSubLink(href, label, pathname, Icon, isCollapsed) {
+  if (isCollapsed) return null;
+  
   return (
-    <a href={href} className={getLinkClass(pathname, href, isCollapsed)}>
-      <Icon className={getIconClass(isCollapsed)} />
+    <Link href={href} className={getLinkClass(pathname, href, isCollapsed)}>
+      <Icon className={getIconClass(isCollapsed)} size={16} />
       <span className={getTextClass(isCollapsed)}>{label}</span>
-    </a>
+    </Link>
   );
 }

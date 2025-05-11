@@ -23,7 +23,7 @@ const EditProperty = () => {
     property_name: "",
     description: "",
     property_type: "HOUSE",
-    listing_type: "RENT",
+    listing_type: "RENT", // Default, will be updated based on property data
     submit_for_review: false,
     location: "",
     bedrooms: 1,
@@ -36,6 +36,10 @@ const EditProperty = () => {
     user_type: "owner"
   });
 
+  // Formatted price display states
+  const [displayRentPrice, setDisplayRentPrice] = useState('');
+  const [displaySalePrice, setDisplaySalePrice] = useState('');
+
   // Media files state
   const [mediaFiles, setMediaFiles] = useState({
     image1: null,
@@ -45,6 +49,19 @@ const EditProperty = () => {
 
   // Existing images from the property
   const [existingImages, setExistingImages] = useState([]);
+
+  // Format number with commas for better readability
+  const formatNumberWithCommas = (value) => {
+    if (!value) return '';
+    // Remove any non-digit characters
+    const plainNumber = value.toString().replace(/[^\d]/g, '');
+    
+    // Format with commas
+    if (plainNumber) {
+      return plainNumber.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+    return '';
+  };
 
   // Available amenities mapping
   const amenitiesMapping = {
@@ -94,7 +111,7 @@ const EditProperty = () => {
         // Log the raw data to debug
         console.log("Raw property data received:", data);
         
-        // Populate form data - Fixed rent_price and sale_price to handle all values properly
+        // Populate form data
         setFormData({
           property_name: data.property_name || "",
           description: data.description || "",
@@ -113,6 +130,15 @@ const EditProperty = () => {
             : [],
           user_type: data.user_type || "owner"
         });
+        
+        // Format price displays
+        if (data.rent_price) {
+          setDisplayRentPrice(formatNumberWithCommas(data.rent_price));
+        }
+        
+        if (data.sale_price) {
+          setDisplaySalePrice(formatNumberWithCommas(data.sale_price));
+        }
         
         // Set existing images
         if (data.images && data.images.length > 0) {
@@ -136,10 +162,34 @@ const EditProperty = () => {
   // Handle input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value
-    });
+    
+    // Special handling for price fields
+    if (name === 'rent_price') {
+      // Format with commas
+      const formattedValue = formatNumberWithCommas(value);
+      setDisplayRentPrice(formattedValue);
+      
+      // Store plain number in form data
+      setFormData({
+        ...formData,
+        [name]: formattedValue.replace(/[^\d]/g, '')
+      });
+    } else if (name === 'sale_price') {
+      // Format with commas
+      const formattedValue = formatNumberWithCommas(value);
+      setDisplaySalePrice(formattedValue);
+      
+      // Store plain number in form data
+      setFormData({
+        ...formData,
+        [name]: formattedValue.replace(/[^\d]/g, '')
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value
+      });
+    }
   };
 
   // Handle amenities selection
@@ -196,7 +246,12 @@ const EditProperty = () => {
             formData.append(`${key}`, value);
           });
         } else {
-          formData.append(key, data[key]);
+          // Explicitly convert boolean to string for submit_for_review
+          if (key === 'submit_for_review') {
+            formData.append(key, data[key].toString());
+          } else {
+            formData.append(key, data[key]);
+          }
         }
       });
       
@@ -217,6 +272,9 @@ const EditProperty = () => {
       if (!accessToken) {
         throw new Error('No access token found. Please log in.');
       }
+
+      // Debug log to confirm submit_for_review value
+      console.log("Submission status:", data.submit_for_review);
 
       const response = await axios.patch(`${API_BASE_URL}/properties/${propertyId}/`, formData, {
         headers: {
@@ -286,6 +344,7 @@ const EditProperty = () => {
       // Create payload for API
       const payload = {
         ...formData,
+        // Set submit_for_review to true when NOT a draft, false when it is a draft
         submit_for_review: !isDraft,
         bedrooms: parseInt(formData.bedrooms),
         bathrooms: parseInt(formData.bathrooms),
@@ -293,6 +352,7 @@ const EditProperty = () => {
       };
       
       console.log("Updating property data:", payload);
+      console.log("Submit for review status:", !isDraft);
       
       // Use the updateProperty function with both data and files
       const response = await updateProperty(payload, mediaFiles, params.id);
@@ -310,8 +370,12 @@ const EditProperty = () => {
       // Dismiss loading toast
       toast.dismiss();
       
-      // Show success message
-      toast.success(isDraft ? 'Property saved as draft' : 'Property updated successfully');
+      // Show success message with appropriate wording
+      if (isDraft) {
+        toast.success('Property saved as draft');
+      } else {
+        toast.success('Property submitted for review');
+      }
       
       // Redirect to property details page after a short delay
       setTimeout(() => {
@@ -403,10 +467,16 @@ const EditProperty = () => {
             value={formData.listing_type}
             onChange={handleInputChange}
             className="w-full border border-gray-300 p-2 rounded-md"
+            disabled  // Disable changing listing type to maintain consistency
           >
             <option value="RENT">For Rent</option>
             <option value="SALE">For Sale</option>
           </select>
+          {formData.listing_type && (
+            <p className="text-xs text-gray-500 mt-1">
+              Listing type cannot be changed after creation
+            </p>
+          )}
         </div>
 
         {/* Number of Bedrooms - Show only if not LAND */}
@@ -467,7 +537,7 @@ const EditProperty = () => {
             <input
               type="text"
               name="rent_price"
-              value={formData.rent_price}
+              value={displayRentPrice}
               onChange={handleInputChange}
               className="w-full border border-gray-300 p-2 rounded-md"
               placeholder="12,000,000"
@@ -482,7 +552,7 @@ const EditProperty = () => {
             <input
               type="text"
               name="sale_price"
-              value={formData.sale_price}
+              value={displaySalePrice}
               onChange={handleInputChange}
               className="w-full border border-gray-300 p-2 rounded-md"
               placeholder="150,000,000"
@@ -638,7 +708,7 @@ const EditProperty = () => {
         </div>
       </div>
 
-      {/* Buttons */}
+      {/* Submit Buttons */}
       <div className="mt-8 flex justify-end gap-4">
         <button
           type="button"
@@ -654,7 +724,7 @@ const EditProperty = () => {
           disabled={submitting}
           className="bg-gradient-to-r from-blue-500 to-teal-500 text-white py-2 px-6 rounded-md hover:opacity-90 disabled:opacity-50"
         >
-          {submitting ? 'Submitting...' : 'Update property'}
+          {submitting ? 'Submitting...' : 'Submit for review'}
         </button>
       </div>
     </div>

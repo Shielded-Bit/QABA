@@ -5,6 +5,7 @@ import { BellDot, Trash2, Eye, Search, Menu } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useProfile } from "../../../contexts/ProfileContext";
+import { createPortal } from "react-dom";
 
 export default function TopNav() {
   const [notifications, setNotifications] = useState([
@@ -12,11 +13,17 @@ export default function TopNav() {
     { id: 2, message: "Agent sent you a message.", expanded: false },
   ]);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [profileImageUrl, setProfileImageUrl] = useState("");
+  const [isBrowser, setIsBrowser] = useState(false);
   
   // Use the shared profile context
   const { userData, profileImage, isLoading, userType } = useProfile();
+  
+  // Check if we're in browser environment for the portal
+  useEffect(() => {
+    setIsBrowser(true);
+  }, []);
   
   // For debugging - you can remove this in production
   useEffect(() => {
@@ -46,6 +53,19 @@ export default function TopNav() {
       }
     }
   }, [profileImage, userData]);
+
+  // Add body class to prevent scrolling when notifications are open
+  useEffect(() => {
+    if (showNotifications) {
+      document.body.classList.add('overflow-hidden');
+    } else {
+      document.body.classList.remove('overflow-hidden');
+    }
+    
+    return () => {
+      document.body.classList.remove('overflow-hidden');
+    };
+  }, [showNotifications]);
 
   const handleDelete = (id) => {
     setNotifications(notifications.filter((notif) => notif.id !== id));
@@ -106,18 +126,125 @@ export default function TopNav() {
     return "U"; // Default to "U" for User
   };
 
+  // Render the modal overlay and content with portal to ensure it's on top of all content
+  const renderModalContent = () => {
+    if (!isBrowser || !showNotifications) return null;
+
+    return createPortal(
+      <>
+        {/* Semi-transparent overlay to dim ALL content */}
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-50" 
+          onClick={() => setShowNotifications(false)}
+          aria-hidden="true"
+        ></div>
+        
+        {/* Desktop Notifications Dropdown */}
+        <div 
+          className="hidden sm:block fixed top-24 right-10 bg-white shadow-lg rounded-md w-64 p-3 z-50"
+          onClick={(e) => e.stopPropagation()}
+          style={{ maxHeight: '80vh', overflowY: 'auto' }}
+        >
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="text-lg font-medium">Notifications</h3>
+            <button 
+              className="text-gray-500 hover:text-gray-700"
+              onClick={() => setShowNotifications(false)}
+            >
+              &times;
+            </button>
+          </div>
+          
+          {notifications.length === 0 ? (
+            <p className="text-sm text-gray-500 py-4 text-center">No new notifications</p>
+          ) : (
+            notifications.map((notif) => (
+              <div key={notif.id} className="flex justify-between items-start p-2 border-b hover:bg-gray-50">
+                <p className={`text-sm text-gray-800 ${notif.expanded ? "whitespace-normal" : "truncate"}`}>
+                  {notif.message}
+                </p>
+                <div className="flex items-center gap-2 ml-2">
+                  <Eye 
+                    className="h-4 w-4 text-blue-500 cursor-pointer hover:text-blue-700" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleMessageExpansion(notif.id);
+                    }} 
+                  />
+                  <Trash2 
+                    className="h-4 w-4 text-red-500 cursor-pointer hover:text-red-700" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(notif.id);
+                    }} 
+                  />
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+        
+        {/* Mobile Notifications Dropdown */}
+        <div 
+          className="sm:hidden fixed top-16 inset-x-0 mx-4 bg-white shadow-lg rounded-md p-4 z-50"
+          onClick={(e) => e.stopPropagation()}
+          style={{ maxHeight: '80vh', overflowY: 'auto' }}
+        >
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="text-lg font-medium">Notifications</h3>
+            <button 
+              className="text-gray-500 hover:text-gray-700"
+              onClick={() => setShowNotifications(false)}
+            >
+              &times;
+            </button>
+          </div>
+          
+          {notifications.length === 0 ? (
+            <p className="text-sm text-gray-500 py-4 text-center">No new notifications</p>
+          ) : (
+            notifications.map((notif) => (
+              <div key={notif.id} className="flex justify-between items-start p-2 border-b hover:bg-gray-50">
+                <p className={`text-sm text-gray-800 ${notif.expanded ? "whitespace-normal" : "truncate"}`}>
+                  {notif.message}
+                </p>
+                <div className="flex items-center gap-2 ml-2">
+                  <Eye 
+                    className="h-5 w-5 text-blue-500 cursor-pointer hover:text-blue-700" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleMessageExpansion(notif.id);
+                    }} 
+                  />
+                  <Trash2 
+                    className="h-5 w-5 text-red-500 cursor-pointer hover:text-red-700" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(notif.id);
+                    }} 
+                  />
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </>,
+      document.body
+    );
+  };
+
   return (
     <div className="bg-gray-100 w-full sticky px-3 md:px-10">
       {/* Large Screen Navigation */}
       <div className="hidden sm:flex justify-between items-center p-6">
         {/* Search Bar */}
         <div className="flex items-center flex-1 relative max-w-md">
-          <Search className="absolute left-3 h-5 w-5 text-gray-500" />
+          {/* <Search className="absolute left-3 h-5 w-5 text-gray-500" />
           <input
             type="text"
             placeholder="Search for properties, agents"
             className="w-full pl-10 p-2 border border-gray-300 rounded-md text-sm focus:ring focus:ring-blue-300"
-          />
+          /> */}
         </div>
 
         {/* Notification + Profile Section */}
@@ -130,30 +257,6 @@ export default function TopNav() {
             )}
           </div>
 
-          {/* Notifications Dropdown */}
-          {showNotifications && (
-            <>
-              <div className="fixed inset-0 bg-black bg-opacity-50 z-50" onClick={() => setShowNotifications(false)}></div>
-              <div className="absolute top-10 right-0 bg-white shadow-lg rounded-md w-64 p-3 z-50">
-                {notifications.length === 0 ? (
-                  <p className="text-sm text-gray-500">No new notifications</p>
-                ) : (
-                  notifications.map((notif) => (
-                    <div key={notif.id} className="flex justify-between items-center p-2 border-b bg-white">
-                      <p className={`text-sm text-gray-800 ${notif.expanded ? "whitespace-normal" : "truncate"}`}>
-                        {notif.message}
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <Eye className="h-4 w-4 text-blue-500 cursor-pointer" onClick={() => toggleMessageExpansion(notif.id)} />
-                        <Trash2 className="h-4 w-4 text-red-500 cursor-pointer" onClick={() => handleDelete(notif.id)} />
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </>
-          )}
-
           {/* User Profile */}
           <Link href={getSettingsUrl()} className="flex items-center gap-2 cursor-pointer">
             <div className="w-10 h-10 relative rounded-full overflow-hidden border border-gray-300 shadow-sm">
@@ -165,9 +268,6 @@ export default function TopNav() {
                   height={40}
                   className="rounded-full object-cover"
                   key={profileImageUrl}
-                  onError={(e) => {
-                    setProfileImageUrl("https://i.pravatar.cc/150");
-                  }}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-gray-200">
@@ -221,7 +321,6 @@ export default function TopNav() {
                 height={32}
                 className="rounded-full object-cover"
                 key={profileImageUrl}
-                onError={() => setProfileImageUrl("https://i.pravatar.cc/150")}
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gray-200">
@@ -235,27 +334,15 @@ export default function TopNav() {
         </Link>
       </div>
 
-      {/* Mobile Notifications Dropdown */}
-      {showNotifications && (
-        <div className="sm:hidden fixed inset-0 bg-black bg-opacity-50 z-40" onClick={() => setShowNotifications(false)}>
-          <div className="absolute top-16 right-4 bg-white shadow-lg rounded-md w-64 p-3 z-50" onClick={(e) => e.stopPropagation()}>
-            {notifications.length === 0 ? (
-              <p className="text-sm text-gray-500">No new notifications</p>
-            ) : (
-              notifications.map((notif) => (
-                <div key={notif.id} className="flex justify-between items-center p-2 border-b">
-                  <p className={`text-sm text-gray-800 ${notif.expanded ? "whitespace-normal" : "truncate"}`}>
-                    {notif.message}
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Eye className="h-4 w-4 text-blue-500 cursor-pointer" onClick={() => toggleMessageExpansion(notif.id)} />
-                    <Trash2 className="h-4 w-4 text-red-500 cursor-pointer" onClick={() => handleDelete(notif.id)} />
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
+      {/* Render modal with portal to ensure it dims ALL content */}
+      {renderModalContent()}
+
+      {/* Mobile menu overlay - separate from notifications */}
+      {mobileMenuOpen && isBrowser && createPortal(
+        <div className="sm:hidden fixed inset-0 bg-black bg-opacity-50 z-40" onClick={() => setMobileMenuOpen(false)}>
+          {/* Mobile menu content would go here */}
+        </div>,
+        document.body
       )}
     </div>
   );

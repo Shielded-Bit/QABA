@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useSwipeable } from "react-swipeable";
+import PropertyModal from "../components/propertyModal"; // Import the modal component
 
 const notifications = [
   { id: 1, title: "Price Drop Alert", message: "Good news! The price of Luxury Villa has dropped by 10%. Check it out now" },
@@ -11,6 +13,13 @@ const notifications = [
 
 const Dashboard = () => {
   const [properties, setProperties] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalFilterType, setModalFilterType] = useState("ALL");
+
+  const openModal = (filterType = "ALL") => {
+    setModalFilterType(filterType);
+    setIsModalOpen(true);
+  };
 
   useEffect(() => {
     const fetchProperties = async () => {
@@ -53,16 +62,29 @@ const Dashboard = () => {
   return (
     <div className="px-2 py-1">
       <div className="hidden md:grid md:grid-cols-2 gap-4">
-        <PropertiesSection properties={properties} />
-        <NotificationsSection />
+        <PropertiesSection properties={properties} onViewAll={() => openModal()} />
+        <NotificationsSection onViewAll={() => openModal("notifications")} />
       </div>
 
       <div className="flex flex-col space-y-4 md:hidden">
         <MobileSwiper items={[
-          { id: 'properties', content: <PropertiesList properties={properties} /> },
-          { id: 'notifications', content: <NotificationsList /> }
+          { 
+            id: 'properties', 
+            content: <PropertiesList properties={properties} onViewAll={() => openModal()} /> 
+          },
+          { 
+            id: 'notifications', 
+            content: <NotificationsList onViewAll={() => openModal("notifications")} /> 
+          }
         ]} />
       </div>
+
+      {/* Property Modal */}
+      <PropertyModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)}
+        filterType={modalFilterType}
+      />
     </div>
   );
 };
@@ -89,9 +111,9 @@ const MobileSwiper = ({ items }) => {
   );
 };
 
-const PropertiesSection = ({ properties }) => (
+const PropertiesSection = ({ properties, onViewAll }) => (
   <div className="bg-white shadow-md rounded-lg p-4 text-gray-600">
-    <Header title="Recent Added Properties" />
+    <Header title="Recent Added Properties" onViewAll={onViewAll} />
     <div className="space-y-3 mt-7">
       {properties.map((property) => (
         <PropertyCard key={property.id} {...property} />
@@ -100,9 +122,9 @@ const PropertiesSection = ({ properties }) => (
   </div>
 );
 
-const NotificationsSection = () => (
+const NotificationsSection = ({ onViewAll }) => (
   <div className="bg-white shadow-md rounded-lg p-4 text-gray-600">
-    <Header title="Notifications" />
+    <Header title="Notifications" onViewAll={onViewAll} />
     <div className="space-y-3 mt-7">
       {notifications.map((notification) => (
         <NotificationCard key={notification.id} {...notification} />
@@ -111,7 +133,7 @@ const NotificationsSection = () => (
   </div>
 );
 
-const PropertiesList = ({ properties }) => (
+const PropertiesList = ({ properties, onViewAll }) => (
   <div className="bg-white shadow-md rounded-lg p-4 w-full">
     <h2 className="text-lg font-semibold mb-4 text-gray-600">Recent Added Properties</h2>
     <div className="space-y-3">
@@ -119,11 +141,16 @@ const PropertiesList = ({ properties }) => (
         <PropertyCard key={property.id} {...property} />
       ))}
     </div>
-    <a href="#" className="mt-4 text-center block text-blue-600 hover:underline">View All</a>
+    <button 
+      onClick={onViewAll}
+      className="mt-4 text-center block w-full text-blue-600 hover:underline"
+    >
+      View All
+    </button>
   </div>
 );
 
-const NotificationsList = () => (
+const NotificationsList = ({ onViewAll }) => (
   <div className="bg-white shadow-md rounded-lg p-4 w-full">
     <h2 className="text-lg font-semibold mb-4 text-gray-600">Notifications</h2>
     <div className="space-y-3">
@@ -131,24 +158,32 @@ const NotificationsList = () => (
         <NotificationCard key={notification.id} {...notification} />
       ))}
     </div>
-    <a href="#" className="mt-4 text-center block text-blue-600 hover:underline">View All</a>
+    <button
+      onClick={onViewAll}
+      className="mt-4 text-center block w-full text-blue-600 hover:underline"
+    >
+      View All
+    </button>
   </div>
 );
 
-const PropertyCard = ({ image, name, address, status, price }) => (
-  <div className="flex items-start gap-2 border-b pb-3 last:border-b-0 w-full cursor-pointer hover:bg-gray-50 transition">
-    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-md overflow-hidden flex-shrink-0">
-      <Image src={image} alt={name} width={80} height={80} className="object-cover w-full h-full" />
-    </div>
-    <div className="flex-1 min-w-0 space-y-1">
-      <div className="flex justify-between items-center">
-        <h3 className="font-semibold text-sm sm:text-base text-gray-800 truncate">{name}</h3>
-        <p className="text-sm sm:text-base font-semibold text-[#014d98] whitespace-nowrap">{price}</p>
+// Updated PropertyCard with Next.js Link component instead of useRouter
+const PropertyCard = ({ id, image, name, address, status, price }) => (
+  <Link href={`/details/${id}`} passHref>
+    <div className="flex items-start gap-2 border-b pb-3 last:border-b-0 w-full cursor-pointer hover:bg-gray-50 transition">
+      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-md overflow-hidden flex-shrink-0">
+        <Image src={image} alt={name} width={80} height={80} className="object-cover w-full h-full" />
       </div>
-      <p className="text-xs sm:text-sm text-gray-500 truncate">{address}</p>
-      <p className="text-xs text-green-600">{status}</p>
+      <div className="flex-1 min-w-0 space-y-1">
+        <div className="flex justify-between items-center">
+          <h3 className="font-semibold text-sm sm:text-base text-gray-800 truncate">{name}</h3>
+          <p className="text-sm sm:text-base font-semibold text-[#014d98] whitespace-nowrap">{price}</p>
+        </div>
+        <p className="text-xs sm:text-sm text-gray-500 truncate">{address}</p>
+        <p className="text-xs text-green-600">{status}</p>
+      </div>
     </div>
-  </div>
+  </Link>
 );
 
 const NotificationCard = ({ title, message }) => (
@@ -158,12 +193,15 @@ const NotificationCard = ({ title, message }) => (
   </div>
 );
 
-const Header = ({ title }) => (
+const Header = ({ title, onViewAll }) => (
   <div className="flex justify-between items-center mb-4">
     <h2 className="text-lg font-semibold">{title}</h2>
-    <a href="#" className="text-sm bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white rounded-lg px-5 py-2 transition-all duration-300 hover:from-[#3ab7b1] hover:to-[#014d98]">
+    <button 
+      onClick={onViewAll}
+      className="text-sm bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white rounded-lg px-5 py-2 transition-all duration-300 hover:from-[#3ab7b1] hover:to-[#014d98]"
+    >
       View All
-    </a>
+    </button>
   </div>
 );
 

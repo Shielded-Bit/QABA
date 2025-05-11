@@ -35,11 +35,7 @@ export default function DashboardHeader() {
             />
           </div>
 
-          {/* Export Data Button */}
-          <button className="flex items-center gap-2 bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white font-medium px-4 py-2 rounded-md shadow hover:shadow-lg transition">
-            <Download className="h-5 w-5" />
-            Export Data
-          </button>
+       
         </div>
       </div>
 
