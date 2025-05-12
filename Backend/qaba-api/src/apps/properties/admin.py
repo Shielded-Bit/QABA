@@ -129,6 +129,7 @@ class PropertyAdmin(admin.ModelAdmin):
         "listing_type",
         "location",
         "price_display",
+        "lister_type",  # Add lister_type
         "bedrooms",
         "bathrooms",
         "property_status",
@@ -142,6 +143,7 @@ class PropertyAdmin(admin.ModelAdmin):
         "listing_type",
         "property_status",
         "listing_status",
+        "lister_type",  # Add lister_type filter
         "listed_date",
         "amenities",
     )
@@ -161,7 +163,7 @@ class PropertyAdmin(admin.ModelAdmin):
         PropertyDocumentInline,
     ]
     date_hierarchy = "listed_date"
-    filter_horizontal = ("amenities",)  # Better UI for many-to-many relationships
+    filter_horizontal = ("amenities",)
 
     fieldsets = (
         (None, {"fields": ("property_name", "description", "listed_by")}),
@@ -171,6 +173,7 @@ class PropertyAdmin(admin.ModelAdmin):
                 "fields": (
                     "property_type",
                     "listing_type",
+                    "lister_type",  # Add lister_type
                     "location",
                     "area_sqft",
                     "bedrooms",
@@ -178,31 +181,45 @@ class PropertyAdmin(admin.ModelAdmin):
                 )
             },
         ),
-        (_("Status"), {"fields": ("property_status", "listing_status")}),
+        (_("Status"), {"fields": ("property_status", "listing_status", "is_verified")}),
         (
             _("Pricing"),
             {
-                "fields": ("sale_price", "rent_price", "rent_frequency"),
+                "fields": (
+                    "sale_price",
+                    "rent_price",
+                    "rent_frequency",
+                    "agent_commission",  # Add commission
+                    "qaba_fee",  # Add fee
+                    "total_price",  # Add total price
+                ),
                 "description": "Enter sale price for sales listings, or rent price and frequency for rental listings.",
             },
         ),
         (_("Dates"), {"fields": ("listed_date",), "classes": ("collapse",)}),
     )
 
-    def get_queryset(self, request):
-        return super().get_queryset(request).select_related("listed_by")
-
     def price_display(self, obj):
+        """Display either rent or sale price with commission and fees if available"""
+        price_display = "-"
+
         if obj.listing_type == "RENT" and obj.rent_price:
             frequency = (
                 obj.get_rent_frequency_display() if obj.rent_frequency else "Monthly"
             )
-            return f"${obj.rent_price:,} / {frequency}"
+            price_display = f"${obj.rent_price:,} / {frequency}"
         elif obj.sale_price:
-            return f"${obj.sale_price:,}"
-        return "-"
+            price_display = f"${obj.sale_price:,}"
+
+        if obj.total_price:
+            price_display += f" (Total: ${obj.total_price:,})"
+
+        return price_display
 
     price_display.short_description = "Price"
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("listed_by")
 
     def image_count(self, obj):
         return obj.images.count()

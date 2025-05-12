@@ -98,6 +98,24 @@ class PropertyViewSet(viewsets.ModelViewSet):
     @extend_schema(
         parameters=[
             OpenApiParameter(
+                name="lister_type",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                description="Filter by lister type (LANDLOARD, AGENT)",
+            ),
+            OpenApiParameter(
+                name="min_total",
+                type=float,
+                location=OpenApiParameter.QUERY,
+                description="Minimum total price filter",
+            ),
+            OpenApiParameter(
+                name="max_total",
+                type=float,
+                location=OpenApiParameter.QUERY,
+                description="Maximum total price filter",
+            ),
+            OpenApiParameter(
                 name="min_sale",
                 type=float,
                 location=OpenApiParameter.QUERY,
@@ -127,10 +145,30 @@ class PropertyViewSet(viewsets.ModelViewSet):
         queryset = self.filter_queryset(self.get_queryset())
 
         # Price range filtering
+        lister_type = request.query_params.get("lister_type")
+        min_total = request.query_params.get("min_total")
+        max_total = request.query_params.get("max_total")
         min_price = request.query_params.get("min_sale")
         max_price = request.query_params.get("max_sale")
         min_rent = request.query_params.get("min_rent")
         max_rent = request.query_params.get("max_rent")
+
+        if lister_type:
+            queryset = queryset.filter(lister_type=lister_type)
+
+        if min_total:
+            try:
+                min_total = float(min_total)
+                queryset = queryset.filter(total_price__gte=min_total)
+            except ValueError:
+                pass
+
+        if max_total:
+            try:
+                max_total = float(max_total)
+                queryset = queryset.filter(total_price__lte=max_total)
+            except ValueError:
+                pass
 
         if min_price:
             queryset = queryset.filter(sale_price__gte=min_price)

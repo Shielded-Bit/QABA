@@ -148,18 +148,9 @@ class Property(models.Model):
         blank=True,
         help_text="Sale price (applicable for sale listings)",
     )
-    # is_verified_by_shieldedbit = models.BooleanField(
-    #     default=False,
-    #     help_text="Indicates if the property has been verified by ShieldedBit",
-    # )
-    # is_verified_by_nrea = models.BooleanField(
-    #     default=False,
-    #     help_text="Indicates if the property has been verified by NREA",
-    # )
-    # is_verified_by_qaba = models.BooleanField(
-    #     default=False,
-    #     help_text="Indicates if the property has been verified by Qaba",
-    # )
+    is_verified = models.BooleanField(
+        default=False, help_text="Indicates if the property has been verified by admin"
+    )
 
     def has_amenity(self, amenity):
         """Check if property has a specific amenity"""

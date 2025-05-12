@@ -1,3 +1,4 @@
+import attrs
 from apps.users.models import Notification, User
 from apps.users.serializers import UserSerializer
 from django.conf import settings
@@ -84,6 +85,9 @@ class PropertyListSerializer(serializers.ModelSerializer):
     listing_status_display = serializers.CharField(
         source="get_listing_status_display", read_only=True
     )
+    lister_type_display = serializers.CharField(
+        source="get_lister_type_display", read_only=True
+    )
 
     listed_by = UserSerializer(read_only=True)
     thumbnail = serializers.SerializerMethodField()
@@ -105,6 +109,9 @@ class PropertyListSerializer(serializers.ModelSerializer):
             "property_status_display",
             "listing_status",
             "listing_status_display",
+            "listing_status_display",
+            "lister_type",
+            "lister_type_display",
             "bedrooms",
             "bathrooms",
             "area_sqft",
@@ -154,6 +161,9 @@ class PropertyDetailSerializer(PropertyListSerializer):
             "rent_frequency_display",
             "rent_price",
             "documents",
+            "agent_commission",
+            "qaba_fee",
+            "total_price",
         ]
 
     def get_documents(self, obj):
@@ -214,6 +224,7 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
             "sale_price",
             "property_type",
             "listing_type",
+            "lister_type",  # Add lister_type
             "submit_for_review",
             "location",
             "bedrooms",
@@ -224,6 +235,9 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
             "video",
             "rent_frequency",
             "rent_price",
+            "agent_commission",
+            "qaba_fee",
+            "total_price",
             "documents",
             "document_types",
         ]
@@ -234,20 +248,33 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, attrs):
-        if attrs.get("listing_type") == Property.ListingType.RENT:
-            if not attrs.get("rent_frequency"):
+        listing_type = attrs.get("listing_type")
+        sale_price = attrs.get("sale_price")
+        rent_price = attrs.get("rent_price")
+        rent_frequency = attrs.get("rent_frequency")
+        lister_type = attrs.get("lister_type")
+
+        if listing_type == Property.ListingType.RENT:
+            if not all([rent_price, rent_frequency]):
                 raise serializers.ValidationError(
-                    {"rent_frequency": "Rent frequency is required for rental listings"}
+                    {
+                        "rent_price": "Rent price and frequency are required for rental listings"
+                    }
                 )
-            if not attrs.get("rent_price"):
-                raise serializers.ValidationError(
-                    {"rent_price": "Rent price is required for rental listings"}
-                )
-        if attrs.get("listing_type") == Property.ListingType.SALE:
-            if not attrs.get("sale_price"):
+
+        if listing_type == Property.ListingType.SALE:
+            if not sale_price:
                 raise serializers.ValidationError(
                     {"sale_price": "Sale price is required for sale listings"}
                 )
+        if lister_type == Property.ListerType.AGENT:
+            if not attrs.get("agent_commission"):
+                raise serializers.ValidationError(
+                    {
+                        "agent_commission": "Agent commission is required for agent listings"
+                    }
+                )
+
         # Validate document metadata if documents are provided
         documents = attrs.get("documents", [])
         document_types = attrs.get("document_types", [])
@@ -383,6 +410,7 @@ class PropertyUpdateSerializer(serializers.ModelSerializer):
             "sale_price",
             "property_type",
             "listing_type",
+            "lister_type",
             "location",
             "property_status",
             "listing_status",
@@ -392,6 +420,9 @@ class PropertyUpdateSerializer(serializers.ModelSerializer):
             "video",
             "rent_frequency",
             "rent_price",
+            "agent_commission",
+            "qaba_fee",
+            "total_price",
         ]
 
     def update(self, instance, validated_data):
