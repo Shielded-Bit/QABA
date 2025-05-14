@@ -187,24 +187,6 @@ class PropertyViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return APIResponse.success(data=serializer.data)
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        # Pass the request context to the serializer
-        property_instance = serializer.save(listed_by=request.user)
-
-        # Create notification for admin review
-        self._create_review_notification(property_instance)
-
-        # Return the property data with the newly created documents
-        return APIResponse.success(
-            data=PropertyDetailSerializer(
-                property_instance, context={"request": request}
-            ).data,
-            message="Property created successfully and pending review",
-        )
-
     @action(
         detail=True,
         methods=["POST"],

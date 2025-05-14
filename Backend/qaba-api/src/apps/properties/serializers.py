@@ -1,4 +1,3 @@
-import attrs
 from apps.users.models import Notification, User
 from apps.users.serializers import UserSerializer
 from django.conf import settings
@@ -182,6 +181,54 @@ class PropertyDetailSerializer(PropertyListSerializer):
         return PropertyDocumentSerializer(documents, many=True).data
 
 
+class AmenityListField(serializers.ListField):
+    """
+    Custom field for amenity IDs with validation
+    Handles both regular integer lists and comma-separated strings in a list
+    """
+
+    def __init__(self, **kwargs):
+        child = serializers.CharField()  # Change to CharField to handle string input
+        kwargs["child"] = child
+        kwargs["write_only"] = True
+        kwargs["required"] = False
+        kwargs["help_text"] = "List of amenity IDs for this property"
+        super().__init__(**kwargs)
+
+    def to_internal_value(self, data):
+        processed_data = []
+
+        for item in data:
+            if isinstance(item, str) and "," in item:
+                parts = item.split(",")
+                processed_data.extend([part.strip() for part in parts if part.strip()])
+            else:
+                processed_data.append(item)
+
+        try:
+            # Convert all values to integers
+            values = [int(val) for val in processed_data if val]
+        except (ValueError, TypeError):
+            raise serializers.ValidationError(
+                "Amenity IDs must be integers or comma-separated integers"
+            )
+
+        valid_amenity_ids = set(
+            Amenity.objects.filter(is_active=True).values_list("id", flat=True)
+        )
+        invalid_ids = [
+            amenity_id for amenity_id in values if amenity_id not in valid_amenity_ids
+        ]
+
+        if invalid_ids:
+            raise serializers.ValidationError(
+                f"Invalid amenity IDs: {', '.join(map(str, invalid_ids))}. "
+                f"Please provide valid amenity IDs."
+            )
+
+        return values
+
+
 class PropertyCreateSerializer(serializers.ModelSerializer):
     images = serializers.ListField(
         child=serializers.ImageField(),
@@ -198,12 +245,8 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
         default=False,
         help_text="Submit the property for review by the admin",
     )
-    amenities_ids = serializers.ListField(
-        child=serializers.IntegerField(),
-        write_only=True,
-        required=False,
-        help_text="List of amenity IDs for this property",
-    )
+
+    amenities_ids = AmenityListField()
 
     # Add documents field
     documents = serializers.ListField(
@@ -211,7 +254,7 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
     )
     # Add document metadata
     document_types = serializers.ListField(
-        child=serializers.ChoiceField(choices=PropertyDocument.DocumentType.choices),
+        child=serializers.CharField(),
         required=False,
         write_only=True,
     )
@@ -224,7 +267,7 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
             "sale_price",
             "property_type",
             "listing_type",
-            "lister_type",  # Add lister_type
+            "lister_type",
             "submit_for_review",
             "location",
             "bedrooms",
@@ -245,6 +288,15 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
     def validate_images(self, value):
         if len(value) > 5:
             raise serializers.ValidationError("You can upload a maximum of 5 images.")
+        return value
+
+    def validate_document_types(self, value):
+        allowed_types = PropertyDocument.DocumentType
+        for doc_type in value:
+            if doc_type not in allowed_types:
+                raise serializers.ValidationError(
+                    f"Invalid document type: {doc_type}. Allowed types: {', '.join([t.name for t in allowed_types])}"
+                )
         return value
 
     def validate(self, attrs):
@@ -321,6 +373,7 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
 
         # Add amenities
         if amenities_ids:
+            print(f"Amenities IDs: {amenities_ids}")
             property_instance.amenities.set(amenities_ids)
 
         # Handle images and video as before

@@ -1,5 +1,3 @@
-from pickle import DUP
-from tkinter import SE
 from cloudinary.models import CloudinaryField
 from django.conf import settings
 from django.db import models
