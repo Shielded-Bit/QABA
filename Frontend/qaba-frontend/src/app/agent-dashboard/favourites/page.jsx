@@ -1,16 +1,14 @@
 "use client";
-import Header2 from '../components/header2';
-import Search from '../shared/search';
+// import Header2 from '../components/header2';
 import Propertycards from './propertycards';
 
 export default function FavouritesPage() {
   return (
     <>
-      <div className="dashboard-header lg:ml-4 ml-3">
+      {/* <div className="dashboard-header lg:ml-4 ml-3">
         <Header2 />
-        <Search /> {/* Fixed: Use uppercase `Search` */}
-      </div>
-      <div className="space-y-4 ml-6 lg:ml-5">
+      </div> */}
+      <div className="space-y-4 ml-12 lg:ml-8">
         <Propertycards />
       </div>
     </>

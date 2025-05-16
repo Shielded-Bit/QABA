@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSwipeable } from "react-swipeable";
-import PropertyModal from "../components/propertyModal"; // Import the modal component
+import PropertyModal from "../components/propertyModal"; // For property listings
+import NotificationModal from "@/app/components/NotificationModal";
 
 const notifications = [
   { id: 1, title: "Price Drop Alert", message: "Good news! The price of Luxury Villa has dropped by 10%. Check it out now" },
@@ -13,12 +14,15 @@ const notifications = [
 
 const Dashboard = () => {
   const [properties, setProperties] = useState([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalFilterType, setModalFilterType] = useState("ALL");
+  const [isPropertyModalOpen, setIsPropertyModalOpen] = useState(false);
+  const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
 
-  const openModal = (filterType = "ALL") => {
-    setModalFilterType(filterType);
-    setIsModalOpen(true);
+  const openPropertyModal = () => {
+    setIsPropertyModalOpen(true);
+  };
+
+  const openNotificationModal = () => {
+    setIsNotificationModalOpen(true);
   };
 
   useEffect(() => {
@@ -62,28 +66,34 @@ const Dashboard = () => {
   return (
     <div className="px-2 py-1">
       <div className="hidden md:grid md:grid-cols-2 gap-4">
-        <PropertiesSection properties={properties} onViewAll={() => openModal()} />
-        <NotificationsSection onViewAll={() => openModal("notifications")} />
+        <PropertiesSection properties={properties} onViewAll={openPropertyModal} />
+        <NotificationsSection onViewAll={openNotificationModal} />
       </div>
 
       <div className="flex flex-col space-y-4 md:hidden">
         <MobileSwiper items={[
           { 
             id: 'properties', 
-            content: <PropertiesList properties={properties} onViewAll={() => openModal()} /> 
+            content: <PropertiesList properties={properties} onViewAll={openPropertyModal} /> 
           },
           { 
             id: 'notifications', 
-            content: <NotificationsList onViewAll={() => openModal("notifications")} /> 
+            content: <NotificationsList onViewAll={openNotificationModal} /> 
           }
         ]} />
       </div>
 
       {/* Property Modal */}
       <PropertyModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)}
-        filterType={modalFilterType}
+        isOpen={isPropertyModalOpen} 
+        onClose={() => setIsPropertyModalOpen(false)}
+      />
+
+      {/* Notification Modal */}
+      <NotificationModal 
+        isOpen={isNotificationModalOpen} 
+        onClose={() => setIsNotificationModalOpen(false)}
+        notifications={notifications}
       />
     </div>
   );

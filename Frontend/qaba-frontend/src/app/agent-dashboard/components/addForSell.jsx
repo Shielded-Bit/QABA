@@ -1,60 +1,122 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-// Import the custom modals
-import SuccessModal from "./SuccessModal"; // Make sure path is correct
-import ConfirmationModal from "./ConfirmationModal"; // Make sure path is correct
+import SuccessModal from "./SuccessModal";
+import ConfirmationModal from "./ConfirmationModal";
+import DocumentUploadModal from "../../components/DocumentUploadModal"; // Import the new modal component
 
-// We'll assume API_BASE_URL is imported from somewhere or defined here
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://qaba.onrender.com/api/v1";
 
-// Format number with commas
+// Helper functions
 const formatNumberWithCommas = (value) => {
-  // Remove any non-digit characters
   const plainNumber = value.replace(/[^\d]/g, '');
-  
-  // Format with commas
-  if (plainNumber) {
-    return plainNumber.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  }
-  return '';
+  return plainNumber ? plainNumber.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '';
 };
 
-// Convert formatted string back to plain number
 const convertToPlainNumber = (formattedValue) => {
-  // Remove all non-digit characters and return as number
   return formattedValue.replace(/[^\d]/g, '');
 };
 
-// Updated createProperty function to handle both property data and media files in a single request
-const createProperty = async (data, mediaFiles) => {
+// Constants
+const PROPERTY_TYPES = [
+  { value: "HOUSE", label: "House" },
+  { value: "APARTMENT", label: "Apartment" },
+  { value: "DUPLEX", label: "Duplex" },
+  { value: "FULL_DETACHED", label: "Full Detached" },
+  { value: "SEMI_DETACHED", label: "Semi Detached" },
+  { value: "EMPTY_LAND", label: "Empty Land" },
+  { value: "LAND_WITH_BUILDING", label: "Land with Building" }
+];
+
+const DOCUMENT_TYPES = [
+  { value: "DEED", label: "Deed" },
+  { value: "TITLE", label: "Title Certificate" },
+  { value: "PERMIT", label: "Building Permit" },
+  { value: "SURVEY", label: "Survey Plan" },
+  { value: "LAND_USE", label: "Land Use Approval" },
+  { value: "TAX", label: "Tax Receipt" },
+  { value: "FLOOR_PLAN", label: "Floor Plan" },
+  { value: "UTILITY", label: "Utility Bills" },
+  { value: "OTHER", label: "Other Document" }
+];
+
+// Reusable components
+const FormField = ({ label, children, className = "" }) => (
+  <div className={className}>
+    <label className="block text-gray-700">{label}</label>
+    {children}
+  </div>
+);
+
+const Select = ({ name, value, onChange, options, placeholder }) => (
+  <select 
+    name={name}
+    value={value}
+    onChange={onChange}
+    className="w-full border border-gray-300 p-2 rounded-md"
+  >
+    {placeholder && <option value="">{placeholder}</option>}
+    {options.map(option => (
+      <option key={option.value} value={option.value}>{option.label}</option>
+    ))}
+  </select>
+);
+
+const FormInput = ({ type = "text", name, value, onChange, placeholder, className = "" }) => (
+  <input
+    type={type}
+    name={name}
+    value={value}
+    onChange={onChange}
+    className={`w-full border border-gray-300 p-2 rounded-md ${className}`}
+    placeholder={placeholder}
+  />
+);
+
+const FileUpload = ({ onChange, fileType, selectedFile }) => (
+  <div className="border-2 border-dashed border-gray-300 rounded-md p-6 flex items-center justify-center relative">
+    <input
+      type="file"
+      accept={fileType === 'video' ? "video/*" : fileType === 'document' ? ".pdf,.doc,.docx,.xls,.xlsx" : "image/*"}
+      onChange={(e) => onChange(e, fileType)}
+      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+    />
+    <div className="text-gray-500 text-center pointer-events-none">
+      {selectedFile ? (
+        <p>Selected: {selectedFile.name}</p>
+      ) : (
+        <p>Drag and drop {fileType === 'video' ? 'a video' : fileType === 'document' ? 'a document' : 'an image'} or click to upload</p>
+      )}
+    </div>
+  </div>
+);
+
+// API functions
+const createProperty = async (data, mediaFiles, documents) => {
   try {
     const formData = new FormData();
     
-    // Add all property details to FormData
+    // Add property details
     Object.keys(data).forEach(key => {
-      // Special handling for amenities_ids (array)
       if (key === 'amenities_ids' && Array.isArray(data[key])) {
-        data[key].forEach(id => {
-          formData.append('amenities_ids', id);
-        });
-      } 
-      // Handle other arrays if needed
-      else if (Array.isArray(data[key])) {
-        data[key].forEach(value => {
-          formData.append(`${key}`, value);
-        });
-      } 
-      // Handle normal fields
-      else {
+        data[key].forEach(id => formData.append('amenities_ids', id));
+      } else if (Array.isArray(data[key])) {
+        data[key].forEach(value => formData.append(`${key}`, value));
+      } else {
         formData.append(key, data[key]);
       }
     });
     
-    // Add media files to FormData
+    // Add media files
     if (mediaFiles.image1) formData.append('images', mediaFiles.image1);
     if (mediaFiles.image2) formData.append('images', mediaFiles.image2);
     if (mediaFiles.video) formData.append('video', mediaFiles.video);
+    
+    // Add documents
+    documents.forEach(doc => {
+      formData.append('documents', doc.file);
+      formData.append('document_types', doc.type);
+    });
     
     const accessToken = localStorage.getItem('access_token');
     
@@ -62,16 +124,8 @@ const createProperty = async (data, mediaFiles) => {
       throw new Error('No access token found. Please log in.');
     }
 
-    // For debugging purposes, log what's being sent
-    console.log("Form data being sent:");
-    for (let pair of formData.entries()) {
-      console.log(pair[0] + ': ' + pair[1]);
-    }
-
     const response = await axios.post(`${API_BASE_URL}/properties/`, formData, {
       headers: {
-        // Don't set Content-Type when using FormData
-        // Axios will automatically set it to multipart/form-data with the correct boundary
         'Authorization': `Bearer ${accessToken}`
       },
     });
@@ -83,29 +137,14 @@ const createProperty = async (data, mediaFiles) => {
 
   } catch (error) {
     console.error("API Error:", error.response?.data || error.message);
-    
-    // Error handling
-    if (error.response) {
-      return {
-        success: false,
-        message: error.response.data?.message || 'Failed to create property',
-        errors: error.response.data?.errors || {}
-      };
-    } else if (error.request) {
-      return {
-        success: false,
-        message: 'No response received from server. Please check your network connection.'
-      };
-    } else {
-      return {
-        success: false,
-        message: error.message || 'An unexpected error occurred'
-      };
-    }
+    return {
+      success: false,
+      message: error.response?.data?.message || error.message || 'Failed to create property',
+      errors: error.response?.data?.errors || {}
+    };
   }
 };
 
-// Function to fetch amenities from the API
 const fetchAmenities = async () => {
   try {
     const accessToken = localStorage.getItem('access_token');
@@ -120,11 +159,7 @@ const fetchAmenities = async () => {
       }
     });
 
-    if (response.data.success) {
-      return response.data.data;
-    } else {
-      throw new Error(response.data.message || 'Failed to fetch amenities');
-    }
+    return response.data.success ? response.data.data : [];
   } catch (error) {
     console.error("Error fetching amenities:", error);
     return [];
@@ -132,7 +167,7 @@ const fetchAmenities = async () => {
 };
 
 const AddForSell = () => {
-  // Form state - Updated to use amenities_ids instead of amenities
+  // Form state
   const [formData, setFormData] = useState({
     property_name: "",
     description: "",
@@ -145,33 +180,43 @@ const AddForSell = () => {
     area_sqft: 0,
     sale_price: "",
     property_status: "New",
-    amenities_ids: [], // Changed from amenities to amenities_ids
-    user_type: "owner"
+    amenities_ids: [],
+    user_type: "LandLord"
   });
 
-  // Formatted price display state
-  const [displayPrice, setDisplayPrice] = useState('');
+  // Documents state
+  const [documents, setDocuments] = useState([]);
+  
+  // Document modal state
+  const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
 
-  // Amenities state
+  // Other states
+  const [displayPrice, setDisplayPrice] = useState('');
   const [amenities, setAmenities] = useState([]);
   const [isLoadingAmenities, setIsLoadingAmenities] = useState(false);
+  const [mediaFiles, setMediaFiles] = useState({
+    image1: null,
+    image2: null,
+    video: null
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
+  const [isDraft, setIsDraft] = useState(false);
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [submissionType, setSubmissionType] = useState(null);
 
-  // Effect to format the initial price if it exists
+  // Effects
   useEffect(() => {
     if (formData.sale_price) {
       setDisplayPrice(formatNumberWithCommas(formData.sale_price));
     }
-  }, []);
-
-  // Effect to fetch amenities when component mounts
-  useEffect(() => {
+    
     const getAmenities = async () => {
       setIsLoadingAmenities(true);
       try {
         const amenitiesData = await fetchAmenities();
         setAmenities(amenitiesData);
-      } catch (error) {
-        console.error("Failed to fetch amenities:", error);
       } finally {
         setIsLoadingAmenities(false);
       }
@@ -180,46 +225,18 @@ const AddForSell = () => {
     getAmenities();
   }, []);
 
-  // Media files state
-  const [mediaFiles, setMediaFiles] = useState({
-    image1: null,
-    image2: null,
-    video: null
-  });
-
-  // Loading state
-  const [isLoading, setIsLoading] = useState(false);
-  
-  // Modal states
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalMessage, setModalMessage] = useState("");
-  const [isDraft, setIsDraft] = useState(false);
-  
-  // Error modal state
-  const [errorModalOpen, setErrorModalOpen] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
-  
-  // Confirmation modal state
-  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
-  const [submissionType, setSubmissionType] = useState(null); // 'draft' or 'review'
-
-  // Handle input changes
+  // Handlers
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     
-    // Special handling for sale_price
     if (name === 'sale_price') {
-      // Format the display value with commas
       const formattedValue = formatNumberWithCommas(value);
       setDisplayPrice(formattedValue);
-      
-      // Store the plain number in the actual formData
       setFormData({
         ...formData,
         [name]: convertToPlainNumber(formattedValue)
       });
     } else {
-      // Normal handling for other fields
       setFormData({
         ...formData,
         [name]: value
@@ -227,29 +244,18 @@ const AddForSell = () => {
     }
   };
 
-  // Handle amenities selection - Updated to work with amenities_ids
   const handleAmenityToggle = (amenityId) => {
     setFormData(prevState => {
       const currentAmenities = [...prevState.amenities_ids];
-      
-      // If amenity ID is already selected, remove it
-      if (currentAmenities.includes(amenityId)) {
-        return {
-          ...prevState,
-          amenities_ids: currentAmenities.filter(id => id !== amenityId)
-        };
-      } 
-      // Otherwise, add it
-      else {
-        return {
-          ...prevState,
-          amenities_ids: [...currentAmenities, amenityId]
-        };
-      }
+      return {
+        ...prevState,
+        amenities_ids: currentAmenities.includes(amenityId)
+          ? currentAmenities.filter(id => id !== amenityId)
+          : [...currentAmenities, amenityId]
+      };
     });
   };
 
-  // Handle file uploads
   const handleFileChange = (e, fileType) => {
     const file = e.target.files[0];
     if (file) {
@@ -260,11 +266,19 @@ const AddForSell = () => {
     }
   };
 
-  // Close the modal and reset form if needed
+  // New document upload handler using the modal
+  const handleDocumentUpload = ({ file, type }) => {
+    setDocuments([...documents, { file, type }]);
+    setIsDocumentModalOpen(false);
+  };
+
+  const removeDocument = (index) => {
+    setDocuments(documents.filter((_, i) => i !== index));
+  };
+
   const handleCloseModal = () => {
     setModalOpen(false);
     
-    // If it was a final submission (not draft), reset the form
     if (!isDraft) {
       setFormData({
         property_name: "",
@@ -278,8 +292,8 @@ const AddForSell = () => {
         area_sqft: 0,
         sale_price: "",
         property_status: "New",
-        amenities_ids: [], // Updated here
-        user_type: "owner"
+        amenities_ids: [],
+        user_type: "LandLord"
       });
       
       setMediaFiles({
@@ -288,22 +302,14 @@ const AddForSell = () => {
         video: null
       });
       
-      // Reset display price
+      setDocuments([]);
       setDisplayPrice('');
     }
   };
 
-  // Close error modal
-  const handleCloseErrorModal = () => {
-    setErrorModalOpen(false);
-  };
-  
-  // New function to initiate submission with confirmation
   const initiateSubmit = (isDraftSubmission) => {
-    // Store the submission type for when user confirms
     setSubmissionType(isDraftSubmission ? 'draft' : 'review');
     
-    // First validate required fields before showing confirmation modal
     const requiredFields = [
       'property_name', 
       'description', 
@@ -316,30 +322,22 @@ const AddForSell = () => {
     );
 
     if (missingFields.length > 0) {
-      setErrorMessage(`Please fill in the following required fields: ${missingFields.join(', ')}`);
-      setErrorModalOpen(true);
+      alert(`Please fill in the following required fields: ${missingFields.join(', ')}`);
       return;
     }
     
-    // Open confirmation modal if validation passes
     setConfirmModalOpen(true);
   };
   
-  // Function to handle confirmation
   const confirmSubmit = () => {
-    // Close confirmation modal
     setConfirmModalOpen(false);
-    
-    // Call the original handleSubmit with the stored submission type
     handleSubmit(submissionType === 'draft');
   };
 
-  // Updated handleSubmit function
   const handleSubmit = async (isDraftSubmission = false) => {
     try {
       setIsLoading(true);
       
-      // Create payload with all necessary data
       const payload = {
         ...formData,
         submit_for_review: !isDraftSubmission,
@@ -348,13 +346,9 @@ const AddForSell = () => {
         area_sqft: formData.area_sqft ? parseFloat(formData.area_sqft) : 0
       };
       
-      console.log("Submitting data:", payload);
-      
-      // Use the updated createProperty function with both data and files
-      const response = await createProperty(payload, mediaFiles);
+      const response = await createProperty(payload, mediaFiles, documents);
         
       if (!response.success) {
-        // Handle errors
         if (response.errors?.admin_user) {
           if (isDraftSubmission) {
             setIsDraft(true);
@@ -363,175 +357,136 @@ const AddForSell = () => {
             return;
           }
           
-          setErrorMessage('Property submission requires admin review. Please contact support.');
-          setErrorModalOpen(true);
+          alert('Property submission requires admin review. Please contact support.');
           return;
         }
         
         throw new Error(response.message || "Failed to submit property data");
       }
       
-      // Show success message
       setIsDraft(isDraftSubmission);
-      if (isDraftSubmission) {
-        setModalMessage('Your property has been saved as a draft. You can continue editing or view your listings.');
-      } else {
-        setModalMessage('Your property has been submitted for review. You will be notified when it is approved.');
-      }
+      setModalMessage(isDraftSubmission
+        ? 'Your property has been saved as a draft. You can continue editing or view your listings.'
+        : 'Your property has been submitted for review. You will be notified when it is approved.'
+      );
       setModalOpen(true);
         
     } catch (error) {
       console.error("Error submitting property:", error);
-      setErrorMessage(error.message || 'Something went wrong');
-      setErrorModalOpen(true);
+      alert(error.message || 'Something went wrong');
     } finally {
       setIsLoading(false);
     }
   };
+
+  // Options for dropdowns
+  const countOptions = [
+    { value: "1", label: "1" },
+    { value: "2", label: "2" },
+    { value: "3", label: "3" },
+    { value: "4", label: "4" },
+    { value: "5", label: "5+" }
+  ];
+
+  const userTypeOptions = [
+    { value: "LandLord", label: "Landlord" },
+    { value: "agent", label: "Agent" }
+  ];
+
+  const statusOptions = [
+    { value: "New", label: "New" },
+    { value: "Under Construction", label: "Under Construction" },
+    { value: "Ready to Move In", label: "Ready to Move In" }
+  ];
+
+  const listingTypeOptions = [
+    { value: "SALE", label: "For Sale" }
+  ];
 
   return (
     <div className="rounded-lg py-6 md:px-3">
       <h2 className="text-2xl font-normal text-[#014d98] mb-6">Property Details</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Dropdown - What Best Describes You */}
-        <div>
-          <label className="block text-gray-700">What best describes you?</label>
-          <select 
+        <FormField label="What best describes you?">
+          <Select 
             name="user_type"
             value={formData.user_type}
             onChange={handleInputChange}
-            className="w-full border border-gray-300 p-2 rounded-md"
-          >
-            <option value="owner">I am the property owner</option>
-            <option value="agent">I am a property agent</option>
-          </select>
-        </div>
-
-        {/* Property Name */}
-        <div>
-          <label className="block text-gray-700">Property Name</label>
-          <input
-            type="text"
+            options={userTypeOptions}
+          />
+        </FormField>
+        <FormField label="Property Type">
+          <Select 
+            name="property_type"
+            value={formData.property_type}
+            onChange={handleInputChange}
+            options={PROPERTY_TYPES}
+          />
+        </FormField>
+        <FormField label="Property Name">
+          <FormInput
             name="property_name"
             value={formData.property_name}
             onChange={handleInputChange}
-            className="w-full border border-gray-300 p-2 rounded-md"
             placeholder="Greenhood House"
           />
-        </div>
-
-        {/* Property Type */}
-        <div>
-            <label className="block text-gray-700">Property Type</label>
-            <select 
-              name="property_type"
-              value={formData.property_type}
-              onChange={handleInputChange}
-              className="w-full border border-gray-300 p-2 rounded-md"
-            >
-              <option value="HOUSE">House</option>
-              <option value="APARTMENT">Apartment</option>
-              <option value="LAND">Land</option>
-            </select> 
-        </div>
-
-
-        {/* Number of Bedrooms */}
-        <div>
-          <label className="block text-gray-700">Number of Bedrooms</label>
-          <select 
+        </FormField>
+        <FormField label="Number of Bedrooms">
+          <Select 
             name="bedrooms"
             value={formData.bedrooms}
             onChange={handleInputChange}
-            className="w-full border border-gray-300 p-2 rounded-md"
-          >
-            <option value="1">1</option>
-            <option value="2">2</option>
-            <option value="3">3</option>
-            <option value="4">4</option>
-            <option value="5">5+</option>
-          </select>
-        </div>
-
-        {/* Number of Bathrooms */}
-        <div>
-          <label className="block text-gray-700">Number of Bathrooms</label>
-          <select 
+            options={countOptions}
+          />
+        </FormField>
+        <FormField label="Number of Bathrooms">
+          <Select 
             name="bathrooms"
             value={formData.bathrooms}
             onChange={handleInputChange}
-            className="w-full border border-gray-300 p-2 rounded-md"
-          >
-            <option value="1">1</option>
-            <option value="2">2</option>
-            <option value="3">3</option>
-            <option value="4">4</option>
-            <option value="5">5+</option>
-          </select>
-        </div>
-
-        {/* Listing Type */}
-        <div>
-          <label className="block text-gray-700">Listing Type</label>
-          <select 
+            options={countOptions}
+          />
+        </FormField>
+        <FormField label="Listing Type">
+          <Select 
             name="listing_type"
             value={formData.listing_type}
             onChange={handleInputChange}
-            className="w-full border border-gray-300 p-2 rounded-md"
-          >
-            <option value="SALE">For Sale</option>
-          </select>
-        </div>
-
-        {/* Square Footage */}
-        <div>
-          <label className="block text-gray-700">Square Footage (Optional)</label>
-          <input
+            options={listingTypeOptions}
+          />
+        </FormField>
+        <FormField label="Square Footage (Optional)">
+          <FormInput
             type="number"
             name="area_sqft"
             value={formData.area_sqft}
             onChange={handleInputChange}
-            className="w-full border border-gray-300 p-2 rounded-md"
             placeholder="Enter square footage"
           />
-        </div>
-
-        {/* Price - Updated to handle formatting */}
-        <div>
-          <label className="block text-gray-700">Sale Price</label>
-          <input
-            type="text"
+        </FormField>
+        <FormField label="Sale Price">
+          <FormInput
             name="sale_price"
             value={displayPrice}
             onChange={handleInputChange}
-            className="w-full border border-gray-300 p-2 rounded-md"
             placeholder="12,000,000"
           />
-        </div>
-
-        {/* Property Status */}
-        <div>
-          <label className="block text-gray-700">Property Status</label>
-          <select 
+        </FormField>
+        <FormField label="Property Status">
+          <Select 
             name="property_status"
             value={formData.property_status}
             onChange={handleInputChange}
-            className="w-full border border-gray-300 p-2 rounded-md"
-          >
-            <option value="New">New</option>
-            <option value="Under Construction">Under Construction</option>
-            <option value="Ready to Move In">Ready to Move In</option>
-          </select>
-        </div>
+            options={statusOptions}
+          />
+        </FormField>
       </div>
 
-      {/* Address and Description */}
       <div className="mt-8">
         <h3 className="text-xl font-normal text-[#014d98]">Address and Description</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-          <div>
-            <label className="block text-gray-700">Property Description</label>
+          <FormField label="Property Description">
             <textarea
               name="description"
               value={formData.description}
@@ -539,9 +494,8 @@ const AddForSell = () => {
               className="w-full border border-gray-300 p-2 rounded-md h-32"
               placeholder="In a couple of sentences, tell potential buyers about your property's best features"
             ></textarea>
-          </div>
-          <div>
-            <label className="block text-gray-700">Property Address</label>
+          </FormField>
+          <FormField label="Property Address">
             <textarea
               name="location"
               value={formData.location}
@@ -549,70 +503,92 @@ const AddForSell = () => {
               className="w-full border border-gray-300 p-2 rounded-md h-32"
               placeholder="In detail, explain the address of the environment for easy navigation"
             ></textarea>
-          </div>
+          </FormField>
         </div>
       </div>
 
-      {/* Upload Media */}
       <div className="mt-8">
         <h3 className="text-xl font-normal text-[#014d98]">Upload Media</h3>
         <p className="text-sm text-gray-600 mt-2">
           Showcase your property with high-quality images and a video. Clear visuals attract more buyers
-          and increase engagement. Follow the guidelines below for the best results.
+          and increase engagement.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
-          {/* Upload Box 1 */}
-          <div className="border-2 border-dashed border-gray-300 rounded-md p-6 flex items-center justify-center relative">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => handleFileChange(e, 'image1')}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            />
-            <div className="text-gray-500 text-center pointer-events-none">
-              {mediaFiles.image1 ? (
-                <p>Selected: {mediaFiles.image1.name}</p>
-              ) : (
-                <p>Drag and drop an image or click to upload</p>
-              )}
-            </div>
-          </div>
-          {/* Upload Box 2 */}
-          <div className="border-2 border-dashed border-gray-300 rounded-md p-6 flex items-center justify-center relative">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => handleFileChange(e, 'image2')}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            />
-            <div className="text-gray-500 text-center pointer-events-none">
-              {mediaFiles.image2 ? (
-                <p>Selected: {mediaFiles.image2.name}</p>
-              ) : (
-                <p>Drag and drop an image or click to upload</p>
-              )}
-            </div>
-          </div>
-          {/* Upload Box 3 */}
-          <div className="border-2 border-dashed border-gray-300 rounded-md p-6 flex items-center justify-center relative">
-            <input
-              type="file"
-              accept="video/*"
-              onChange={(e) => handleFileChange(e, 'video')}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            />
-            <div className="text-gray-500 text-center pointer-events-none">
-              {mediaFiles.video ? (
-                <p>Selected: {mediaFiles.video.name}</p>
-              ) : (
-                <p>Drag and drop a video or click to upload</p>
-              )}
-            </div>
-          </div>
+          <FileUpload 
+            onChange={handleFileChange} 
+            fileType="image1"
+            selectedFile={mediaFiles.image1} 
+          />
+          <FileUpload 
+            onChange={handleFileChange} 
+            fileType="image2"
+            selectedFile={mediaFiles.image2} 
+          />
+          <FileUpload 
+            onChange={handleFileChange} 
+            fileType="video"
+            selectedFile={mediaFiles.video} 
+          />
         </div>
       </div>
 
-      {/* Features and Amenities - Updated to use fetched amenities */}
+      {/* Updated Document Upload Section */}
+      <div className="mt-8">
+        <h3 className="text-xl font-normal text-[#014d98]">Property Documents</h3>
+        <p className="text-sm text-gray-600 mt-2">
+          Upload important property documents such as deeds, title certificates, permits, etc.
+        </p>
+        
+        <div className="flex justify-end mt-4">
+          <button
+            type="button"
+            onClick={() => setIsDocumentModalOpen(true)}
+            className="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600"
+          >
+            <span className="flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+              </svg>
+              Upload Document
+            </span>
+          </button>
+        </div>
+        
+        {/* Display uploaded documents */}
+        {documents.length > 0 && (
+          <div className="mt-4">
+            <h4 className="text-lg font-medium">Uploaded Documents</h4>
+            <div className="mt-2 border rounded-md divide-y">
+              {documents.map((doc, index) => {
+                const docType = DOCUMENT_TYPES.find(type => type.value === doc.type);
+                return (
+                  <div key={index} className="flex items-center justify-between p-3">
+                    <div className="flex items-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                      </svg>
+                      <div>
+                        <p className="font-medium">{docType ? docType.label : doc.type}</p>
+                        <p className="text-sm text-gray-500">{doc.file.name}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => removeDocument(index)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Features and Amenities */}
       <div className="mt-8">
         <h3 className="text-xl font-normal text-[#014d98]">Features and Amenities</h3>
         {isLoadingAmenities ? (
@@ -660,7 +636,14 @@ const AddForSell = () => {
         </button>
       </div>
 
-      {/* Confirmation Modal */}
+      {/* Modals */}
+      <DocumentUploadModal
+        isOpen={isDocumentModalOpen}
+        onClose={() => setIsDocumentModalOpen(false)}
+        onUpload={handleDocumentUpload}
+        documentTypes={DOCUMENT_TYPES}
+      />
+
       <ConfirmationModal 
         isOpen={confirmModalOpen}
         onClose={() => setConfirmModalOpen(false)}
@@ -673,54 +656,12 @@ const AddForSell = () => {
         }
       />
 
-      {/* Success Modal */}
       <SuccessModal 
         isOpen={modalOpen}
         onClose={handleCloseModal}
         message={modalMessage}
         isDraft={isDraft}
       />
-      
-      {/* Error Modal */}
-      <ErrorModal
-        isOpen={errorModalOpen}
-        onClose={handleCloseErrorModal}
-        message={errorMessage}
-      />
-    </div>
-  );
-};
-
-// Error Modal Component
-const ErrorModal = ({ isOpen, onClose, message }) => {
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl p-6 md:p-8 w-11/12 max-w-md">
-        <div className="flex flex-col items-center">
-          {/* Error Icon */}
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </div>
-          
-          {/* Title */}
-          <h3 className="text-xl font-semibold text-[#014d98] mb-2">Error</h3>
-          
-          {/* Message */}
-          <p className="text-gray-600 text-center mb-6">{message}</p>
-          
-          {/* Button */}
-          <button
-            onClick={onClose}
-            className="w-full bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700"
-          >
-            Close
-          </button>
-        </div>
-      </div>
     </div>
   );
 };

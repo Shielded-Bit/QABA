@@ -8,7 +8,6 @@ import {
   Heart,
   CreditCard,
   HousePlug,
-  // Mail,
   Settings,
   HelpCircle,
   ChevronDown,
@@ -62,20 +61,20 @@ export default function Sidebar() {
         isSidebarCollapsed ? "w-16" : "w-64"
       }`}
     >
-   <div className="px-6 sm:px-6 py-3 sm:py-7 flex items-center justify-between border-b">
-  <div className={`text-xl font-bold ${isSidebarCollapsed ? "hidden" : "block"}`}>
-    <Link href="/" className="text-gradient hover:opacity-80 transition-opacity">
-      QABA
-    </Link>
-  </div>
-  {isMobile && (
-    <button onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} className="px-0 hover:bg-gray-100 rounded">
-      <Menu />
-    </button>
-  )}
-</div>
+      <div className="px-6 sm:px-6 py-3 sm:py-7 flex items-center justify-between border-b">
+        <div className={`text-xl font-bold ${isSidebarCollapsed ? "hidden" : "block"}`}>
+          <Link href="/" className="text-gradient hover:opacity-80 transition-opacity">
+            QABA
+          </Link>
+        </div>
+        {isMobile && (
+          <button onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} className="px-0 hover:bg-gray-100 rounded">
+            <Menu />
+          </button>
+        )}
+      </div>
       
-      <nav className="flex-1 p-4 space-y-4">
+      <nav className="flex-1 p-4 space-y-4 relative">
         {renderLink("/agent-dashboard", "Dashboard", pathname, LayoutDashboard, isSidebarCollapsed)}
 
         {renderDropdown("Properties", Building2, isPropertiesOpen, setIsPropertiesOpen, [
@@ -91,7 +90,6 @@ export default function Sidebar() {
         {renderLink("/agent-dashboard/favourites", "Favourite", pathname, Heart, isSidebarCollapsed)}
         {renderLink("/agent-dashboard/transactions", "Transactions", pathname, CreditCard, isSidebarCollapsed)}
         {renderLink("/agent-dashboard/propertyOverview", "Property Overview", pathname, ChartNoAxesCombined, isSidebarCollapsed)}
-        {/* {renderLink("/agent-dashboard/messages", "Message", pathname, Mail, isSidebarCollapsed)} */}
       </nav>
 
       <div className="p-4 space-y-2 border-t">
@@ -110,7 +108,7 @@ function renderDropdown(label, Icon, isOpen, setIsOpen, links, pathname, isColla
   const isAnySubLinkActive = links.some(link => checkActiveLink(pathname, link.href));
   
   return (
-    <div>
+    <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={`w-full flex items-center ${
@@ -120,7 +118,14 @@ function renderDropdown(label, Icon, isOpen, setIsOpen, links, pathname, isColla
         }`}
       >
         <div className="flex items-center">
-          <Icon className={getIconClass(isCollapsed)} />
+          <div className="relative">
+            <Icon className={getIconClass(isCollapsed)} />
+            {isCollapsed && (
+              <div className="absolute left-full z-50 ml-2 bg-black text-white text-xs px-2 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                {label}
+              </div>
+            )}
+          </div>
           <span className={getTextClass(isCollapsed)}>{label}</span>
         </div>
         {!isCollapsed && (
@@ -147,7 +152,7 @@ function renderDropdown(label, Icon, isOpen, setIsOpen, links, pathname, isColla
 
 function getLinkClass(pathname, href, isCollapsed) {
   const isActive = checkActiveLink(pathname, href);
-  return `flex items-center ${
+  return `group flex items-center ${
     isCollapsed ? "justify-center px-2" : "px-3"
   } py-2 rounded-md ${
     isActive
@@ -171,7 +176,14 @@ function getTextClass(isCollapsed) {
 function renderLink(href, label, pathname, Icon, isCollapsed) {
   return (
     <a href={href} className={getLinkClass(pathname, href, isCollapsed)}>
-      <Icon className={getIconClass(isCollapsed)} />
+      <div className="relative">
+        <Icon className={getIconClass(isCollapsed)} />
+        {isCollapsed && (
+          <div className="absolute left-full z-50 ml-2 bg-black text-white text-xs px-2 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+            {label}
+          </div>
+        )}
+      </div>
       <span className={getTextClass(isCollapsed)}>{label}</span>
     </a>
   );
@@ -179,8 +191,19 @@ function renderLink(href, label, pathname, Icon, isCollapsed) {
 
 function renderSubLink(href, label, pathname, Icon, isCollapsed, key) {
   return (
-    <a key={key} href={href} className={getLinkClass(pathname, href, isCollapsed)}>
-      <Icon className={getIconClass(isCollapsed)} />
+    <a 
+      key={key} 
+      href={href} 
+      className={`group ${getLinkClass(pathname, href, isCollapsed)}`}
+    >
+      <div className="relative">
+        <Icon className={getIconClass(isCollapsed)} />
+        {isCollapsed && (
+          <div className="absolute left-full z-50 ml-2 bg-black text-white text-xs px-2 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+            {label}
+          </div>
+        )}
+      </div>
       <span className={getTextClass(isCollapsed)}>{label}</span>
     </a>
   );

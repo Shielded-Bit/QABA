@@ -14,7 +14,6 @@ export default function TopNav() {
   ]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [profileImageUrl, setProfileImageUrl] = useState("");
   const [isBrowser, setIsBrowser] = useState(false);
   
   // Use the shared profile context
@@ -29,30 +28,6 @@ export default function TopNav() {
   useEffect(() => {
     console.log("Current user data:", userData);
   }, [userData]);
-
-  // Set profile image when component mounts or when profileImage from context changes
-  useEffect(() => {
-    if (profileImage) {
-      setProfileImageUrl(profileImage);
-    } else if (userData) {
-      // Try to get from userData as backup
-      const photoUrl = userData?.profile_photo_url || 
-                      userData?.agent_profile?.profile_photo_url || 
-                      userData?.client_profile?.profile_photo_url;
-      if (photoUrl) {
-        setProfileImageUrl(photoUrl);
-      } else {
-        // Try to get from localStorage as final backup
-        const savedImage = localStorage.getItem('profile_photo_url');
-        if (savedImage) {
-          setProfileImageUrl(savedImage);
-        } else {
-          // Default placeholder if no image is found
-          setProfileImageUrl("https://i.pravatar.cc/150");
-        }
-      }
-    }
-  }, [profileImage, userData]);
 
   // Add body class to prevent scrolling when notifications are open
   useEffect(() => {
@@ -77,6 +52,29 @@ export default function TopNav() {
         notif.id === id ? { ...notif, expanded: !notif.expanded } : notif
       )
     );
+  };
+
+  // Get the profile image URL
+  const getProfileImageUrl = () => {
+    if (profileImage) {
+      return profileImage;
+    } else if (userData) {
+      // Try to get from userData as backup
+      const photoUrl = userData?.profile_photo_url || 
+                      userData?.agent_profile?.profile_photo_url || 
+                      userData?.client_profile?.profile_photo_url;
+      if (photoUrl) {
+        return photoUrl;
+      } else {
+        // Try to get from localStorage as final backup
+        const savedImage = localStorage.getItem('profile_photo_url');
+        if (savedImage) {
+          return savedImage;
+        }
+      }
+    }
+    // Default placeholder if no image is found
+    return "https://i.pravatar.cc/150";
   };
 
   // Get user display name based on the structure from /api/v1/users/me/ endpoint
@@ -260,14 +258,13 @@ export default function TopNav() {
           {/* User Profile */}
           <Link href={getSettingsUrl()} className="flex items-center gap-2 cursor-pointer">
             <div className="w-10 h-10 relative rounded-full overflow-hidden border border-gray-300 shadow-sm">
-              {!isLoading && profileImageUrl ? (
+              {!isLoading ? (
                 <Image
-                  src={profileImageUrl}
+                  src={getProfileImageUrl()}
                   alt={`${getUserDisplayName()} Profile`}
                   width={40}
                   height={40}
                   className="rounded-full object-cover"
-                  key={profileImageUrl}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-gray-200">
@@ -294,12 +291,7 @@ export default function TopNav() {
 
         {/* Search Bar (Mobile) */}
         <div className="flex items-center flex-1 relative mx-4">
-          <Search className="absolute left-3 h-4 w-4 text-gray-500" />
-          <input
-            type="text"
-            placeholder="Search..."
-            className="w-full pl-8 p-2 border border-gray-300 rounded-md text-xs focus:ring focus:ring-blue-300"
-          />
+         
         </div>
 
         {/* Notification Bell */}
@@ -313,14 +305,13 @@ export default function TopNav() {
         {/* User Profile (Mobile) */}
         <Link href={getSettingsUrl()} className="flex items-center gap-1 ml-4 cursor-pointer">
           <div className="w-8 h-8 relative rounded-full overflow-hidden border border-gray-300">
-            {!isLoading && profileImageUrl ? (
+            {!isLoading ? (
               <Image
-                src={profileImageUrl}
+                src={getProfileImageUrl()}
                 alt={`${getShortName()} Profile`}
                 width={32}
                 height={32}
                 className="rounded-full object-cover"
-                key={profileImageUrl}
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gray-200">

@@ -97,15 +97,22 @@ export default function Sidebar() {
       <nav className="flex-1 p-4 space-y-4">
         {renderLink('/dashboard', 'Dashboard', pathname, LayoutDashboard, isSidebarCollapsed)}
 
-        <div>
+        <div className="relative group">
           <button
             onClick={() => setIsPropertiesOpen(!isPropertiesOpen)}
             className={`w-full flex items-center ${
               isSidebarCollapsed ? 'justify-center px-2' : 'justify-between px-3'
             } py-2 rounded-md hover:bg-gradient-to-r from-[#014d98] to-[#3ab7b1] hover:text-white transition-all duration-200`}
           >
-            <div className="flex items-center">
-              <Building2 className={getIconClass(isSidebarCollapsed)} />
+            <div className="flex items-center relative">
+              <div className="relative">
+                <Building2 className={getIconClass(isSidebarCollapsed)} />
+                {isSidebarCollapsed && (
+                  <div className="absolute left-full z-50 ml-2 bg-black text-white text-xs px-2 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                    Properties
+                  </div>
+                )}
+              </div>
               <span className={getTextClass(isSidebarCollapsed)}>Properties</span>
             </div>
             {!isSidebarCollapsed && (
@@ -144,7 +151,7 @@ export default function Sidebar() {
 
 function getLinkClass(pathname, href, isCollapsed) {
   const isActive = checkActiveLink(pathname, href);
-  return `flex items-center ${isCollapsed ? 'justify-center px-2' : 'px-3'} py-2 rounded-md transition-all duration-200 ${
+  return `group flex items-center ${isCollapsed ? 'justify-center px-2' : 'px-3'} py-2 rounded-md transition-all duration-200 ${
     isActive
       ? 'bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white'
       : 'hover:bg-gradient-to-r from-[#014d98] to-[#3ab7b1] hover:text-white'
@@ -168,19 +175,40 @@ function getTextClass(isCollapsed) {
 
 function renderLink(href, label, pathname, Icon, isCollapsed) {
   return (
-    <Link href={href} className={getLinkClass(pathname, href, isCollapsed)}>
-      <Icon className={getIconClass(isCollapsed)} size={isCollapsed ? 20 : 18} />
+    <Link 
+      href={href} 
+      className={getLinkClass(pathname, href, isCollapsed)}
+    >
+      <div className="relative">
+        <Icon className={getIconClass(isCollapsed)} size={isCollapsed ? 20 : 18} />
+        {isCollapsed && (
+          <div className="absolute left-full z-50 ml-2 bg-black text-white text-xs px-2 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+            {label}
+          </div>
+        )}
+      </div>
       <span className={getTextClass(isCollapsed)}>{label}</span>
     </Link>
   );
 }
 
 function renderSubLink(href, label, pathname, Icon, isCollapsed) {
+  // Render only when not collapsed, with tooltip support
   if (isCollapsed) return null;
   
   return (
-    <Link href={href} className={getLinkClass(pathname, href, isCollapsed)}>
-      <Icon className={getIconClass(isCollapsed)} size={16} />
+    <Link 
+      href={href} 
+      className={getLinkClass(pathname, href, isCollapsed)}
+    >
+      <div className="relative">
+        <Icon className={getIconClass(isCollapsed)} size={16} />
+        {isCollapsed && (
+          <div className="absolute left-full z-50 ml-2 bg-black text-white text-xs px-2 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+            {label}
+          </div>
+        )}
+      </div>
       <span className={getTextClass(isCollapsed)}>{label}</span>
     </Link>
   );

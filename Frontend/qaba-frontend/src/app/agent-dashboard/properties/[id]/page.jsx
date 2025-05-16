@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, PlayCircle, BookImage } from "lucide-react";
+import { ChevronLeft, ChevronRight, PlayCircle, BookImage, Info } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -17,6 +17,7 @@ export default function PropertyDetail() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [showVideo, setShowVideo] = useState(false);
+  const [showFeeBreakdown, setShowFeeBreakdown] = useState(false);
 
   useEffect(() => {
     const fetchPropertyDetail = async () => {
@@ -79,6 +80,10 @@ export default function PropertyDetail() {
     setShowVideo(!showVideo);
   };
 
+  const toggleFeeBreakdown = () => {
+    setShowFeeBreakdown(!showFeeBreakdown);
+  };
+
   const handleDeleteProperty = async () => {
     try {
       setDeleteLoading(true);
@@ -109,6 +114,16 @@ export default function PropertyDetail() {
     } finally {
       setDeleteLoading(false);
     }
+  };
+
+  // Format currency in Naira
+  const formatCurrency = (amount) => {
+    if (!amount) return 'N/A';
+    
+    return new Intl.NumberFormat('en-NG', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(amount);
   };
 
   // Helper function to render action buttons based on property status
@@ -245,8 +260,14 @@ export default function PropertyDetail() {
     ? property.images 
     : ["/api/placeholder/400/320"];
 
-  const amount = property.rent_price || property.sale_price || 'N/A';
+  const basePrice = property.rent_price || property.sale_price || 0;
   const propertyType = property.listing_type === "SALE" ? "Buy" : "Rent";
+  const rentFrequency = property.rent_frequency || 'Monthly';
+  
+  // Calculate fees based on property data
+  const agentFee = property.agent_commission || (basePrice * 0.1);
+  const qabaFee = property.qaba_fee || (basePrice * 0.05);
+  const totalPrice = property.total_price || (parseFloat(basePrice) + parseFloat(agentFee) + parseFloat(qabaFee));
 
   // Add status indicator badge
   const getStatusBadge = () => {
@@ -265,7 +286,7 @@ export default function PropertyDetail() {
   const hasVideo = property.video && property.video.video_url;
 
   return (
-    <div className="w-full mx-auto p-0 lg:p-8 pl-14 ">
+    <div className="w-full mx-auto p-0 lg:p-8 pl-14">
       {/* Toast Container for notifications */}
       <ToastContainer position="top-right" autoClose={3000} />
       
@@ -317,11 +338,86 @@ export default function PropertyDetail() {
         <div className="flex flex-wrap gap-4 md:gap-6 mb-6">
           {property.amenities && property.amenities.slice(0, 3).map((amenity, index) => (
             <div key={index} className="flex items-center gap-2 text-gray-500">
-              {/* Use the emoji icon directly from the backend data */}
               <span className="text-2xl">{amenity.icon || '🏠'}</span>
               <span>{typeof amenity === 'string' ? amenity : amenity.name}</span>
             </div>
           ))}
+        </div>
+
+        {/* Pricing Info Card */}
+        <div className="mb-6 bg-gradient-to-r from-blue-50 to-green-50 p-4 rounded-lg border border-blue-100">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-blue-900 mb-2">
+                {propertyType === "Buy" ? "Purchase Price" : `${rentFrequency} Rent`}
+              </h2>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl md:text-3xl font-bold text-green-600">
+                  ₦ {formatCurrency(basePrice)}
+                </span>
+                <span className="text-gray-500 text-sm">
+                  {propertyType === "Rent" ? `/${rentFrequency.toLowerCase()}` : ""}
+                </span>
+              </div>
+            </div>
+            
+            <div className="mt-4 md:mt-0">
+              <div className="flex items-center gap-2">
+                <span className="text-xl md:text-2xl font-bold">
+                  ₦ {formatCurrency(totalPrice)}
+                </span>
+                <span className="text-gray-700 font-medium">Initial Payment</span>
+                <button 
+                  onClick={toggleFeeBreakdown}
+                  className="p-1 text-blue-600 hover:text-blue-800"
+                  aria-label="View fee breakdown"
+                >
+                  <Info className="w-5 h-5" />
+                </button>
+              </div>
+              <p className="text-sm text-gray-500 mt-1">Includes one-time fees</p>
+            </div>
+          </div>
+          
+          {/* Fee Breakdown */}
+          {showFeeBreakdown && (
+            <div className="mt-4 pt-4 border-t border-blue-100">
+              <h3 className="font-semibold text-blue-900 mb-2">Fee Breakdown</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-white p-3 rounded shadow-sm">
+                  <p className="text-sm text-gray-500">Base {propertyType === "Rent" ? "Rent" : "Price"}</p>
+                  <p className="font-bold">₦ {formatCurrency(basePrice)}</p>
+                  <p className="text-xs text-gray-500">
+                    {propertyType === "Rent" ? `Recurring ${rentFrequency.toLowerCase()}` : "One-time payment"}
+                  </p>
+                </div>
+                
+                <div className="bg-white p-3 rounded shadow-sm">
+                  <p className="text-sm text-gray-500">Agent Fee (10%)</p>
+                  <p className="font-bold">₦ {formatCurrency(agentFee)}</p>
+                  <p className="text-xs text-gray-500">One-time payment</p>
+                </div>
+                
+                <div className="bg-white p-3 rounded shadow-sm">
+                  <p className="text-sm text-gray-500">Qaba Fee (5%)</p>
+                  <p className="font-bold">₦ {formatCurrency(qabaFee)}</p>
+                  <p className="text-xs text-gray-500">One-time payment</p>
+                </div>
+              </div>
+              
+              <div className="mt-4 bg-blue-50 p-3 rounded">
+                <div className="flex justify-between items-center">
+                  <p className="font-medium">Initial Payment:</p>
+                  <p className="font-bold text-lg">₦ {formatCurrency(totalPrice)}</p>
+                </div>
+                {propertyType === "Rent" && (
+                  <p className="text-sm text-gray-600 mt-2">
+                    After initial payment, tenant will pay ₦ {formatCurrency(basePrice)} {rentFrequency.toLowerCase()}.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Image and Description Section - Side by Side on md and larger screens */}
@@ -435,8 +531,8 @@ export default function PropertyDetail() {
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8 border-t border-b py-6">
           <div>
-            <h3 className="text-gray-500 text-sm md:text-base mb-1 md:mb-2">{propertyType === "Buy" ? "Sale Price" : `Rent (${property.rent_frequency || 'Monthly'})`}</h3>
-            <p className="text-xl md:text-2xl font-bold">₦ {amount}</p>
+            <h3 className="text-gray-500 text-sm md:text-base mb-1 md:mb-2">Type</h3>
+            <p className="text-xl md:text-2xl font-bold">{property.property_type_display || 'N/A'}</p>
           </div>
           
           <div>
@@ -456,7 +552,7 @@ export default function PropertyDetail() {
                 (typeof property.area_sqft === 'object' ? 
                   `${property.area_sqft.min} - ${property.area_sqft.max}` : 
                   property.area_sqft) : 
-                'N/A'} sq ft
+                'N/A'} {property.area_sqft ? 'sq ft' : ''}
             </p>
           </div>
         </div>
@@ -467,7 +563,6 @@ export default function PropertyDetail() {
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
               {property.amenities.map((amenity, index) => (
                 <div key={index} className="flex items-center gap-2 md:gap-3">
-                  {/* Display the icon directly from the backend data */}
                   <span className="text-2xl">{amenity.icon || '🏠'}</span>
                   <span className="text-sm md:text-base font-medium">
                     {typeof amenity === 'string' ? amenity : amenity.name}
