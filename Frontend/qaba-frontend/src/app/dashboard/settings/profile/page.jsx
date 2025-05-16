@@ -177,7 +177,7 @@ export default function ProfilePage() {
     }
     
     // Otherwise, ensure it's properly joined with the API base URL
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://qaba.onrender.com';
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
     
     // Remove leading slash from imageUrl if it exists and the baseUrl ends with slash
     if (imageUrl.startsWith('/') && baseUrl.endsWith('/')) {

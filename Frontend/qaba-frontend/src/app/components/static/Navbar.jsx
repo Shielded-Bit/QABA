@@ -10,6 +10,14 @@ import { XCircle, AlertCircle, LogOut } from "lucide-react";
 import Button from "../shared/Button";
 import { useProfile } from "../../../contexts/ProfileContext";
 import useLogout from "../../hooks/useLogout"; // Import the logout hook
+import { 
+  Search, 
+  Home, 
+  PlusCircle, 
+  Info, 
+  Newspaper,
+  Cog,
+} from "lucide-react";
 
 const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -122,7 +130,7 @@ const Navbar = () => {
             { name: "Buy", path: "/buy" },
             { name: "Rent", path: "/rent" },
             { name: "Add Listing", path: "/add-listing" },
-            { name: "Landlord / Agent", path: "/landlord-agent" },
+            // { name: "Landlord / Agent", path: "/landlord-agent" },
             { name: "About Us", path: "/about-us" },
             { name: "Blog", path: "/blog" },
           ].map(({ name, path }) => (
@@ -217,105 +225,124 @@ const Navbar = () => {
 
       {/* Mobile Dropdown Menu */}
       <div
-        className={`md:hidden pl-3 bg-gradient-to-b from-[rgb(246,246,246)] to-[rgb(203,228,221)] h-auto overflow-hidden transform transition-all duration-500 ${
-          menuOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-5"
-        }`}
+  className={`md:hidden bg-gradient-to-b from-[rgb(246,246,246)] to-[rgb(203,228,221)] transform transition-all duration-500 ${
+    menuOpen ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
+  } overflow-hidden`}
+>
+  {/* Navigation Links in Two-Column Grid */}
+  <div className="grid grid-cols-2 gap-3 p-4 text-gray-800">
+    {[
+      { name: "Buy", path: "/buy", icon: Search },
+      { name: "Rent", path: "/rent", icon: Home },
+      { name: "Add Listing", path: "/add-listing", icon: PlusCircle },
+      { name: "About Us", path: "/about-us", icon: Info },
+      { name: "Blog", path: "/blog", icon: Newspaper },
+    ].map(({ name, path, icon: Icon }) => (
+      <Link
+        key={path}
+        href={path}
+        className={`
+          flex items-center justify-center
+          px-3 py-3 rounded-xl 
+          group 
+          transition-all duration-300 
+          hover:shadow-md 
+          hover:scale-[1.02] 
+          active:scale-95
+          ${
+            isActive(path)
+              ? "bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white"
+              : "bg-white border border-gray-200 text-gray-700 hover:border-[#014d98]/30"
+          }
+        `}
+        onClick={() => setMenuOpen(false)}
       >
-        <ul
-          className={`grid grid-cols-2 gap-4 p-4 text-gray-800 text-left transform transition-all duration-500 ${
-            menuOpen ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0"
-          }`}
-        >
-          {[
-            { name: "Buy", path: "/buy" },
-            { name: "Rent", path: "/rent" },
-            { name: "Add Listing", path: "/add-listing" },
-            { name: "Landlord / Agent", path: "/landlord-agent" },
-            { name: "About Us", path: "/about-us" },
-            { name: "Blog", path: "/blog" },
-          ].map(({ name, path }) => (
-            <li key={path} className="transition-transform duration-300 ease-in-out hover:scale-105">
-              <Link
-                href={path}
-                className={`${
-                  isActive(path)
-                    ? "text-transparent bg-clip-text bg-gradient-to-r from-[#014d98] to-[#3ab7b1]"
-                    : "hover:text-transparent hover:bg-clip-text hover:bg-gradient-to-r hover:from-[#014d98] hover:to-[#3ab7b1]"
-                }`}
-                onClick={() => setMenuOpen(false)}
-              >
-                {name}
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <Icon 
+          className={`
+            mr-2 
+            ${
+              isActive(path)
+                ? "text-white" 
+                : "text-[#014d98] group-hover:text-[#3ab7b1] transition-colors"
+            }
+          `} 
+          size={20} 
+        />
+        <span className="text-xs font-medium">{name}</span>
+      </Link>
+    ))}
+  </div>
 
-        <div className="flex flex-col items-start space-y-2 p-4">
-          {isSignedIn ? (
-            // Profile section for mobile when signed in - now with proper user name
-            <>
-              <div className="flex items-center gap-2 w-full">
-                <div className="w-8 h-8 relative rounded-full overflow-hidden border border-gray-300">
-                  {!isLoading && profileImageUrl ? (
-                    <Image
-                      src={profileImageUrl}
-                      alt="Profile"
-                      width={32}
-                      height={32}
-                      className="rounded-full object-cover"
-                      onError={() => setProfileImageUrl("https://i.pravatar.cc/150")}
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                      <span className="text-sm font-medium text-gray-500">
-                        {getInitial()}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium text-gray-800">{getShortName()}</span>
-                  <span className="text-xs text-gray-500">{getUserRole()}</span>
-                </div>
+  <div className="border-t border-gray-300 p-4">
+    {isSignedIn ? (
+      <div className="space-y-4">
+        {/* User Profile Section */}
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 relative rounded-full overflow-hidden border border-gray-300">
+            {!isLoading && profileImageUrl ? (
+              <Image
+                src={profileImageUrl}
+                alt="Profile"
+                width={40}
+                height={40}
+                className="rounded-full object-cover"
+                onError={() => setProfileImageUrl("https://i.pravatar.cc/150")}
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                <span className="text-sm font-medium text-gray-500">
+                  {getInitial()}
+                </span>
               </div>
-              
-              <Link
-                href={getDashboardUrl()}
-                className="text-gray-700 hover:text-gray-900 w-full"
-                onClick={() => setMenuOpen(false)}
-              >
-                Dashboard
-              </Link>
-              <Link
-                href={`${getDashboardUrl()}/settings`}
-                className="text-gray-700 hover:text-gray-900 w-full"
-                onClick={() => setMenuOpen(false)}
-              >
-                Settings
-              </Link>
-              <button
-                className="flex items-center text-gray-700 hover:text-gray-900 w-full text-left"
-                onClick={() => {
-                  setMenuOpen(false);
-                  setShowSignOutModal(true);
-                }}
-              >
-                <LogOut size={16} className="mr-2" />
-                Sign Out
-              </button>
-            </>
-          ) : (
-            // Sign In link for mobile when not signed in
-            <Link
-              href="/signin"
-              className="bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white px-4 py-2 rounded-md hover:from-[#3ab7b1] hover:to-[#014d98]"
-              onClick={() => setMenuOpen(false)}
-            >
-              Sign In
-            </Link>
-          )}
+            )}
+          </div>
+          <div>
+            <p className="font-semibold text-gray-800">{getShortName()}</p>
+            <p className="text-xs text-gray-500">{getUserRole()}</p>
+          </div>
+        </div>
+
+        {/* Dashboard, Settings, Logout in a Single Row */}
+        <div className="grid grid-cols-3 gap-2">
+          <Link
+            href={getDashboardUrl()}
+            className="flex flex-col items-center justify-center bg-white border border-gray-200 rounded-xl p-2 text-xs text-gray-700 hover:bg-gray-100 hover:shadow-sm transition-all"
+            onClick={() => setMenuOpen(false)}
+          >
+            <Home size={20} className="mb-1 text-[#014d98]" />
+            Dashboard
+          </Link>
+          <Link
+            href={`${getDashboardUrl()}/settings`}
+            className="flex flex-col items-center justify-center bg-white border border-gray-200 rounded-xl p-2 text-xs text-gray-700 hover:bg-gray-100 hover:shadow-sm transition-all"
+            onClick={() => setMenuOpen(false)}
+          >
+            <Cog size={20} className="mb-1 text-[#014d98]" />
+            Settings
+          </Link>
+          <button
+            className="flex flex-col items-center justify-center bg-white border border-red-200 text-red-600 rounded-xl p-2 text-xs hover:bg-red-50 hover:shadow-sm transition-all"
+            onClick={() => {
+              setMenuOpen(false);
+              setShowSignOutModal(true);
+            }}
+          >
+            <LogOut size={20} className="mb-1 text-red-500" />
+            Sign Out
+          </button>
         </div>
       </div>
+    ) : (
+      <Link
+        href="/signin"
+        className="w-full block text-center bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white py-3 rounded-lg hover:opacity-90"
+        onClick={() => setMenuOpen(false)}
+      >
+        Sign In
+      </Link>
+    )}
+  </div>
+</div>
       
       {/* Click outside to close profile dropdown */}
       {profileMenuOpen && (

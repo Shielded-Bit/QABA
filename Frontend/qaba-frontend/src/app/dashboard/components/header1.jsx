@@ -259,8 +259,6 @@ export default function TopNav() {
                   width={40}
                   height={40}
                   className="rounded-full object-cover"
-                  key={profileImageUrl}
-                  
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-gray-200">
@@ -308,7 +306,6 @@ export default function TopNav() {
                 width={32}
                 height={32}
                 className="rounded-full object-cover"
-                key={profileImageUrl}
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gray-200">
