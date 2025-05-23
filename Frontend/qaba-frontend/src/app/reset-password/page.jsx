@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import axios from 'axios';
 
@@ -26,7 +26,8 @@ const NewPassword = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const { token } = useParams(); // ✅ Corrected retrieval of token from URL params
+  const searchParams = useSearchParams();
+  const token = searchParams.get('token');
   const router = useRouter();
 
   // Redirect if no token is found
@@ -58,14 +59,14 @@ const NewPassword = () => {
     try {
       const response = await axios.post('https://qaba.onrender.com/api/v1/auth/password-reset/confirm/', {
         token,
-        new_password: password, // Ensure correct field name
+        new_password: password,
       });
 
-      console.log('Response:', response.data); // Debug API response
+      console.log('Response:', response.data);
       setSuccess(true);
       setTimeout(() => router.push('/signin'), 2000);
     } catch (err) {
-      console.error('Error:', err.response?.data); // Debug API error
+      console.error('Error:', err.response?.data);
       setError(err.response?.data?.message || 'Password reset failed. Please try again.');
     } finally {
       setLoading(false);
@@ -121,4 +122,5 @@ const NewPassword = () => {
   );
 };
 
+// This is crucial - make sure you have the default export
 export default NewPassword;
