@@ -1,188 +1,240 @@
 "use client";
-
-import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { toast } from "react-hot-toast";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
+import SuccessModal from "./SuccessModal";
+import ConfirmationModal from "./ConfirmationModal";
+import DocumentUploadModal from "../../components/DocumentUploadModal"; // Import the new modal component
 
-// Constants
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://qaba.onrender.com/api/v1";
 
-// Property types for selection
+// Helper functions
+const formatNumberWithCommas = (value) => {
+  const plainNumber = value.replace(/[^\d]/g, '');
+  return plainNumber ? plainNumber.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '';
+};
+
+const convertToPlainNumber = (formattedValue) => {
+  return formattedValue.replace(/[^\d]/g, '');
+};
+
+// Constants
 const PROPERTY_TYPES = [
   { value: "HOUSE", label: "House" },
   { value: "APARTMENT", label: "Apartment" },
-  { value: "SELF_CONTAIN", label: "Self Contain" },
-  { value: "ONE_BEDROOM_FLAT", label: "One Bedroom Flat" },
-  { value: "TWO_BEDROOM_FLAT", label: "Two Bedroom Flat" },
-  { value: "THREE_BEDROOM_FLAT", label: "Three Bedroom Flat" },
-  { value: "FOUR_BEDROOM_FLAT", label: "Four Bedroom Flat" },
-  { value: "WAREHOUSE", label: "Warehouse" },
+  { value: "DUPLEX", label: "Duplex" },
+  { value: "FULL_DETACHED", label: "Full Detached" },
+  { value: "SEMI_DETACHED", label: "Semi Detached" },
   { value: "EMPTY_LAND", label: "Empty Land" },
   { value: "LAND_WITH_BUILDING", label: "Land with Building" }
 ];
 
-// Available amenities mapping
-const AMENITIES_MAPPING = {
-  CAR_PARK: "Car Park",
-  BIG_COMPOUND: "Big Compound",
-  CCTV_CAMERA: "CCTV Camera",
-  POP_CEILING: "POP Ceiling",
-  TRAFFIC_LIGHT: "Traffic Light",
-  HOUSE_SECURITY: "House Security",
-  SWIMMING_POOL: "Swimming Pool",
-  SECURITY_DOOR: "Security Door",
-  BBOYS_QUARTERS: "Boys Quarters",
-  GYM: "Gym",
-  PARKING: "Parking",
-  GARDEN: "Garden",
-  OTHERS: "Others",
+const DOCUMENT_TYPES = [
+  { value: "DEED", label: "Deed" },
+  { value: "TITLE", label: "Title Certificate" },
+  { value: "PERMIT", label: "Building Permit" },
+  { value: "SURVEY", label: "Survey Plan" },
+  { value: "LAND_USE", label: "Land Use Approval" },
+  { value: "TAX", label: "Tax Receipt" },
+  { value: "FLOOR_PLAN", label: "Floor Plan" },
+  { value: "UTILITY", label: "Utility Bills" },
+  { value: "OTHER", label: "Other Document" }
+];
+
+// Reusable components
+const FormField = ({ label, children, className = "" }) => (
+  <div className={className}>
+    <label className="block text-gray-700">{label}</label>
+    {children}
+  </div>
+);
+
+const Select = ({ name, value, onChange, options, placeholder }) => (
+  <select 
+    name={name}
+    value={value}
+    onChange={onChange}
+    className="w-full border border-gray-300 p-2 rounded-md"
+  >
+    {placeholder && <option value="">{placeholder}</option>}
+    {options.map(option => (
+      <option key={option.value} value={option.value}>{option.label}</option>
+    ))}
+  </select>
+);
+
+const FormInput = ({ type = "text", name, value, onChange, placeholder, className = "" }) => (
+  <input
+    type={type}
+    name={name}
+    value={value}
+    onChange={onChange}
+    className={`w-full border border-gray-300 p-2 rounded-md ${className}`}
+    placeholder={placeholder}
+  />
+);
+
+const FileUpload = ({ onChange, fileType, selectedFile }) => (
+  <div className="border-2 border-dashed border-gray-300 rounded-md p-6 flex items-center justify-center relative">
+    <input
+      type="file"
+      accept={fileType === 'video' ? "video/*" : fileType === 'document' ? ".pdf,.doc,.docx,.xls,.xlsx" : "image/*"}
+      onChange={(e) => onChange(e, fileType)}
+      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+    />
+    <div className="text-gray-500 text-center pointer-events-none">
+      {selectedFile ? (
+        <p>Selected: {selectedFile.name}</p>
+      ) : (
+        <p>Drag and drop {fileType === 'video' ? 'a video' : fileType === 'document' ? 'a document' : 'an image'} or click to upload</p>
+      )}
+    </div>
+  </div>
+);
+
+// API functions
+const createProperty = async (data, mediaFiles, documents) => {
+  try {
+    const formData = new FormData();
+    
+    // Add property details
+    Object.keys(data).forEach(key => {
+      if (key === 'amenities_ids' && Array.isArray(data[key])) {
+        data[key].forEach(id => formData.append('amenities_ids', id));
+      } else if (Array.isArray(data[key])) {
+        data[key].forEach(value => formData.append(`${key}`, value));
+      } else {
+        formData.append(key, data[key]);
+      }
+    });
+    
+    // Add media files
+    if (mediaFiles.image1) formData.append('images', mediaFiles.image1);
+    if (mediaFiles.image2) formData.append('images', mediaFiles.image2);
+    if (mediaFiles.video) formData.append('video', mediaFiles.video);
+    
+    // Add documents
+    documents.forEach(doc => {
+      formData.append('documents', doc.file);
+      formData.append('document_types', doc.type);
+    });
+    
+    const accessToken = localStorage.getItem('access_token');
+    
+    if (!accessToken) {
+      throw new Error('No access token found. Please log in.');
+    }
+
+    const response = await axios.post(`${API_BASE_URL}/properties/`, formData, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      },
+    });
+
+    return {
+      success: true,
+      data: response.data
+    };
+
+  } catch (error) {
+    console.error("API Error:", error.response?.data || error.message);
+    return {
+      success: false,
+      message: error.response?.data?.message || error.message || 'Failed to create property',
+      errors: error.response?.data?.errors || {}
+    };
+  }
 };
 
-// Format number with commas for better readability
-const formatNumberWithCommas = (value) => {
-  if (!value) return '';
-  const plainNumber = value.toString().replace(/[^\d]/g, '');
-  return plainNumber ? plainNumber.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '';
+const fetchAmenities = async () => {
+  try {
+    const accessToken = localStorage.getItem('access_token');
+    
+    if (!accessToken) {
+      throw new Error('No access token found. Please log in.');
+    }
+
+    const response = await axios.get(`${API_BASE_URL}/amenities/`, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      }
+    });
+
+    return response.data.success ? response.data.data : [];
+  } catch (error) {
+    console.error("Error fetching amenities:", error);
+    return [];
+  }
 };
 
-const EditProperty = () => {
-  const params = useParams();
-  const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  
-  // Form state with all required fields for both rent and sale
+const AddForSell = () => {
+  // Form state
   const [formData, setFormData] = useState({
     property_name: "",
     description: "",
     property_type: "HOUSE",
-    listing_type: "RENT", // Will be updated from API response
+    listing_type: "SALE",
+    submit_for_review: false,
     location: "",
     bedrooms: 1,
     bathrooms: 1,
     area_sqft: 0,
-    rent_frequency: "MONTHLY",
-    rent_price: "",
     sale_price: "",
-    amenities: [],
-    user_type: "owner",
-    listing_status: "DRAFT",
-    property_status: "AVAILABLE",
-    lister_type: "LANDLOARD"
+    property_status: "New",
+    amenities_ids: [],
+    user_type: "LandLord"
   });
 
-  // Formatted price display states
-  const [displayRentPrice, setDisplayRentPrice] = useState('');
-  const [displaySalePrice, setDisplaySalePrice] = useState('');
+  // Documents state
+  const [documents, setDocuments] = useState([]);
+  
+  // Document modal state
+  const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
 
-  // Media files state
+  // Other states
+  const [displayPrice, setDisplayPrice] = useState('');
+  const [amenities, setAmenities] = useState([]);
+  const [isLoadingAmenities, setIsLoadingAmenities] = useState(false);
   const [mediaFiles, setMediaFiles] = useState({
-    images: [],
+    image1: null,
+    image2: null,
     video: null
   });
+  const [isLoading, setIsLoading] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
+  const [isDraft, setIsDraft] = useState(false);
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [submissionType, setSubmissionType] = useState(null);
 
-  // Existing images from the property
-  const [existingImages, setExistingImages] = useState([]);
-  
-  // Track images to delete
-  const [imagesToDelete, setImagesToDelete] = useState([]);
-
-  // Fetch property data on component mount
+  // Effects
   useEffect(() => {
-    const fetchPropertyData = async () => {
-      if (!params.id) return;
-      
-      try {
-        setLoading(true);
-        
-        const accessToken = localStorage.getItem('access_token');
+    if (formData.sale_price) {
+      setDisplayPrice(formatNumberWithCommas(formData.sale_price));
+    }
     
-        if (!accessToken) {
-          toast.error('No access token found. Please log in.');
-          router.push('/login');
-          return;
-        }
-        
-        const response = await axios.get(`${API_BASE_URL}/properties/${params.id}/`, {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`
-          }
-        });
-        
-        // Handle data structure to get property
-        const data = response.data.property || response.data.data || response.data;
-        
-        // Populate form data
-        setFormData({
-          property_name: data.property_name || "",
-          description: data.description || "",
-          property_type: data.property_type || "HOUSE",
-          listing_type: data.listing_type || "RENT",
-          location: data.location || "",
-          bedrooms: data.bedrooms || 1,
-          bathrooms: data.bathrooms || 1,
-          area_sqft: data.area_sqft || 0,
-          rent_frequency: data.rent_frequency || "MONTHLY",
-          rent_price: data.rent_price !== undefined ? data.rent_price : "",
-          sale_price: data.sale_price !== undefined ? data.sale_price : "",
-          amenities: Array.isArray(data.amenities) 
-            ? data.amenities.map(amenity => typeof amenity === 'string' ? amenity : amenity.name)
-            : [],
-          user_type: data.user_type || "owner",
-          listing_status: data.listing_status || "DRAFT",
-          property_status: data.property_status || "AVAILABLE",
-          lister_type: data.lister_type || "LANDLOARD"
-        });
-        
-        // Format price displays
-        if (data.rent_price) {
-          setDisplayRentPrice(formatNumberWithCommas(data.rent_price));
-        }
-        
-        if (data.sale_price) {
-          setDisplaySalePrice(formatNumberWithCommas(data.sale_price));
-        }
-        
-        // Set existing images
-        if (data.images && data.images.length > 0) {
-          setExistingImages(data.images);
-        }
-        
-        toast.success('Property data loaded successfully');
-      } catch (err) {
-        console.error("Failed to fetch property details:", err);
-        toast.error(`Error loading property: ${err.response?.data?.message || err.message}`);
+    const getAmenities = async () => {
+      setIsLoadingAmenities(true);
+      try {
+        const amenitiesData = await fetchAmenities();
+        setAmenities(amenitiesData);
       } finally {
-        setLoading(false);
+        setIsLoadingAmenities(false);
       }
     };
-    
-    fetchPropertyData();
-  }, [params.id, router]);
 
-  // Handle input changes - FIXED VERSION
+    getAmenities();
+  }, []);
+
+  // Handlers
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     
-    // Special handling for price fields
-    if (name === 'rent_price') {
-      // Only format the display value, but store the raw number
-      const numericValue = value.replace(/[^\d]/g, '');
-      setDisplayRentPrice(formatNumberWithCommas(numericValue));
-      
+    if (name === 'sale_price') {
+      const formattedValue = formatNumberWithCommas(value);
+      setDisplayPrice(formattedValue);
       setFormData({
         ...formData,
-        [name]: numericValue // Store the raw number without commas
-      });
-    } else if (name === 'sale_price') {
-      // Only format the display value, but store the raw number
-      const numericValue = value.replace(/[^\d]/g, '');
-      setDisplaySalePrice(formatNumberWithCommas(numericValue));
-      
-      setFormData({
-        ...formData,
-        [name]: numericValue // Store the raw number without commas
+        [name]: convertToPlainNumber(formattedValue)
       });
     } else {
       setFormData({
@@ -192,502 +244,426 @@ const EditProperty = () => {
     }
   };
 
-  // Handle amenities selection
-  const handleAmenityToggle = (amenity) => {
+  const handleAmenityToggle = (amenityId) => {
     setFormData(prevState => {
-      const currentAmenities = [...prevState.amenities];
-      
-      if (currentAmenities.includes(amenity)) {
-        return {
-          ...prevState,
-          amenities: currentAmenities.filter(item => item !== amenity)
-        };
-      } else {
-        return {
-          ...prevState,
-          amenities: [...currentAmenities, amenity]
-        };
-      }
+      const currentAmenities = [...prevState.amenities_ids];
+      return {
+        ...prevState,
+        amenities_ids: currentAmenities.includes(amenityId)
+          ? currentAmenities.filter(id => id !== amenityId)
+          : [...currentAmenities, amenityId]
+      };
     });
   };
 
-  // Handle file uploads
   const handleFileChange = (e, fileType) => {
-    if (fileType === 'images') {
-      if (e.target.files.length > 0) {
-        setMediaFiles({
-          ...mediaFiles,
-          images: [...mediaFiles.images, e.target.files[0]]
-        });
-        toast.success('Image selected successfully');
-      }
-    } else if (fileType === 'video') {
-      if (e.target.files[0]) {
-        setMediaFiles({
-          ...mediaFiles,
-          video: e.target.files[0]
-        });
-        toast.success('Video selected successfully');
-      }
+    const file = e.target.files[0];
+    if (file) {
+      setMediaFiles({
+        ...mediaFiles,
+        [fileType]: file
+      });
     }
   };
 
-  // Handle removing a pending image upload
-  const handleRemovePendingImage = (index) => {
-    setMediaFiles(prev => ({
-      ...prev,
-      images: prev.images.filter((_, i) => i !== index)
-    }));
-    toast.success('Image removed from uploads');
+  // New document upload handler using the modal
+  const handleDocumentUpload = ({ file, type }) => {
+    setDocuments([...documents, { file, type }]);
+    setIsDocumentModalOpen(false);
   };
 
-  // Handle removing existing image
-  const handleRemoveExistingImage = (imageUrl) => {
-    setExistingImages(prev => prev.filter(img => img !== imageUrl));
-    setImagesToDelete(prev => [...prev, imageUrl]);
-    toast.success('Image marked for deletion');
+  const removeDocument = (index) => {
+    setDocuments(documents.filter((_, i) => i !== index));
   };
 
-  // Submit form - handles both draft and review
-  const handleSubmit = async (isDraft = false) => {
-    // Validate required fields
-    const requiredFields = ['property_name', 'description', 'location'];
+  const handleCloseModal = () => {
+    setModalOpen(false);
     
-    // Add price field validation based on listing type
-    if (formData.listing_type === 'RENT') {
-      requiredFields.push('rent_price');
-    } else if (formData.listing_type === 'SALE') {
-      requiredFields.push('sale_price');
+    if (!isDraft) {
+      setFormData({
+        property_name: "",
+        description: "",
+        property_type: "HOUSE",
+        listing_type: "SALE",
+        submit_for_review: false,
+        location: "",
+        bedrooms: 1,
+        bathrooms: 1,
+        area_sqft: 0,
+        sale_price: "",
+        property_status: "New",
+        amenities_ids: [],
+        user_type: "LandLord"
+      });
+      
+      setMediaFiles({
+        image1: null,
+        image2: null,
+        video: null
+      });
+      
+      setDocuments([]);
+      setDisplayPrice('');
     }
+  };
+
+  const initiateSubmit = (isDraftSubmission) => {
+    setSubmissionType(isDraftSubmission ? 'draft' : 'review');
+    
+    const requiredFields = [
+      'property_name', 
+      'description', 
+      'location', 
+      'sale_price'
+    ];
 
     const missingFields = requiredFields.filter(field => 
-      !formData[field] || String(formData[field]).trim() === ''
+      !formData[field] || formData[field].trim() === ''
     );
 
     if (missingFields.length > 0) {
-      toast.error(`Please fill in the following required fields: ${missingFields.join(', ')}`);
+      alert(`Please fill in the following required fields: ${missingFields.join(', ')}`);
       return;
     }
+    
+    setConfirmModalOpen(true);
+  };
+  
+  const confirmSubmit = () => {
+    setConfirmModalOpen(false);
+    handleSubmit(submissionType === 'draft');
+  };
 
+  const handleSubmit = async (isDraftSubmission = false) => {
     try {
-      setSubmitting(true);
-      toast.loading('Updating property...');
+      setIsLoading(true);
       
-      // Create FormData for sending files
-      const formDataForApi = new FormData();
-      
-      // Set listing status based on isDraft
-      const updatedFormData = {
+      const payload = {
         ...formData,
-        listing_status: isDraft ? "DRAFT" : "PENDING", // Use PENDING for review
+        submit_for_review: !isDraftSubmission,
         bedrooms: parseInt(formData.bedrooms),
         bathrooms: parseInt(formData.bathrooms),
-        area_sqft: formData.area_sqft ? parseFloat(formData.area_sqft) : 0,
+        area_sqft: formData.area_sqft ? parseFloat(formData.area_sqft) : 0
       };
       
-      // Add all form data to FormData
-      Object.keys(updatedFormData).forEach(key => {
-        if (Array.isArray(updatedFormData[key])) {
-          // Handle arrays like amenities
-          updatedFormData[key].forEach(value => {
-            formDataForApi.append(key, value);
-          });
-        } else if (updatedFormData[key] !== null && updatedFormData[key] !== undefined) {
-          formDataForApi.append(key, updatedFormData[key]);
-        }
-      });
-      
-      // Add images to delete
-      imagesToDelete.forEach(url => {
-        formDataForApi.append('images_to_delete', url);
-      });
-      
-      // Add new images
-      mediaFiles.images.forEach(image => {
-        formDataForApi.append('images', image);
-      });
-      
-      // Add video if selected
-      if (mediaFiles.video) {
-        formDataForApi.append('video', mediaFiles.video);
-      }
-      
-      const accessToken = localStorage.getItem('access_token');
-      
-      const response = await axios.patch(
-        `${API_BASE_URL}/properties/${params.id}/`, 
-        formDataForApi, 
-        {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`
+      const response = await createProperty(payload, mediaFiles, documents);
+        
+      if (!response.success) {
+        if (response.errors?.admin_user) {
+          if (isDraftSubmission) {
+            setIsDraft(true);
+            setModalMessage('Your property has been saved as a draft locally.');
+            setModalOpen(true);
+            return;
           }
+          
+          alert('Property submission requires admin review. Please contact support.');
+          return;
         }
-      );
-      
-      toast.dismiss();
-      
-      if (isDraft) {
-        toast.success('Property saved as draft');
-      } else {
-        toast.success('Property submitted for review');
+        
+        throw new Error(response.message || "Failed to submit property data");
       }
       
-      // Redirect to property details
-      setTimeout(() => {
-        router.push(`/agent-dashboard/properties/${params.id}`);
-      }, 1500);
+      setIsDraft(isDraftSubmission);
+      setModalMessage(isDraftSubmission
+        ? 'Your property has been saved as a draft. You can continue editing or view your listings.'
+        : 'Your property has been submitted for review. You will be notified when it is approved.'
+      );
+      setModalOpen(true);
         
     } catch (error) {
-      toast.dismiss();
-      console.error("Error updating property:", error);
-      toast.error(error.response?.data?.message || error.message || 'Something went wrong');
+      console.error("Error submitting property:", error);
+      alert(error.message || 'Something went wrong');
     } finally {
-      setSubmitting(false);
+      setIsLoading(false);
     }
   };
 
-  // Helper component for FileUploadBox
-  const FileUploadBox = ({ onChange, onRemove, file, index = null }) => (
-    <div className="border-2 border-dashed border-gray-300 rounded-md p-6 flex flex-col items-center justify-center relative">
-      {file ? (
-        <>
-          <div className="text-gray-500 text-center mb-2">
-            <p className="truncate w-full">{file.name || "Selected file"}</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => onRemove(index)}
-            className="bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600"
-          >
-            Remove
-          </button>
-        </>
-      ) : (
-        <>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={onChange}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-          />
-          <div className="text-gray-500 text-center pointer-events-none">
-            <p>Upload Image</p>
-          </div>
-        </>
-      )}
-    </div>
-  );
+  // Options for dropdowns
+  const countOptions = [
+    { value: "1", label: "1" },
+    { value: "2", label: "2" },
+    { value: "3", label: "3" },
+    { value: "4", label: "4" },
+    { value: "5", label: "5+" }
+  ];
 
-  // Loading state
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="text-xl">Loading property data...</div>
-      </div>
-    );
-  }
+  const userTypeOptions = [
+    { value: "LandLord", label: "Landlord" },
+    { value: "agent", label: "Agent" }
+  ];
+
+  const statusOptions = [
+    { value: "New", label: "New" },
+    { value: "Under Construction", label: "Under Construction" },
+    { value: "Ready to Move In", label: "Ready to Move In" }
+  ];
+
+  const listingTypeOptions = [
+    { value: "SALE", label: "For Sale" }
+  ];
 
   return (
-    <div className="rounded-lg py-6 md:px-6 pl-4 pr-4 max-w-7xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-normal text-[#014d98]">Edit Property</h2>
-        <button
-          onClick={() => router.push(`/agent-dashboard/properties/${params.id}`)}
-          className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
-        >
-          Cancel
-        </button>
+    <div className="rounded-lg py-6 md:px-3">
+      <h2 className="text-2xl font-normal text-[#014d98] mb-6">Property Details</h2>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <FormField label="What best describes you?">
+          <Select 
+            name="user_type"
+            value={formData.user_type}
+            onChange={handleInputChange}
+            options={userTypeOptions}
+          />
+        </FormField>
+        <FormField label="Property Type">
+          <Select 
+            name="property_type"
+            value={formData.property_type}
+            onChange={handleInputChange}
+            options={PROPERTY_TYPES}
+          />
+        </FormField>
+        <FormField label="Property Name">
+          <FormInput
+            name="property_name"
+            value={formData.property_name}
+            onChange={handleInputChange}
+            placeholder="Greenhood House"
+          />
+        </FormField>
+        <FormField label="Number of Bedrooms">
+          <Select 
+            name="bedrooms"
+            value={formData.bedrooms}
+            onChange={handleInputChange}
+            options={countOptions}
+          />
+        </FormField>
+        <FormField label="Number of Bathrooms">
+          <Select 
+            name="bathrooms"
+            value={formData.bathrooms}
+            onChange={handleInputChange}
+            options={countOptions}
+          />
+        </FormField>
+        <FormField label="Listing Type">
+          <Select 
+            name="listing_type"
+            value={formData.listing_type}
+            onChange={handleInputChange}
+            options={listingTypeOptions}
+          />
+        </FormField>
+        <FormField label="Square Footage (Optional)">
+          <FormInput
+            type="number"
+            name="area_sqft"
+            value={formData.area_sqft}
+            onChange={handleInputChange}
+            placeholder="Enter square footage"
+          />
+        </FormField>
+        <FormField label="Sale Price">
+          <FormInput
+            name="sale_price"
+            value={displayPrice}
+            onChange={handleInputChange}
+            placeholder="12,000,000"
+          />
+        </FormField>
+        <FormField label="Property Status">
+          <Select 
+            name="property_status"
+            value={formData.property_status}
+            onChange={handleInputChange}
+            options={statusOptions}
+          />
+        </FormField>
       </div>
 
-      {/* Basic Property Information */}
-      <div className="bg-white p-6 rounded-lg shadow-sm mb-6">
-        <h3 className="text-xl font-normal text-[#014d98] mb-4">Basic Information</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div>
-            <label className="block text-gray-700 mb-2">Property Name*</label>
-            <input
-              type="text"
-              name="property_name"
-              value={formData.property_name}
-              onChange={handleInputChange}
-              className="w-full border border-gray-300 p-2 rounded-md"
-              placeholder="e.g. Greenhood House"
-            />
-          </div>
-
-          <div>
-            <label className="block text-gray-700 mb-2">Property Type</label>
-            <select 
-              name="property_type"
-              value={formData.property_type}
-              onChange={handleInputChange}
-              className="w-full border border-gray-300 p-2 rounded-md"
-            >
-              {PROPERTY_TYPES.map(type => (
-                <option key={type.value} value={type.value}>{type.label}</option>
-              ))}
-            </select> 
-          </div>
-
-          <div>
-            <label className="block text-gray-700 mb-2">Listing Type</label>
-            <select 
-              name="listing_type"
-              value={formData.listing_type}
-              onChange={handleInputChange}
-              className="w-full border border-gray-300 p-2 rounded-md"
-              disabled  // Disable changing listing type
-            >
-              <option value="RENT">For Rent</option>
-              <option value="SALE">For Sale</option>
-            </select>
-            <p className="text-xs text-gray-500 mt-1">
-              Listing type cannot be changed after creation
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Property Details Section */}
-      <div className="bg-white p-6 rounded-lg shadow-sm mb-6">
-        <h3 className="text-xl font-normal text-[#014d98] mb-4">Property Details</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Conditional rendering based on property type */}
-          {!formData.property_type.includes("LAND") && (
-            <>
-              <div>
-                <label className="block text-gray-700 mb-2">Bedrooms</label>
-                <select 
-                  name="bedrooms"
-                  value={formData.bedrooms}
-                  onChange={handleInputChange}
-                  className="w-full border border-gray-300 p-2 rounded-md"
-                >
-                  {[1, 2, 3, 4, 5].map(num => (
-                    <option key={num} value={num}>{num === 5 ? "5+" : num}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-gray-700 mb-2">Bathrooms</label>
-                <select 
-                  name="bathrooms"
-                  value={formData.bathrooms}
-                  onChange={handleInputChange}
-                  className="w-full border border-gray-300 p-2 rounded-md"
-                >
-                  {[1, 2, 3, 4, 5].map(num => (
-                    <option key={num} value={num}>{num === 5 ? "5+" : num}</option>
-                  ))}
-                </select>
-              </div>
-            </>
-          )}
-
-          <div>
-            <label className="block text-gray-700 mb-2">Square Footage</label>
-            <input
-              type="number"
-              name="area_sqft"
-              value={formData.area_sqft}
-              onChange={handleInputChange}
-              className="w-full border border-gray-300 p-2 rounded-md"
-              placeholder="Enter square footage"
-            />
-          </div>
-        </div>
-        
-        {/* Price fields based on listing type */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-          {formData.listing_type === "RENT" && (
-            <>
-              <div>
-                <label className="block text-gray-700 mb-2">Rent Price*</label>
-                <input
-                  type="text"
-                  name="rent_price"
-                  value={displayRentPrice}
-                  onChange={handleInputChange}
-                  className="w-full border border-gray-300 p-2 rounded-md"
-                  placeholder="e.g. 12,000,000"
-                />
-              </div>
-              <div>
-                <label className="block text-gray-700 mb-2">Rent Frequency</label>
-                <select 
-                  name="rent_frequency"
-                  value={formData.rent_frequency}
-                  onChange={handleInputChange}
-                  className="w-full border border-gray-300 p-2 rounded-md"
-                >
-                  <option value="MONTHLY">Monthly</option>
-                  <option value="YEARLY">Yearly</option>
-                  <option value="QUARTERLY">Quarterly</option>
-                  <option value="WEEKLY">Weekly</option>
-                </select>
-              </div>
-            </>
-          )}
-
-          {formData.listing_type === "SALE" && (
-            <div>
-              <label className="block text-gray-700 mb-2">Sale Price*</label>
-              <input
-                type="text"
-                name="sale_price"
-                value={displaySalePrice}
-                onChange={handleInputChange}
-                className="w-full border border-gray-300 p-2 rounded-md"
-                placeholder="e.g. 150,000,000"
-              />
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Description and Location */}
-      <div className="bg-white p-6 rounded-lg shadow-sm mb-6">
-        <h3 className="text-xl font-normal text-[#014d98] mb-4">Address and Description</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-gray-700 mb-2">Property Description*</label>
+      <div className="mt-8">
+        <h3 className="text-xl font-normal text-[#014d98]">Address and Description</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+          <FormField label="Property Description">
             <textarea
               name="description"
               value={formData.description}
               onChange={handleInputChange}
               className="w-full border border-gray-300 p-2 rounded-md h-32"
-              placeholder="Describe your property's best features"
+              placeholder="In a couple of sentences, tell potential buyers about your property's best features"
             ></textarea>
-          </div>
-          <div>
-            <label className="block text-gray-700 mb-2">Property Address*</label>
+          </FormField>
+          <FormField label="Property Address">
             <textarea
               name="location"
               value={formData.location}
               onChange={handleInputChange}
               className="w-full border border-gray-300 p-2 rounded-md h-32"
-              placeholder="Provide the property address"
+              placeholder="In detail, explain the address of the environment for easy navigation"
             ></textarea>
-          </div>
+          </FormField>
         </div>
       </div>
 
-      {/* Media Section */}
-      <div className="bg-white p-6 rounded-lg shadow-sm mb-6">
-        <h3 className="text-xl font-normal text-[#014d98] mb-4">Property Media</h3>
+      <div className="mt-8">
+        <h3 className="text-xl font-normal text-[#014d98]">Upload Media</h3>
+        <p className="text-sm text-gray-600 mt-2">
+          Showcase your property with high-quality images and a video. Clear visuals attract more buyers
+          and increase engagement.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+          <FileUpload 
+            onChange={handleFileChange} 
+            fileType="image1"
+            selectedFile={mediaFiles.image1} 
+          />
+          <FileUpload 
+            onChange={handleFileChange} 
+            fileType="image2"
+            selectedFile={mediaFiles.image2} 
+          />
+          <FileUpload 
+            onChange={handleFileChange} 
+            fileType="video"
+            selectedFile={mediaFiles.video} 
+          />
+        </div>
+      </div>
+
+      {/* Updated Document Upload Section */}
+      <div className="mt-8">
+        <h3 className="text-xl font-normal text-[#014d98]">Property Documents</h3>
+        <p className="text-sm text-gray-600 mt-2">
+          Upload important property documents such as deeds, title certificates, permits, etc.
+        </p>
         
-        {/* Existing Images */}
-        {existingImages.length > 0 && (
-          <div className="mb-6">
-            <h4 className="text-lg font-normal text-gray-700 mb-3">Existing Images</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {existingImages.map((imageUrl, index) => (
-                <div key={index} className="relative border rounded-md overflow-hidden h-48">
-                  <img 
-                    src={imageUrl} 
-                    alt={`Property image ${index+1}`} 
-                    className="w-full h-full object-cover"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveExistingImage(imageUrl)}
-                    className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 w-6 h-6 flex items-center justify-center"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
+        <div className="flex justify-end mt-4">
+          <button
+            type="button"
+            onClick={() => setIsDocumentModalOpen(true)}
+            className="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600"
+          >
+            <span className="flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+              </svg>
+              Upload Document
+            </span>
+          </button>
+        </div>
+        
+        {/* Display uploaded documents */}
+        {documents.length > 0 && (
+          <div className="mt-4">
+            <h4 className="text-lg font-medium">Uploaded Documents</h4>
+            <div className="mt-2 border rounded-md divide-y">
+              {documents.map((doc, index) => {
+                const docType = DOCUMENT_TYPES.find(type => type.value === doc.type);
+                return (
+                  <div key={index} className="flex items-center justify-between p-3">
+                    <div className="flex items-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                      </svg>
+                      <div>
+                        <p className="font-medium">{docType ? docType.label : doc.type}</p>
+                        <p className="text-sm text-gray-500">{doc.file.name}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => removeDocument(index)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
-        
-        {/* Upload New Media */}
-        <div>
-          <h4 className="text-lg font-normal text-gray-700 mb-3">Upload New Media</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-            {/* Display pending image uploads */}
-            {mediaFiles.images.map((file, index) => (
-              <FileUploadBox
-                key={`pending-${index}`}
-                file={file}
-                index={index}
-                onRemove={handleRemovePendingImage}
-              />
-            ))}
-            
-            {/* Add new image button */}
-            {mediaFiles.images.length < 5 && (
-              <div className="border-2 border-dashed border-gray-300 rounded-md p-6 flex items-center justify-center relative">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleFileChange(e, 'images')}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                />
-                <div className="text-gray-500 text-center">
-                  <p>+ Add Image</p>
-                </div>
-              </div>
-            )}
-            
-            {/* Video upload */}
-            <div className="border-2 border-dashed border-gray-300 rounded-md p-6 flex items-center justify-center relative">
-              <input
-                type="file"
-                accept="video/*"
-                onChange={(e) => handleFileChange(e, 'video')}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-              />
-              <div className="text-gray-500 text-center">
-                <p>{mediaFiles.video ? `Selected: ${mediaFiles.video.name}` : '+ Add Video'}</p>
-              </div>
-            </div>
-          </div>
-          <p className="text-xs text-gray-500 mt-2">
-            Upload high-quality images to showcase your property. You can upload up to 5 images.
-          </p>
-        </div>
       </div>
 
       {/* Features and Amenities */}
-      <div className="bg-white p-6 rounded-lg shadow-sm mb-6">
-        <h3 className="text-xl font-normal text-[#014d98] mb-4">Features and Amenities</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-          {Object.keys(AMENITIES_MAPPING).map((amenity) => (
-            <label key={amenity} className="flex items-center space-x-2 p-2 border border-transparent hover:border-gray-200 rounded-md">
-              <input
-                type="checkbox"
-                className="h-4 w-4 text-blue-600"
-                checked={formData.amenities.includes(amenity)}
-                onChange={() => handleAmenityToggle(amenity)}
-              />
-              <span className="text-gray-700">{AMENITIES_MAPPING[amenity]}</span>
-            </label>
-          ))}
-        </div>
+      <div className="mt-8">
+        <h3 className="text-xl font-normal text-[#014d98]">Features and Amenities</h3>
+        {isLoadingAmenities ? (
+          <div className="text-center py-4">
+            <p>Loading amenities...</p>
+          </div>
+        ) : amenities.length === 0 ? (
+          <div className="text-center py-4">
+            <p>No amenities available. Please try refreshing the page.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+            {amenities.map((amenity) => (
+              <label key={amenity.id} className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4"
+                  checked={formData.amenities_ids.includes(amenity.id)}
+                  onChange={() => handleAmenityToggle(amenity.id)}
+                />
+                <span>{amenity.icon} {amenity.name}</span>
+              </label>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Submit Buttons */}
-      <div className="flex justify-end gap-4 mt-6">
+      {/* Buttons */}
+      <div className="mt-8 flex justify-end gap-4">
         <button
           type="button"
-          onClick={() => handleSubmit(true)}
-          disabled={submitting}
+          onClick={() => initiateSubmit(true)}
+          disabled={isLoading}
           className="border-2 border-blue-500 text-blue-500 py-2 px-6 rounded-md hover:bg-blue-100 disabled:opacity-50"
         >
-          {submitting ? 'Saving...' : 'Save as Draft'}
+          {isLoading ? 'Saving...' : 'Save as draft'}
         </button>
         <button
           type="button"
-          onClick={() => handleSubmit(false)}
-          disabled={submitting}
+          onClick={() => initiateSubmit(false)}
+          disabled={isLoading}
           className="bg-gradient-to-r from-blue-500 to-teal-500 text-white py-2 px-6 rounded-md hover:opacity-90 disabled:opacity-50"
         >
-          {submitting ? 'Submitting...' : 'Submit for Review'}
+          {isLoading ? 'Submitting...' : 'Submit for review'}
         </button>
       </div>
+
+      {/* Modals */}
+      <DocumentUploadModal
+        isOpen={isDocumentModalOpen}
+        onClose={() => setIsDocumentModalOpen(false)}
+        onUpload={handleDocumentUpload}
+        documentTypes={DOCUMENT_TYPES}
+      />
+
+      <ConfirmationModal 
+        isOpen={confirmModalOpen}
+        onClose={() => setConfirmModalOpen(false)}
+        onConfirm={confirmSubmit}
+        title={submissionType === 'draft' ? "Save as Draft?" : "Submit Property?"}
+        message={
+          submissionType === 'draft' 
+            ? "Are you sure you want to save this property as a draft? You can edit it later."
+            : "Are you sure you want to submit this property for review? Please verify that all information is correct and complete."
+        }
+      />
+
+      <SuccessModal 
+        isOpen={modalOpen}
+        onClose={handleCloseModal}
+        message={modalMessage}
+        isDraft={isDraft}
+      />
     </div>
   );
 };
 
-export default EditProperty;
+export default AddForSell;
