@@ -85,6 +85,18 @@ export function ProfileProvider({ children }) {
   const fetchProfile = useCallback(async () => {
     if (typeof window === 'undefined') return;
     
+    // Check if user has a token - if not, don't try to fetch profile
+    const token = getToken();
+    if (!token) {
+      setProfileData({
+        userData: null,
+        profileImage: null,
+        isLoading: false,
+        error: null, // No error - just no token available
+      });
+      return;
+    }
+    
     try {
       setProfileData(prev => ({ ...prev, isLoading: true }));
       
@@ -151,7 +163,7 @@ export function ProfileProvider({ children }) {
         }
       }
     }
-  }, [fetchUserInfo, fetchProfileData]);
+  }, [fetchUserInfo, fetchProfileData, getToken]);
 
   // Update profile data correctly
   const updateProfileData = useCallback((newData) => {
@@ -179,7 +191,10 @@ export function ProfileProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    fetchProfile();
+    // Only fetch profile if we're in the browser
+    if (typeof window !== 'undefined') {
+      fetchProfile();
+    }
   }, [fetchProfile]);
 
   const value = {

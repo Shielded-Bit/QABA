@@ -10,21 +10,16 @@ const EditProperty = () => {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState(null);
-  
-  // State to track images to delete
-  const [imagesToDelete, setImagesToDelete] = useState([]);
   
   // API base URL
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://qaba.onrender.com/api/v1";
   
-  // Form state
+  // Form state with minimal required fields
   const [formData, setFormData] = useState({
     property_name: "",
     description: "",
     property_type: "HOUSE",
-    listing_type: "RENT", // Default, will be updated based on property data
-    submit_for_review: false,
+    listing_type: "RENT", // Will be updated from API response
     location: "",
     bedrooms: 1,
     bathrooms: 1,
@@ -33,34 +28,34 @@ const EditProperty = () => {
     rent_price: "",
     sale_price: "",
     amenities: [],
-    user_type: "owner"
+    user_type: "owner",
+    // Fields from your API example
+    listing_status: "DRAFT",
+    property_status: "AVAILABLE",
+    lister_type: "LANDLOARD"
   });
 
   // Formatted price display states
   const [displayRentPrice, setDisplayRentPrice] = useState('');
   const [displaySalePrice, setDisplaySalePrice] = useState('');
 
-  // Media files state
+  // Media files state - simplified
   const [mediaFiles, setMediaFiles] = useState({
-    image1: null,
-    image2: null,
+    images: [],
     video: null
   });
 
   // Existing images from the property
   const [existingImages, setExistingImages] = useState([]);
+  
+  // Track images to delete
+  const [imagesToDelete, setImagesToDelete] = useState([]);
 
   // Format number with commas for better readability
   const formatNumberWithCommas = (value) => {
     if (!value) return '';
-    // Remove any non-digit characters
     const plainNumber = value.toString().replace(/[^\d]/g, '');
-    
-    // Format with commas
-    if (plainNumber) {
-      return plainNumber.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    }
-    return '';
+    return plainNumber ? plainNumber.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '';
   };
 
   // Available amenities mapping
@@ -102,14 +97,8 @@ const EditProperty = () => {
           }
         });
         
-        // Handle potential nested data structure
-        const rawData = response.data;
-        const data = rawData.property ? rawData.property : 
-                    rawData.data ? rawData.data : 
-                    rawData;
-        
-        // Log the raw data to debug
-        console.log("Raw property data received:", data);
+        // Handle data structure to get property
+        const data = response.data.property || response.data.data || response.data;
         
         // Populate form data
         setFormData({
@@ -117,7 +106,6 @@ const EditProperty = () => {
           description: data.description || "",
           property_type: data.property_type || "HOUSE",
           listing_type: data.listing_type || "RENT",
-          submit_for_review: data.submit_for_review || false,
           location: data.location || "",
           bedrooms: data.bedrooms || 1,
           bathrooms: data.bathrooms || 1,
@@ -128,7 +116,10 @@ const EditProperty = () => {
           amenities: Array.isArray(data.amenities) 
             ? data.amenities.map(amenity => typeof amenity === 'string' ? amenity : amenity.name)
             : [],
-          user_type: data.user_type || "owner"
+          user_type: data.user_type || "owner",
+          listing_status: data.listing_status || "DRAFT",
+          property_status: data.property_status || "AVAILABLE",
+          lister_type: data.lister_type || "LANDLOARD"
         });
         
         // Format price displays
@@ -145,11 +136,9 @@ const EditProperty = () => {
           setExistingImages(data.images);
         }
         
-        setError(null);
         toast.success('Property data loaded successfully');
       } catch (err) {
         console.error("Failed to fetch property details:", err);
-        setError(err.message);
         toast.error(`Error loading property: ${err.response?.data?.message || err.message}`);
       } finally {
         setLoading(false);
@@ -165,21 +154,17 @@ const EditProperty = () => {
     
     // Special handling for price fields
     if (name === 'rent_price') {
-      // Format with commas
       const formattedValue = formatNumberWithCommas(value);
       setDisplayRentPrice(formattedValue);
       
-      // Store plain number in form data
       setFormData({
         ...formData,
         [name]: formattedValue.replace(/[^\d]/g, '')
       });
     } else if (name === 'sale_price') {
-      // Format with commas
       const formattedValue = formatNumberWithCommas(value);
       setDisplaySalePrice(formattedValue);
       
-      // Store plain number in form data
       setFormData({
         ...formData,
         [name]: formattedValue.replace(/[^\d]/g, '')
@@ -197,15 +182,12 @@ const EditProperty = () => {
     setFormData(prevState => {
       const currentAmenities = [...prevState.amenities];
       
-      // If amenity is already selected, remove it
       if (currentAmenities.includes(amenity)) {
         return {
           ...prevState,
           amenities: currentAmenities.filter(item => item !== amenity)
         };
-      } 
-      // Otherwise, add it
-      else {
+      } else {
         return {
           ...prevState,
           amenities: [...currentAmenities, amenity]
@@ -216,13 +198,22 @@ const EditProperty = () => {
 
   // Handle file uploads
   const handleFileChange = (e, fileType) => {
-    const file = e.target.files[0];
-    if (file) {
-      setMediaFiles({
-        ...mediaFiles,
-        [fileType]: file
-      });
-      toast.success(`${fileType.charAt(0).toUpperCase() + fileType.slice(1)} selected successfully`);
+    if (fileType === 'images') {
+      if (e.target.files.length > 0) {
+        setMediaFiles({
+          ...mediaFiles,
+          images: [...mediaFiles.images, e.target.files[0]]
+        });
+        toast.success('Image selected successfully');
+      }
+    } else if (fileType === 'video') {
+      if (e.target.files[0]) {
+        setMediaFiles({
+          ...mediaFiles,
+          video: e.target.files[0]
+        });
+        toast.success('Video selected successfully');
+      }
     }
   };
 
@@ -233,93 +224,10 @@ const EditProperty = () => {
     toast.success('Image marked for deletion');
   };
 
-  // Updated property update function (similar to createProperty in AddForSell)
-  const updateProperty = async (data, mediaFiles, propertyId) => {
-    try {
-      const formData = new FormData();
-      
-      // Add all property details to FormData
-      Object.keys(data).forEach(key => {
-        // Handle arrays specially (like amenities)
-        if (Array.isArray(data[key])) {
-          data[key].forEach(value => {
-            formData.append(`${key}`, value);
-          });
-        } else {
-          // Explicitly convert boolean to string for submit_for_review
-          if (key === 'submit_for_review') {
-            formData.append(key, data[key].toString());
-          } else {
-            formData.append(key, data[key]);
-          }
-        }
-      });
-      
-      // Add any images to delete
-      if (imagesToDelete.length > 0) {
-        imagesToDelete.forEach(url => {
-          formData.append('images_to_delete', url);
-        });
-      }
-      
-      // Add media files to FormData
-      if (mediaFiles.image1) formData.append('images', mediaFiles.image1);
-      if (mediaFiles.image2) formData.append('images', mediaFiles.image2);
-      if (mediaFiles.video) formData.append('video', mediaFiles.video);
-      
-      const accessToken = localStorage.getItem('access_token');
-      
-      if (!accessToken) {
-        throw new Error('No access token found. Please log in.');
-      }
-
-      // Debug log to confirm submit_for_review value
-      console.log("Submission status:", data.submit_for_review);
-
-      const response = await axios.patch(`${API_BASE_URL}/properties/${propertyId}/`, formData, {
-        headers: {
-          // Don't set Content-Type when using FormData
-          'Authorization': `Bearer ${accessToken}`
-        },
-      });
-
-      return {
-        success: true,
-        data: response.data
-      };
-
-    } catch (error) {
-      console.error("API Error:", error.response?.data || error.message);
-      
-      // Error handling
-      if (error.response) {
-        return {
-          success: false,
-          message: error.response.data?.message || 'Failed to update property',
-          errors: error.response.data?.errors || {}
-        };
-      } else if (error.request) {
-        return {
-          success: false,
-          message: 'No response received from server. Please check your network connection.'
-        };
-      } else {
-        return {
-          success: false,
-          message: error.message || 'An unexpected error occurred'
-        };
-      }
-    }
-  };
-
-  // Handle form submission
+  // Submit form - handles both draft and review
   const handleSubmit = async (isDraft = false) => {
     // Validate required fields
-    const requiredFields = [
-      'property_name', 
-      'description', 
-      'location'
-    ];
+    const requiredFields = ['property_name', 'description', 'location'];
     
     // Add price field validation based on listing type
     if (formData.listing_type === 'RENT') {
@@ -341,43 +249,66 @@ const EditProperty = () => {
       setSubmitting(true);
       toast.loading('Updating property...');
       
-      // Create payload for API
-      const payload = {
+      // Create FormData for sending files
+      const formDataForApi = new FormData();
+      
+      // Set listing status based on isDraft
+      const updatedFormData = {
         ...formData,
-        // Set submit_for_review to true when NOT a draft, false when it is a draft
-        submit_for_review: !isDraft,
+        listing_status: isDraft ? "DRAFT" : "PENDING", // Use PENDING for review
         bedrooms: parseInt(formData.bedrooms),
         bathrooms: parseInt(formData.bathrooms),
         area_sqft: formData.area_sqft ? parseFloat(formData.area_sqft) : 0,
       };
       
-      console.log("Updating property data:", payload);
-      console.log("Submit for review status:", !isDraft);
-      
-      // Use the updateProperty function with both data and files
-      const response = await updateProperty(payload, mediaFiles, params.id);
-      
-      if (!response.success) {
-        // Handle errors
-        if (response.errors?.admin_user) {
-          toast.error('Property update requires admin review. Please contact support.');
-          return;
+      // Add all form data to FormData
+      Object.keys(updatedFormData).forEach(key => {
+        if (Array.isArray(updatedFormData[key])) {
+          // Handle arrays like amenities
+          updatedFormData[key].forEach(value => {
+            formDataForApi.append(key, value);
+          });
+        } else if (updatedFormData[key] !== null && updatedFormData[key] !== undefined) {
+          formDataForApi.append(key, updatedFormData[key]);
         }
-        
-        throw new Error(response.message || "Failed to update property data");
+      });
+      
+      // Add images to delete
+      imagesToDelete.forEach(url => {
+        formDataForApi.append('images_to_delete', url);
+      });
+      
+      // Add new images
+      mediaFiles.images.forEach(image => {
+        formDataForApi.append('images', image);
+      });
+      
+      // Add video if selected
+      if (mediaFiles.video) {
+        formDataForApi.append('video', mediaFiles.video);
       }
       
-      // Dismiss loading toast
+      const accessToken = localStorage.getItem('access_token');
+      
+      const response = await axios.patch(
+        `${API_BASE_URL}/properties/${params.id}/`, 
+        formDataForApi, 
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
+          }
+        }
+      );
+      
       toast.dismiss();
       
-      // Show success message with appropriate wording
       if (isDraft) {
         toast.success('Property saved as draft');
       } else {
         toast.success('Property submitted for review');
       }
       
-      // Redirect to property details page after a short delay
+      // Redirect to property details
       setTimeout(() => {
         router.push(`/agent-dashboard/properties/${params.id}`);
       }, 1500);
@@ -385,17 +316,10 @@ const EditProperty = () => {
     } catch (error) {
       toast.dismiss();
       console.error("Error updating property:", error);
-      toast.error(error.message || 'Something went wrong');
+      toast.error(error.response?.data?.message || error.message || 'Something went wrong');
     } finally {
       setSubmitting(false);
     }
-  };
-
-  // Handle form cancellation
-  const handleCancel = () => {
-    // Fix: Redirect to correct property detail route
-    router.push(`/agent-dashboard/properties/${params.id}`);
-    toast.info('Edit cancelled');
   };
 
   if (loading) {
@@ -409,42 +333,27 @@ const EditProperty = () => {
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-normal text-[#014d98]">Edit Property</h2>
         <button
-          onClick={handleCancel}
+          onClick={() => router.push(`/agent-dashboard/properties/${params.id}`)}
           className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
         >
           Cancel
         </button>
       </div>
 
+      {/* Basic Property Information */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Dropdown - What Best Describes You */}
         <div>
-          <label className="block text-gray-700">What best describes you?</label>
-          <select 
-            name="user_type"
-            value={formData.user_type}
-            onChange={handleInputChange}
-            className="w-full border border-gray-300 p-2 rounded-md"
-          >
-            <option value="owner">I am the property owner</option>
-            <option value="agent">I am a property agent</option>
-          </select>
-        </div>
-
-        {/* Property Name */}
-        <div>
-          <label className="block text-gray-700">Property Name</label>
+          <label className="block text-gray-700">Property Name*</label>
           <input
             type="text"
             name="property_name"
             value={formData.property_name}
             onChange={handleInputChange}
             className="w-full border border-gray-300 p-2 rounded-md"
-            placeholder="Greenhood House"
+            placeholder="e.g. Greenhood House"
           />
         </div>
 
-        {/* Property Type */}
         <div>
           <label className="block text-gray-700">Property Type</label>
           <select 
@@ -459,7 +368,6 @@ const EditProperty = () => {
           </select> 
         </div>
 
-        {/* Listing Type */}
         <div>
           <label className="block text-gray-700">Listing Type</label>
           <select 
@@ -467,59 +375,53 @@ const EditProperty = () => {
             value={formData.listing_type}
             onChange={handleInputChange}
             className="w-full border border-gray-300 p-2 rounded-md"
-            disabled  // Disable changing listing type to maintain consistency
+            disabled  // Disable changing listing type
           >
             <option value="RENT">For Rent</option>
             <option value="SALE">For Sale</option>
           </select>
-          {formData.listing_type && (
-            <p className="text-xs text-gray-500 mt-1">
-              Listing type cannot be changed after creation
-            </p>
-          )}
+          <p className="text-xs text-gray-500 mt-1">
+            Listing type cannot be changed after creation
+          </p>
         </div>
+      </div>
 
-        {/* Number of Bedrooms - Show only if not LAND */}
+      {/* Price and Details Section */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+        {/* Conditional rendering based on property type */}
         {formData.property_type !== "LAND" && (
-          <div>
-            <label className="block text-gray-700">Number of Bedrooms</label>
-            <select 
-              name="bedrooms"
-              value={formData.bedrooms}
-              onChange={handleInputChange}
-              className="w-full border border-gray-300 p-2 rounded-md"
-            >
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-              <option value="5">5+</option>
-            </select>
-          </div>
+          <>
+            <div>
+              <label className="block text-gray-700">Bedrooms</label>
+              <select 
+                name="bedrooms"
+                value={formData.bedrooms}
+                onChange={handleInputChange}
+                className="w-full border border-gray-300 p-2 rounded-md"
+              >
+                {[1, 2, 3, 4, 5].map(num => (
+                  <option key={num} value={num}>{num === 5 ? "5+" : num}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-gray-700">Bathrooms</label>
+              <select 
+                name="bathrooms"
+                value={formData.bathrooms}
+                onChange={handleInputChange}
+                className="w-full border border-gray-300 p-2 rounded-md"
+              >
+                {[1, 2, 3, 4, 5].map(num => (
+                  <option key={num} value={num}>{num === 5 ? "5+" : num}</option>
+                ))}
+              </select>
+            </div>
+          </>
         )}
 
-        {/* Number of Bathrooms - Show only if not LAND */}
-        {formData.property_type !== "LAND" && (
-          <div>
-            <label className="block text-gray-700">Number of Bathrooms</label>
-            <select 
-              name="bathrooms"
-              value={formData.bathrooms}
-              onChange={handleInputChange}
-              className="w-full border border-gray-300 p-2 rounded-md"
-            >
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-              <option value="5">5+</option>
-            </select>
-          </div>
-        )}
-
-        {/* Square Footage */}
         <div>
-          <label className="block text-gray-700">Square Footage (Optional)</label>
+          <label className="block text-gray-700">Square Footage</label>
           <input
             type="number"
             name="area_sqft"
@@ -529,78 +431,75 @@ const EditProperty = () => {
             placeholder="Enter square footage"
           />
         </div>
-
-        {/* Rent Price - Only show if listing type is RENT */}
+        
+        {/* Price fields based on listing type */}
         {formData.listing_type === "RENT" && (
-          <div>
-            <label className="block text-gray-700">Rent Price</label>
-            <input
-              type="text"
-              name="rent_price"
-              value={displayRentPrice}
-              onChange={handleInputChange}
-              className="w-full border border-gray-300 p-2 rounded-md"
-              placeholder="12,000,000"
-            />
-          </div>
+          <>
+            <div>
+              <label className="block text-gray-700">Rent Price*</label>
+              <input
+                type="text"
+                name="rent_price"
+                value={displayRentPrice}
+                onChange={handleInputChange}
+                className="w-full border border-gray-300 p-2 rounded-md"
+                placeholder="e.g. 12,000,000"
+              />
+            </div>
+            <div>
+              <label className="block text-gray-700">Rent Frequency</label>
+              <select 
+                name="rent_frequency"
+                value={formData.rent_frequency}
+                onChange={handleInputChange}
+                className="w-full border border-gray-300 p-2 rounded-md"
+              >
+                <option value="MONTHLY">Monthly</option>
+                <option value="YEARLY">Yearly</option>
+                <option value="QUARTERLY">Quarterly</option>
+                <option value="WEEKLY">Weekly</option>
+              </select>
+            </div>
+          </>
         )}
 
-        {/* Sale Price - Only show if listing type is SALE */}
         {formData.listing_type === "SALE" && (
           <div>
-            <label className="block text-gray-700">Sale Price</label>
+            <label className="block text-gray-700">Sale Price*</label>
             <input
               type="text"
               name="sale_price"
               value={displaySalePrice}
               onChange={handleInputChange}
               className="w-full border border-gray-300 p-2 rounded-md"
-              placeholder="150,000,000"
+              placeholder="e.g. 150,000,000"
             />
-          </div>
-        )}
-
-        {/* Rent Frequency - Only show if listing type is RENT */}
-        {formData.listing_type === "RENT" && (
-          <div>
-            <label className="block text-gray-700">Rent Frequency</label>
-            <select 
-              name="rent_frequency"
-              value={formData.rent_frequency}
-              onChange={handleInputChange}
-              className="w-full border border-gray-300 p-2 rounded-md"
-            >
-              <option value="MONTHLY">Monthly</option>
-              <option value="YEARLY">Yearly</option>
-              <option value="QUARTERLY">Quarterly</option>
-              <option value="WEEKLY">Weekly</option>
-            </select>
           </div>
         )}
       </div>
 
-      {/* Address and Description */}
+      {/* Description and Location */}
       <div className="mt-8">
         <h3 className="text-xl font-normal text-[#014d98]">Address and Description</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
           <div>
-            <label className="block text-gray-700">Property Description</label>
+            <label className="block text-gray-700">Property Description*</label>
             <textarea
               name="description"
               value={formData.description}
               onChange={handleInputChange}
               className="w-full border border-gray-300 p-2 rounded-md h-32"
-              placeholder="In a couple of sentences, tell potential customers about your property's best features"
+              placeholder="Describe your property's best features"
             ></textarea>
           </div>
           <div>
-            <label className="block text-gray-700">Property Address</label>
+            <label className="block text-gray-700">Property Address*</label>
             <textarea
               name="location"
               value={formData.location}
               onChange={handleInputChange}
               className="w-full border border-gray-300 p-2 rounded-md h-32"
-              placeholder="In detail, explain the address of the environment for easy navigation"
+              placeholder="Provide the property address"
             ></textarea>
           </div>
         </div>
@@ -622,7 +521,6 @@ const EditProperty = () => {
                   type="button"
                   onClick={() => handleRemoveExistingImage(imageUrl)}
                   className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
-                  aria-label="Remove image"
                 >
                   X
                 </button>
@@ -632,46 +530,24 @@ const EditProperty = () => {
         </div>
       )}
 
-      {/* Upload New Media */}
+      {/* Upload New Media - Simplified */}
       <div className="mt-8">
         <h3 className="text-xl font-normal text-[#014d98]">Upload New Media</h3>
-        <p className="text-sm text-gray-600 mt-2">
-          Add or replace property images and videos. Clear visuals attract more interest.
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
-          {/* Upload Box 1 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+          {/* Images */}
           <div className="border-2 border-dashed border-gray-300 rounded-md p-6 flex items-center justify-center relative">
             <input
               type="file"
               accept="image/*"
-              onChange={(e) => handleFileChange(e, 'image1')}
+              onChange={(e) => handleFileChange(e, 'images')}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
             />
-            <div className="text-gray-500 text-center pointer-events-none">
-              {mediaFiles.image1 ? (
-                <p>Selected: {mediaFiles.image1.name}</p>
-              ) : (
-                <p>Drag and drop an image or click to upload</p>
-              )}
+            <div className="text-gray-500 text-center">
+              <p>Add images (selected: {mediaFiles.images.length})</p>
             </div>
           </div>
-          {/* Upload Box 2 */}
-          <div className="border-2 border-dashed border-gray-300 rounded-md p-6 flex items-center justify-center relative">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => handleFileChange(e, 'image2')}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            />
-            <div className="text-gray-500 text-center pointer-events-none">
-              {mediaFiles.image2 ? (
-                <p>Selected: {mediaFiles.image2.name}</p>
-              ) : (
-                <p>Drag and drop an image or click to upload</p>
-              )}
-            </div>
-          </div>
-          {/* Upload Box 3 */}
+          
+          {/* Video */}
           <div className="border-2 border-dashed border-gray-300 rounded-md p-6 flex items-center justify-center relative">
             <input
               type="file"
@@ -679,12 +555,8 @@ const EditProperty = () => {
               onChange={(e) => handleFileChange(e, 'video')}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
             />
-            <div className="text-gray-500 text-center pointer-events-none">
-              {mediaFiles.video ? (
-                <p>Selected: {mediaFiles.video.name}</p>
-              ) : (
-                <p>Drag and drop a video or click to upload</p>
-              )}
+            <div className="text-gray-500 text-center">
+              <p>{mediaFiles.video ? `Selected: ${mediaFiles.video.name}` : 'Add video'}</p>
             </div>
           </div>
         </div>

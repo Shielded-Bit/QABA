@@ -335,14 +335,7 @@ export default function PropertyDetail() {
 
         <p className="text-blue-500 mb-4 md:mb-6">{property.location}</p>
 
-        <div className="flex flex-wrap gap-4 md:gap-6 mb-6">
-          {property.amenities && property.amenities.slice(0, 3).map((amenity, index) => (
-            <div key={index} className="flex items-center gap-2 text-gray-500">
-              <span className="text-2xl">{amenity.icon || '🏠'}</span>
-              <span>{typeof amenity === 'string' ? amenity : amenity.name}</span>
-            </div>
-          ))}
-        </div>
+        {/* Removed the duplicate amenities section that was here */}
 
         {/* Pricing Info Card */}
         <div className="mb-6 bg-gradient-to-r from-blue-50 to-green-50 p-4 rounded-lg border border-blue-100">
@@ -448,10 +441,14 @@ export default function PropertyDetail() {
               {/* Show Video or Images */}
               {(hasVideo && showVideo) ? (
                 <div className="w-full h-64 md:h-96 relative rounded-lg overflow-hidden">
+                  {/* Fixed video playback by using proper video element */}
                   <video 
-                    controls
-                    className="w-full h-full object-cover"
                     src={property.video.video_url}
+                    className="w-full h-full object-cover"
+                    controls
+                    autoPlay={false}
+                    playsInline
+                    preload="metadata"
                     poster={property.thumbnail || (images[0] && getImageUrl(images[0]))}
                   >
                     Your browser does not support the video tag.

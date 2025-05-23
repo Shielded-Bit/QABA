@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { BellDot, Trash2, Eye, Search, Menu } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { BellDot, Trash2, Eye, Menu } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useProfile } from "../../../contexts/ProfileContext";
@@ -13,21 +13,125 @@ export default function TopNav() {
     { id: 2, message: "Agent sent you a message.", expanded: false },
   ]);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isBrowser, setIsBrowser] = useState(false);
+  const [cachedProfileImage, setCachedProfileImage] = useState(null);
   
-  // Use the shared profile context
+  // Add a flag to force a single fetch only on first mount
+  const hasFetchedProfile = useRef(false);
+  
+  // Store user data locally
+  const [cachedUserData, setCachedUserData] = useState(null);
+  const [cachedUserType, setCachedUserType] = useState(null);
+  const [cachedDisplayName, setCachedDisplayName] = useState("Guest");
+  const [cachedShortName, setCachedShortName] = useState("User");
+  const [cachedRole, setCachedRole] = useState("User");
+  const [cachedInitial, setCachedInitial] = useState("U");
+  const [cachedSettingsUrl, setCachedSettingsUrl] = useState("/dashboard/settings");
+  const [isProfileLoading, setIsProfileLoading] = useState(true);
+  
+  // Use the shared profile context with conditional fetch prevention
   const { userData, profileImage, isLoading, userType } = useProfile();
   
-  // Check if we're in browser environment for the portal
+  // Check if we're in browser environment and load cached data
   useEffect(() => {
     setIsBrowser(true);
+    
+    // Try to load from localStorage first for immediate display
+    const savedImage = localStorage.getItem('profile_photo_url');
+    if (savedImage) {
+      setCachedProfileImage(savedImage);
+    }
+    
+    // Try to load cached user data
+    const savedUserData = localStorage.getItem('user_data');
+    if (savedUserData) {
+      try {
+        const parsedData = JSON.parse(savedUserData);
+        setCachedUserData(parsedData);
+        
+        // Extract and set user properties
+        const firstName = parsedData.first_name || parsedData.data?.first_name || "";
+        const lastName = parsedData.last_name || parsedData.data?.last_name || "";
+        
+        if (firstName && lastName) {
+          setCachedDisplayName(`${firstName} ${lastName}`);
+        } else if (firstName) {
+          setCachedDisplayName(firstName);
+        } else if (lastName) {
+          setCachedDisplayName(lastName);
+        } else if (parsedData.email) {
+          setCachedDisplayName(parsedData.email.split('@')[0]);
+        }
+        
+        setCachedShortName(firstName || "User");
+        setCachedInitial(firstName ? firstName.charAt(0).toUpperCase() : "U");
+        
+        setIsProfileLoading(false);
+      } catch (e) {
+        console.error("Failed to parse cached user data");
+      }
+    }
+    
+    const savedUserType = localStorage.getItem('user_type');
+    if (savedUserType) {
+      setCachedUserType(savedUserType);
+      const type = savedUserType;
+      setCachedRole(type === "AGENT" ? "Agent" : "Client");
+      setCachedSettingsUrl(type === "AGENT" ? "/agent-dashboard/settings/profile" : "/dashboard/settings");
+    }
+    
+    // Only fetch on first component mount ever
+    if (!hasFetchedProfile.current) {
+      // This is intentionally empty - we're using the useProfile hook
+      // but preventing re-fetches on subsequent renders
+      hasFetchedProfile.current = true;
+    }
   }, []);
   
-  // For debugging - you can remove this in production
+  // Update cache only when actual new data arrives
   useEffect(() => {
-    console.log("Current user data:", userData);
-  }, [userData]);
+    if (userData && !isLoading) {
+      setCachedUserData(userData);
+      localStorage.setItem('user_data', JSON.stringify(userData));
+      
+      // Extract and set user properties
+      const firstName = userData.first_name || userData.data?.first_name || "";
+      const lastName = userData.last_name || userData.data?.last_name || "";
+      
+      if (firstName && lastName) {
+        setCachedDisplayName(`${firstName} ${lastName}`);
+      } else if (firstName) {
+        setCachedDisplayName(firstName);
+      } else if (lastName) {
+        setCachedDisplayName(lastName);
+      } else if (userData.email) {
+        setCachedDisplayName(userData.email.split('@')[0]);
+      }
+      
+      setCachedShortName(firstName || "User");
+      setCachedInitial(firstName ? firstName.charAt(0).toUpperCase() : "U");
+      
+      setIsProfileLoading(false);
+    }
+    
+    if (userType) {
+      setCachedUserType(userType);
+      localStorage.setItem('user_type', userType);
+      
+      const type = userType;
+      setCachedRole(type === "AGENT" ? "Agent" : "Client");
+      setCachedSettingsUrl(type === "AGENT" ? "/agent-dashboard/settings/profile" : "/dashboard/settings");
+    }
+  }, [userData, isLoading, userType]);
+  
+  // Cache the profile image only when it actually changes
+  useEffect(() => {
+    if (profileImage && profileImage !== cachedProfileImage) {
+      setCachedProfileImage(profileImage);
+      localStorage.setItem('profile_photo_url', profileImage);
+    }
+  }, [profileImage, cachedProfileImage]);
 
   // Add body class to prevent scrolling when notifications are open
   useEffect(() => {
@@ -54,75 +158,42 @@ export default function TopNav() {
     );
   };
 
-  // Get the profile image URL
+  // Get the profile image URL with priority on cached version
   const getProfileImageUrl = () => {
+    // First check our cached state value
+    if (cachedProfileImage) {
+      return cachedProfileImage;
+    }
+    
+    // Then check the context value
     if (profileImage) {
       return profileImage;
-    } else if (userData) {
-      // Try to get from userData as backup
-      const photoUrl = userData?.profile_photo_url || 
-                      userData?.agent_profile?.profile_photo_url || 
-                      userData?.client_profile?.profile_photo_url;
+    } 
+    
+    // Then try to get from userData or cachedUserData as backup
+    const userDataToUse = cachedUserData || userData;
+    if (userDataToUse) {
+      const photoUrl = userDataToUse?.profile_photo_url || 
+                      userDataToUse?.agent_profile?.profile_photo_url || 
+                      userDataToUse?.client_profile?.profile_photo_url;
       if (photoUrl) {
         return photoUrl;
-      } else {
-        // Try to get from localStorage as final backup
-        const savedImage = localStorage.getItem('profile_photo_url');
-        if (savedImage) {
-          return savedImage;
-        }
       }
     }
+    
+    // Last resort - check localStorage directly
+    const savedImage = localStorage.getItem('profile_photo_url');
+    if (savedImage) {
+      return savedImage;
+    }
+    
     // Default placeholder if no image is found
     return "https://i.pravatar.cc/150";
   };
 
-  // Get user display name based on the structure from /api/v1/users/me/ endpoint
-  const getUserDisplayName = () => {
-    if (!userData) return "Guest";
-    
-    // Access directly from userData or from the data property
-    const firstName = userData.first_name || userData.data?.first_name || "";
-    const lastName = userData.last_name || userData.data?.last_name || "";
-    
-    if (firstName && lastName) {
-      return `${firstName} ${lastName}`;
-    } else if (firstName) {
-      return firstName;
-    } else if (lastName) {
-      return lastName;
-    }
-    
-    // Last resort: use email
-    return userData.email ? userData.email.split('@')[0] : "User";
-  };
-
-  // Get short name for mobile display
-  const getShortName = () => {
-    const firstName = userData?.first_name || userData?.data?.first_name;
-    return firstName || "User";
-  };
-
-  // Get user role based on user_type
-  const getUserRole = () => {
-    const type = userType || userData?.user_type || userData?.data?.user_type;
-    return type === "AGENT" ? "Agent" : "Client";
-  };
-
-  // Determine the settings page URL based on user type
-  const getSettingsUrl = () => {
-    const type = userType || userData?.user_type || userData?.data?.user_type;
-    return type === "AGENT" ? "/agent-dashboard/settings/profile" : "/dashboard/settings";
-  };
-
-  // Get the first initial for the avatar fallback
-  const getInitial = () => {
-    const firstName = userData?.first_name || userData?.data?.first_name;
-    if (firstName) {
-      return firstName.charAt(0).toUpperCase();
-    }
-    return "U"; // Default to "U" for User
-  };
+  // Use memoized data and loading state
+  const profileImageUrl = getProfileImageUrl();
+  const effectiveIsLoading = isProfileLoading && isLoading;
 
   // Render the modal overlay and content with portal to ensure it's on top of all content
   const renderModalContent = () => {
@@ -237,12 +308,7 @@ export default function TopNav() {
       <div className="hidden sm:flex justify-between items-center p-6">
         {/* Search Bar */}
         <div className="flex items-center flex-1 relative max-w-md">
-          {/* <Search className="absolute left-3 h-5 w-5 text-gray-500" />
-          <input
-            type="text"
-            placeholder="Search for properties, agents"
-            className="w-full pl-10 p-2 border border-gray-300 rounded-md text-sm focus:ring focus:ring-blue-300"
-          /> */}
+          {/* Search bar removed */}
         </div>
 
         {/* Notification + Profile Section */}
@@ -256,27 +322,29 @@ export default function TopNav() {
           </div>
 
           {/* User Profile */}
-          <Link href={getSettingsUrl()} className="flex items-center gap-2 cursor-pointer">
+          <Link href={cachedSettingsUrl} className="flex items-center gap-2 cursor-pointer">
             <div className="w-10 h-10 relative rounded-full overflow-hidden border border-gray-300 shadow-sm">
-              {!isLoading ? (
+              {profileImageUrl && !effectiveIsLoading ? (
                 <Image
-                  src={getProfileImageUrl()}
-                  alt={`${getUserDisplayName()} Profile`}
+                  src={profileImageUrl}
+                  alt={`${cachedDisplayName} Profile`}
                   width={40}
                   height={40}
                   className="rounded-full object-cover"
+                  priority
+                  unoptimized={profileImageUrl.startsWith('data:')}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-gray-200">
                   <span className="text-xl font-medium text-gray-500">
-                    {getInitial()}
+                    {cachedInitial}
                   </span>
                 </div>
               )}
             </div>
             <div className="hidden sm:flex flex-col">
-              <span className="text-sm font-medium text-gray-800">{getUserDisplayName()}</span>
-              <span className="text-xs text-gray-500">{getUserRole()}</span>
+              <span className="text-sm font-medium text-gray-800">{cachedDisplayName}</span>
+              <span className="text-xs text-gray-500">{cachedRole}</span>
             </div>
           </Link>
         </div>
@@ -289,7 +357,7 @@ export default function TopNav() {
           <Menu className="h-7 w-7 text-gray-600" />
         </button>
 
-        {/* Search Bar (Mobile) */}
+        {/* Search Bar (Mobile) - removed */}
         <div className="flex items-center flex-1 relative mx-4">
          
         </div>
@@ -303,25 +371,27 @@ export default function TopNav() {
         </div>
 
         {/* User Profile (Mobile) */}
-        <Link href={getSettingsUrl()} className="flex items-center gap-1 ml-4 cursor-pointer">
+        <Link href={cachedSettingsUrl} className="flex items-center gap-1 ml-4 cursor-pointer">
           <div className="w-8 h-8 relative rounded-full overflow-hidden border border-gray-300">
-            {!isLoading ? (
+            {profileImageUrl && !effectiveIsLoading ? (
               <Image
-                src={getProfileImageUrl()}
-                alt={`${getShortName()} Profile`}
+                src={profileImageUrl}
+                alt={`${cachedShortName} Profile`}
                 width={32}
                 height={32}
                 className="rounded-full object-cover"
+                priority
+                unoptimized={profileImageUrl.startsWith('data:')}
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gray-200">
                 <span className="text-sm font-medium text-gray-500">
-                  {getInitial()}
+                  {cachedInitial}
                 </span>
               </div>
             )}
           </div>
-          <span className="text-sm font-medium text-gray-800">{getShortName()}</span>
+          <span className="text-sm font-medium text-gray-800">{cachedShortName}</span>
         </Link>
       </div>
 

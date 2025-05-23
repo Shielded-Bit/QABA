@@ -121,7 +121,7 @@ const FileUploadBox = ({ label, onChange, file }) => (
   <div className="border-2 border-dashed border-gray-300 rounded-md p-6 flex items-center justify-center relative">
     <input
       type="file"
-      accept={label.includes("video") ? "video/*" : "image/*"}
+      accept={label.toLowerCase().includes("video") ? "video/*" : "image/*"}
       onChange={onChange}
       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
     />
