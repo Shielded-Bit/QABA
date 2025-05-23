@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import axios from 'axios';
@@ -19,7 +19,7 @@ const bgpict = [
   },
 ];
 
-const NewPassword = () => {
+const NewPasswordForm = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -122,5 +122,12 @@ const NewPassword = () => {
   );
 };
 
-// This is crucial - make sure you have the default export
+const NewPassword = () => {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-gray-800">Loading...</div>}>
+      <NewPasswordForm />
+    </Suspense>
+  );
+};
+
 export default NewPassword;
