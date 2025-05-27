@@ -14,7 +14,7 @@ from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.views import APIView
 
 from .models import Amenity, Favorite, Property, PropertyDocument
-from .permissions import IsClient
+from .permissions import IsClientOrAgent
 from .serializers import (
     AmenitySerializer,
     FavoriteSerializer,
@@ -282,7 +282,7 @@ class FavoriteListView(generics.ListAPIView):
     """
 
     serializer_class = FavoriteSerializer
-    permission_classes = [IsClient]
+    permission_classes = [IsClientOrAgent]
 
     def get_queryset(self):
         return Favorite.objects.filter(user=self.request.user)
