@@ -405,7 +405,7 @@ const AddForSell = () => {
 
   return (
     <div className="rounded-lg py-6 md:px-3">
-      <h2 className="text-2xl font-normal text-[#014d98] mb-6">Property Details</h2>
+      <h2 className="text-3xl font-bold text-gradient mb-6">Property Details</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <FormField label="What best describes you?">
@@ -557,7 +557,7 @@ const AddForSell = () => {
         {/* Display uploaded documents */}
         {documents.length > 0 && (
           <div className="mt-4">
-            <h4 className="text-lg font-medium">Uploaded Documents</h4>
+            <h4 className="text-2xl font-bold text-gradient mb-3">Uploaded Documents</h4>
             <div className="mt-2 border rounded-md divide-y">
               {documents.map((doc, index) => {
                 const docType = DOCUMENT_TYPES.find(type => type.value === doc.type);

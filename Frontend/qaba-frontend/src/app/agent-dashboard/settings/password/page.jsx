@@ -6,7 +6,7 @@ import { Mail, CheckCircle2, AlertCircle, Shield, Key } from 'lucide-react';
 import Cookies from 'js-cookie';
 import useLogout from "../../../hooks/useLogout";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://qaba.onrender.com';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ;
 
 export default function PasswordPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -110,7 +110,7 @@ export default function PasswordPage() {
 
   if (emailSent) {
     return (
-      <div className="max-w-4xl mx-auto p-4 sm:p-6 bg-white">
+      <div className="max-w-4xl mx-auto p-6 bg-white">
         <ToastContainer position="top-right" autoClose={5000} />
         <div className="text-center py-8">
           <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
@@ -148,10 +148,10 @@ export default function PasswordPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-4 sm:p-6 bg-white">
+    <div className="max-w-4xl mx-auto p-3 bg-white">
       <ToastContainer position="top-right" autoClose={5000} />
-      <div className="mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Change Password</h1>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">Change Password</h1>
         <p className="text-gray-600">Update your password to keep your account secure</p>
       </div>
       <div className="max-w-lg">

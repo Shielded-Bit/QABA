@@ -5,8 +5,9 @@ const Footer = () => {
     <footer className="bg-white border-t border-gray-300 pt-20 px-2 sm:px-14 font-light">
       {/* Logo */}
       <div className="mx-auto md:justify-start mb-8">
-        <h2 className="text-2xl font-bold text-blue-600">
-          BUY<span className="text-teal-500">HOMES</span>
+        <h2 className="text-2xl font-bold">
+          <span className="bg-gradient-to-r from-[#014d98] to-[#3ab7b1] bg-clip-text text-transparent">BUY</span>
+          <span className="bg-gradient-to-r from-[#014d98] to-[#3ab7b1] bg-clip-text text-transparent"> HOMES</span>
         </h2>
       </div>
 
@@ -19,39 +20,39 @@ const Footer = () => {
           <div>
             <h3 className="font-bold mb-3">Company</h3>
             <ul className="space-y-3">
-              <li><a href="#" className="hover:text-blue-500">About Us</a></li>
-              <li><a href="#" className="hover:text-blue-500">Properties</a></li>
-              <li><a href="#" className="hover:text-blue-500">Blog</a></li>
-              <li><a href="#" className="hover:text-blue-500">Contact Us</a></li>
+              <li><a href="#" className="hover:text-[#014d98]">About Us</a></li>
+              <li><a href="#" className="hover:text-[#014d98]">Properties</a></li>
+              <li><a href="#" className="hover:text-[#014d98]">Blog</a></li>
+              <li><a href="#" className="hover:text-[#014d98]">Contact Us</a></li>
             </ul>
           </div>
           <div>
             <h3 className="font-bold mb-3">Quick Links</h3>
             <ul className="space-y-3">
-              <li><a href="#" className="hover:text-blue-500">Home</a></li>
-              <li><a href="#" className="hover:text-blue-500">Properties</a></li>
-              <li><a href="#" className="hover:text-blue-500">About Us</a></li>
-              <li><a href="#" className="hover:text-blue-500">Login</a></li>
+              <li><a href="#" className="hover:text-[#014d98]">Home</a></li>
+              <li><a href="#" className="hover:text-[#014d98]">Properties</a></li>
+              <li><a href="#" className="hover:text-[#014d98]">About Us</a></li>
+              <li><a href="#" className="hover:text-[#014d98]">Login</a></li>
             </ul>
           </div>
           <div>
             <h3 className="font-bold mb-3">Resources</h3>
             <ul className="space-y-3">
-              <li><a href="#" className="hover:text-blue-500">Privacy Policy</a></li>
-              <li><a href="#" className="hover:text-blue-500">Terms of Condition</a></li>
-              <li><a href="#" className="hover:text-blue-500">Support</a></li>
-              <li><a href="#" className="hover:text-blue-500">FAQs</a></li>
+              <li><a href="#" className="hover:text-[#014d98]">Privacy Policy</a></li>
+              <li><a href="#" className="hover:text-[#014d98]">Terms of Condition</a></li>
+              <li><a href="#" className="hover:text-[#014d98]">Support</a></li>
+              <li><a href="#" className="hover:text-[#014d98]">FAQs</a></li>
             </ul>
           </div>
-          <div>
+          {/* <div>
             <h3 className="font-bold mb-3">Connect with Us</h3>
             <ul className="space-y-3">
-              <li><a href="#" className="hover:text-blue-500">Social Media</a></li>
-              <li><a href="#" className="hover:text-blue-500">Newsletter</a></li>
-              <li><a href="#" className="hover:text-blue-500">Events</a></li>
-              <li><a href="#" className="hover:text-blue-500">Webinars</a></li>
+              <li><a href="#" className="hover:text-[#014d98]">Social Media</a></li>
+              <li><a href="#" className="hover:text-[#014d98]">Newsletter</a></li>
+              <li><a href="#" className="hover:text-[#014d98]">Events</a></li>
+              <li><a href="#" className="hover:text-[#014d98]">Webinars</a></li>
             </ul>
-          </div>
+          </div> */}
         </div>
 
         {/* Subscription Section */}
@@ -64,15 +65,15 @@ const Footer = () => {
             <input
               type="email"
               placeholder="Your Email Here"
-              className="border rounded-lg px-4 py-2 text-sm focus:ring focus:ring-blue-300 focus:outline-none mr-2"
+              className="border rounded-lg px-4 py-2 text-sm focus:ring focus:ring-[#014d98]/30 focus:outline-none mr-2"
             />
-            <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-500">
+            <button className="bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white px-4 py-2 rounded-lg hover:opacity-90 transition-opacity">
               Subscribe
             </button>
           </div>
           <p className="text-xs text-gray-500">
             We respect your privacy.{" "}
-            <a href="#" className="underline text-blue-600">
+            <a href="#" className="underline text-[#014d98] hover:text-[#3ab7b1]">
               Read our Privacy Policy.
             </a>
           </p>
@@ -83,17 +84,17 @@ const Footer = () => {
       <div className="mx-auto mt-16 mb-8 border-t pt-4 px-0 flex flex-col md:flex-row items-center justify-between text-gray-600 text-sm">
         <p>© 2024 All Rights Reserved</p>
         <div className="flex space-x-4 mt-4 md:mt-0">
-          <a href="#" className="h-8 w-8 flex items-center justify-center rounded-full border">
-            <FaFacebookF className="text-blue-600" />
+          <a href="#" className="h-8 w-8 flex items-center justify-center rounded-full border border-[#014d98]/20 hover:border-[#014d98] transition-colors">
+            <FaFacebookF className="text-[#014d98]" />
           </a>
-          <a href="#" className="h-8 w-8 flex items-center justify-center rounded-full border">
-            <FaInstagram className="text-pink-500" />
+          <a href="#" className="h-8 w-8 flex items-center justify-center rounded-full border border-[#014d98]/20 hover:border-[#014d98] transition-colors">
+            <FaInstagram className="text-[#014d98]" />
           </a>
-          <a href="#" className="h-8 w-8 flex items-center justify-center rounded-full border">
-            <FaTwitter className="text-blue-400" />
+          <a href="#" className="h-8 w-8 flex items-center justify-center rounded-full border border-[#014d98]/20 hover:border-[#014d98] transition-colors">
+            <FaTwitter className="text-[#014d98]" />
           </a>
-          <a href="#" className="h-8 w-8 flex items-center justify-center rounded-full border">
-            <FaLinkedin className="text-blue-700" />
+          <a href="#" className="h-8 w-8 flex items-center justify-center rounded-full border border-[#014d98]/20 hover:border-[#014d98] transition-colors">
+            <FaLinkedin className="text-[#014d98]" />
           </a>
         </div>
       </div>
