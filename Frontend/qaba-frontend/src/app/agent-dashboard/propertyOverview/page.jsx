@@ -9,8 +9,8 @@ export default function PropertyOverview() {
      
        {/* Top Numbers Row Wrapper */}
        <div className="dashboard-numbers sm:pl-10 pl-16 px-6">
-        {/* Text with fixed gradient */}
-        <h1 className="text-2xl font-medium px-4 py-4 bg-clip-text text-transparent bg-gradient-to-r from-[#014d98] via-[#1d86a9] to-[#3ab7b1]">
+        {/* Main heading with gradient text */}
+      <h1 className="text-xl sm:text-2xl lg:text-3xl font-normal text-transparent text-gradient py-2 sm:py-3 lg:py-4 text-center md:text-left">
           Property Overview
         </h1>
         <section className="ml-2 lg:ml-0">

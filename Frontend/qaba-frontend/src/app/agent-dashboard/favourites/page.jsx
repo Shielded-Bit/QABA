@@ -9,6 +9,7 @@ export default function FavouritesPage() {
         <Header2 />
       </div> */}
       <div className="space-y-4 ml-12 lg:ml-8">
+        
         <Propertycards />
       </div>
     </>

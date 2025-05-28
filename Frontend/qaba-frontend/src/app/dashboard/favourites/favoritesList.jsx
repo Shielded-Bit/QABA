@@ -19,6 +19,16 @@ const FavoritesPage = () => {
   const [itemsPerPage, setItemsPerPage] = useState(6);
   const [totalPages, setTotalPages] = useState(1);
 
+  // Handle removing a favorite
+  const handleRemoveFavorite = (favoriteId) => {
+    setFavorites(prevFavorites => 
+      prevFavorites.filter(fav => fav.id !== favoriteId)
+    );
+    setFilteredFavorites(prevFiltered => 
+      prevFiltered.filter(fav => fav.id !== favoriteId)
+    );
+  };
+
   // Fetch favorites from API
   useEffect(() => {
     const fetchFavorites = async () => {
@@ -238,7 +248,7 @@ const FavoritesPage = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-900 to-green-600">
+      <h1 className="text-xl sm:text-2xl lg:text-3xl font-normal text-transparent text-gradient py-2 sm:py-3 lg:py-4 text-center md:text-left">
           My Favorite Properties
         </h1>
         
@@ -374,7 +384,11 @@ const FavoritesPage = () => {
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {currentItems.map((favorite) => (
-              <FavoriteCard key={favorite.id} favorite={favorite} />
+              <FavoriteCard 
+                key={favorite.id} 
+                favorite={favorite} 
+                onRemove={handleRemoveFavorite}
+              />
             ))}
           </div>
           

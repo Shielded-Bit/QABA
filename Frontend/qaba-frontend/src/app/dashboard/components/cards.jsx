@@ -1,28 +1,17 @@
+"use client";
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSwipeable } from "react-swipeable";
-import PropertyModal from "../components/propertyModal"; // For property listings
-import NotificationModal from "@/app/components/NotificationModal";
-
-const notifications = [
-  { id: 1, title: "Price Drop Alert", message: "Good news! The price of Luxury Villa has dropped by 10%. Check it out now" },
-  { id: 2, title: "New Message from Agent", message: "You have a new message from Ekene regarding Modern Duplex." },
-  { id: 3, title: "New Message from Agent", message: "You have a new message from Ekene regarding Modern Duplex." },
-  { id: 4, title: "New Message from Agent", message: "You have a new message from Ekene regarding Modern Duplex." },
-];
+import PropertyModal from "../components/propertyModal";
+import { useNotifications } from "../../../contexts/NotificationContext";
 
 const Dashboard = () => {
   const [properties, setProperties] = useState([]);
   const [isPropertyModalOpen, setIsPropertyModalOpen] = useState(false);
-  const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
 
   const openPropertyModal = () => {
     setIsPropertyModalOpen(true);
-  };
-
-  const openNotificationModal = () => {
-    setIsNotificationModalOpen(true);
   };
 
   useEffect(() => {
@@ -67,7 +56,7 @@ const Dashboard = () => {
     <div className="px-2 py-1">
       <div className="hidden md:grid md:grid-cols-2 gap-4">
         <PropertiesSection properties={properties} onViewAll={openPropertyModal} />
-        <NotificationsSection onViewAll={openNotificationModal} />
+        <NotificationsSection />
       </div>
 
       <div className="flex flex-col space-y-4 md:hidden">
@@ -78,7 +67,7 @@ const Dashboard = () => {
           },
           { 
             id: 'notifications', 
-            content: <NotificationsList onViewAll={openNotificationModal} /> 
+            content: <NotificationsList /> 
           }
         ]} />
       </div>
@@ -87,13 +76,6 @@ const Dashboard = () => {
       <PropertyModal 
         isOpen={isPropertyModalOpen} 
         onClose={() => setIsPropertyModalOpen(false)}
-      />
-
-      {/* Notification Modal */}
-      <NotificationModal 
-        isOpen={isNotificationModalOpen} 
-        onClose={() => setIsNotificationModalOpen(false)}
-        notifications={notifications}
       />
     </div>
   );
@@ -132,16 +114,38 @@ const PropertiesSection = ({ properties, onViewAll }) => (
   </div>
 );
 
-const NotificationsSection = ({ onViewAll }) => (
-  <div className="bg-white shadow-md rounded-lg p-4 text-gray-600">
-    <Header title="Notifications" onViewAll={onViewAll} />
-    <div className="space-y-3 mt-7">
-      {notifications.map((notification) => (
-        <NotificationCard key={notification.id} {...notification} />
-      ))}
+const NotificationsSection = () => {
+  const { notifications = [], loading = true, error = null, markAsRead } = useNotifications() || {};
+
+  return (
+    <div className="bg-white shadow-md rounded-lg p-4 text-gray-600">
+      <h2 className="text-lg font-semibold mb-4">Notifications</h2>
+      <div className="space-y-3 mt-7 max-h-[400px] overflow-y-auto">
+        {loading ? (
+          <div className="flex justify-center items-center h-40">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          </div>
+        ) : error ? (
+          <div className="text-red-500 text-center py-4">
+            Error loading notifications: {error}
+          </div>
+        ) : notifications.length === 0 ? (
+          <div className="text-center py-8 text-gray-400">
+            No notifications at this time
+          </div>
+        ) : (
+          notifications.map((notification) => (
+            <NotificationCard 
+              key={notification.id} 
+              notification={notification}
+              onMarkAsRead={markAsRead}
+            />
+          ))
+        )}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const PropertiesList = ({ properties, onViewAll }) => (
   <div className="bg-white shadow-md rounded-lg p-4 w-full">
@@ -160,22 +164,38 @@ const PropertiesList = ({ properties, onViewAll }) => (
   </div>
 );
 
-const NotificationsList = ({ onViewAll }) => (
-  <div className="bg-white shadow-md rounded-lg p-4 w-full">
-    <h2 className="text-lg font-semibold mb-4 text-gray-600">Notifications</h2>
-    <div className="space-y-3">
-      {notifications.map((notification) => (
-        <NotificationCard key={notification.id} {...notification} />
-      ))}
+const NotificationsList = () => {
+  const { notifications = [], loading = true, error = null, markAsRead } = useNotifications() || {};
+
+  return (
+    <div className="bg-white shadow-md rounded-lg p-4 w-full">
+      <h2 className="text-lg font-semibold mb-4 text-gray-600">Notifications</h2>
+      <div className="space-y-3 max-h-[400px] overflow-y-auto">
+        {loading ? (
+          <div className="flex justify-center items-center h-40">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          </div>
+        ) : error ? (
+          <div className="text-red-500 text-center py-4">
+            Error loading notifications: {error}
+          </div>
+        ) : notifications.length === 0 ? (
+          <div className="text-center py-8 text-gray-400">
+            No notifications at this time
+          </div>
+        ) : (
+          notifications.map((notification) => (
+            <NotificationCard 
+              key={notification.id} 
+              notification={notification}
+              onMarkAsRead={markAsRead}
+            />
+          ))
+        )}
+      </div>
     </div>
-    <button
-      onClick={onViewAll}
-      className="mt-4 text-center block w-full text-blue-600 hover:underline"
-    >
-      View All
-    </button>
-  </div>
-);
+  );
+};
 
 // Updated PropertyCard with Next.js Link component instead of useRouter
 const PropertyCard = ({ id, image, name, address, status, price }) => (
@@ -196,10 +216,24 @@ const PropertyCard = ({ id, image, name, address, status, price }) => (
   </Link>
 );
 
-const NotificationCard = ({ title, message }) => (
-  <div className="border-b pb-3 last:border-b-0 w-full cursor-pointer hover:bg-gray-50 transition">
-    <h3 className="font-semibold text-sm sm:text-base text-gray-800">{title}</h3>
-    <p className="text-xs sm:text-sm text-gray-500">{message}</p>
+const NotificationCard = ({ notification, onMarkAsRead }) => (
+  <div className={`border-b pb-3 last:border-b-0 w-full transition ${notification.is_read ? 'bg-white' : 'bg-blue-50'}`}>
+    <div className="p-3">
+      <p className="text-sm text-gray-800">{notification.message}</p>
+      <div className="mt-2 flex justify-between items-center">
+        <span className="text-xs text-gray-500">
+          {new Date(notification.created_at).toLocaleDateString()}
+        </span>
+        {!notification.is_read && (
+          <button
+            onClick={() => onMarkAsRead(notification.id)}
+            className="text-xs text-blue-600 hover:text-blue-800"
+          >
+            Mark as read
+          </button>
+        )}
+      </div>
+    </div>
   </div>
 );
 

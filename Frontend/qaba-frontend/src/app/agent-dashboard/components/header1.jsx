@@ -1,17 +1,14 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { BellDot, Trash2, Eye, Menu } from "lucide-react";
+import { BellDot, X, Menu } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useProfile } from "../../../contexts/ProfileContext";
+import { useNotifications } from "../../../contexts/NotificationContext";
 import { createPortal } from "react-dom";
 
 export default function TopNav() {
-  const [notifications, setNotifications] = useState([
-    { id: 1, message: "New property listing available!", expanded: false },
-    { id: 2, message: "Agent sent you a message.", expanded: false },
-  ]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isBrowser, setIsBrowser] = useState(false);
@@ -30,63 +27,15 @@ export default function TopNav() {
   const [cachedSettingsUrl, setCachedSettingsUrl] = useState("/dashboard/settings");
   const [isProfileLoading, setIsProfileLoading] = useState(true);
   
-  // Use the shared profile context with conditional fetch prevention
+  // Use the shared profile context
   const { userData, profileImage, isLoading, userType } = useProfile();
   
-  // Check if we're in browser environment and load cached data
+  // Use the notifications context
+  const { notifications = [], unreadCount = 0, markAsRead } = useNotifications() || {};
+
+  // Check if we're in browser environment
   useEffect(() => {
     setIsBrowser(true);
-    
-    // Try to load from localStorage first for immediate display
-    const savedImage = localStorage.getItem('profile_photo_url');
-    if (savedImage) {
-      setCachedProfileImage(savedImage);
-    }
-    
-    // Try to load cached user data
-    const savedUserData = localStorage.getItem('user_data');
-    if (savedUserData) {
-      try {
-        const parsedData = JSON.parse(savedUserData);
-        setCachedUserData(parsedData);
-        
-        // Extract and set user properties
-        const firstName = parsedData.first_name || parsedData.data?.first_name || "";
-        const lastName = parsedData.last_name || parsedData.data?.last_name || "";
-        
-        if (firstName && lastName) {
-          setCachedDisplayName(`${firstName} ${lastName}`);
-        } else if (firstName) {
-          setCachedDisplayName(firstName);
-        } else if (lastName) {
-          setCachedDisplayName(lastName);
-        } else if (parsedData.email) {
-          setCachedDisplayName(parsedData.email.split('@')[0]);
-        }
-        
-        setCachedShortName(firstName || "User");
-        setCachedInitial(firstName ? firstName.charAt(0).toUpperCase() : "U");
-        
-        setIsProfileLoading(false);
-      } catch (e) {
-        console.error("Failed to parse cached user data");
-      }
-    }
-    
-    const savedUserType = localStorage.getItem('user_type');
-    if (savedUserType) {
-      setCachedUserType(savedUserType);
-      const type = savedUserType;
-      setCachedRole(type === "AGENT" ? "Agent" : "Client");
-      setCachedSettingsUrl(type === "AGENT" ? "/agent-dashboard/settings/profile" : "/dashboard/settings");
-    }
-    
-    // Only fetch on first component mount ever
-    if (!hasFetchedProfile.current) {
-      // This is intentionally empty - we're using the useProfile hook
-      // but preventing re-fetches on subsequent renders
-      hasFetchedProfile.current = true;
-    }
   }, []);
   
   // Update cache only when actual new data arrives
@@ -136,26 +85,21 @@ export default function TopNav() {
   // Add body class to prevent scrolling when notifications are open
   useEffect(() => {
     if (showNotifications) {
-      document.body.classList.add('overflow-hidden');
+      document.body.style.overflow = 'hidden';
     } else {
-      document.body.classList.remove('overflow-hidden');
+      document.body.style.overflow = 'unset';
     }
-    
     return () => {
-      document.body.classList.remove('overflow-hidden');
+      document.body.style.overflow = 'unset';
     };
   }, [showNotifications]);
 
-  const handleDelete = (id) => {
-    setNotifications(notifications.filter((notif) => notif.id !== id));
-  };
-
-  const toggleMessageExpansion = (id) => {
-    setNotifications(
-      notifications.map((notif) =>
-        notif.id === id ? { ...notif, expanded: !notif.expanded } : notif
-      )
-    );
+  const handleMarkAsRead = async (id) => {
+    try {
+      await markAsRead(id);
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+    }
   };
 
   // Get the profile image URL with priority on cached version
@@ -195,117 +139,70 @@ export default function TopNav() {
   const profileImageUrl = getProfileImageUrl();
   const effectiveIsLoading = isProfileLoading && isLoading;
 
-  // Render the modal overlay and content with portal to ensure it's on top of all content
-  const renderModalContent = () => {
-    if (!isBrowser || !showNotifications) return null;
+  // Render the modal overlay and notification content with portal
+  const renderNotificationContent = () => {
+    if (!isBrowser) return null;
 
     return createPortal(
-      <>
-        {/* Semi-transparent overlay to dim ALL content */}
+      <div className="fixed inset-0 z-50">
+        {/* Overlay */}
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-50" 
+          className="absolute inset-0 bg-black bg-opacity-50"
           onClick={() => setShowNotifications(false)}
-          aria-hidden="true"
-        ></div>
+        />
         
-        {/* Desktop Notifications Dropdown */}
-        <div 
-          className="hidden sm:block fixed top-24 right-10 bg-white shadow-lg rounded-md w-64 p-3 z-50"
-          onClick={(e) => e.stopPropagation()}
-          style={{ maxHeight: '80vh', overflowY: 'auto' }}
-        >
-          <div className="flex justify-between items-center mb-3">
-            <h3 className="text-lg font-medium">Notifications</h3>
+        {/* Notification Panel - Fixed positioning for mobile */}
+        <div className="absolute right-0 top-0 h-full w-full sm:max-w-md bg-white shadow-lg">
+          <div className="flex items-center justify-between p-4 border-b">
+            <h3 className="text-lg font-semibold">Notifications</h3>
+            {/* X button positioned inside the container on mobile */}
             <button 
-              className="text-gray-500 hover:text-gray-700"
-              onClick={() => setShowNotifications(false)}
+              onClick={() => setShowNotifications(false)} 
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
             >
-              &times;
+              <X className="h-6 w-6 text-gray-600" />
             </button>
           </div>
           
-          {notifications.length === 0 ? (
-            <p className="text-sm text-gray-500 py-4 text-center">No new notifications</p>
-          ) : (
-            notifications.map((notif) => (
-              <div key={notif.id} className="flex justify-between items-start p-2 border-b hover:bg-gray-50">
-                <p className={`text-sm text-gray-800 ${notif.expanded ? "whitespace-normal" : "truncate"}`}>
-                  {notif.message}
-                </p>
-                <div className="flex items-center gap-2 ml-2">
-                  <Eye 
-                    className="h-4 w-4 text-blue-500 cursor-pointer hover:text-blue-700" 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleMessageExpansion(notif.id);
-                    }} 
-                  />
-                  <Trash2 
-                    className="h-4 w-4 text-red-500 cursor-pointer hover:text-red-700" 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(notif.id);
-                    }} 
-                  />
-                </div>
+          <div className="p-4 overflow-y-auto max-h-[calc(100vh-5rem)]">
+            {notifications.length === 0 ? (
+              <p className="text-center text-gray-500 py-8">No notifications yet</p>
+            ) : (
+              <div className="space-y-4">
+                {notifications.map((notification) => (
+                  <div 
+                    key={notification.id}
+                    className={`p-4 rounded-lg border ${notification.is_read ? 'bg-white' : 'bg-blue-50'}`}
+                  >
+                    <p className="text-gray-800">{notification.message}</p>
+                    <div className="mt-2 flex justify-between items-center">
+                      <span className="text-sm text-gray-500">
+                        {new Date(notification.created_at).toLocaleDateString()}
+                      </span>
+                      {!notification.is_read && (
+                        <button
+                          onClick={() => handleMarkAsRead(notification.id)}
+                          className="text-sm text-blue-600 hover:text-blue-800"
+                        >
+                          Mark as read
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))
-          )}
-        </div>
-        
-        {/* Mobile Notifications Dropdown */}
-        <div 
-          className="sm:hidden fixed top-16 inset-x-0 mx-4 bg-white shadow-lg rounded-md p-4 z-50"
-          onClick={(e) => e.stopPropagation()}
-          style={{ maxHeight: '80vh', overflowY: 'auto' }}
-        >
-          <div className="flex justify-between items-center mb-3">
-            <h3 className="text-lg font-medium">Notifications</h3>
-            <button 
-              className="text-gray-500 hover:text-gray-700"
-              onClick={() => setShowNotifications(false)}
-            >
-              &times;
-            </button>
+            )}
           </div>
-          
-          {notifications.length === 0 ? (
-            <p className="text-sm text-gray-500 py-4 text-center">No new notifications</p>
-          ) : (
-            notifications.map((notif) => (
-              <div key={notif.id} className="flex justify-between items-start p-2 border-b hover:bg-gray-50">
-                <p className={`text-sm text-gray-800 ${notif.expanded ? "whitespace-normal" : "truncate"}`}>
-                  {notif.message}
-                </p>
-                <div className="flex items-center gap-2 ml-2">
-                  <Eye 
-                    className="h-5 w-5 text-blue-500 cursor-pointer hover:text-blue-700" 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleMessageExpansion(notif.id);
-                    }} 
-                  />
-                  <Trash2 
-                    className="h-5 w-5 text-red-500 cursor-pointer hover:text-red-700" 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(notif.id);
-                    }} 
-                  />
-                </div>
-              </div>
-            ))
-          )}
         </div>
-      </>,
+      </div>,
       document.body
     );
   };
 
   return (
-    <div className="bg-gray-100 w-full sticky px-3 md:px-10">
+    <div className="bg-gray-100 w-full sticky top-0 z-30">
       {/* Large Screen Navigation */}
-      <div className="hidden sm:flex justify-between items-center p-6">
+      <div className="hidden sm:flex justify-between items-center p-6 px-3 md:px-10">
         {/* Search Bar */}
         <div className="flex items-center flex-1 relative max-w-md">
           {/* Search bar removed */}
@@ -316,8 +213,10 @@ export default function TopNav() {
           {/* Notification Bell */}
           <div className="relative cursor-pointer" onClick={() => setShowNotifications(!showNotifications)}>
             <BellDot className="h-7 w-7 text-gray-600 hover:text-blue-500 transition duration-300" />
-            {notifications.length > 0 && (
-              <span className="absolute top-0 right-0 block h-3 w-3 bg-red-500 rounded-full"></span>
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
             )}
           </div>
 
@@ -350,8 +249,8 @@ export default function TopNav() {
         </div>
       </div>
 
-      {/* Mobile Navigation */}
-      <div className="sm:hidden flex justify-between items-center p-4">
+      {/* Mobile Navigation - Fixed padding to match page content */}
+      <div className="sm:hidden flex justify-between items-center p-4 px-3">
         {/* Mobile Menu Button */}
         <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
           <Menu className="h-7 w-7 text-gray-600" />
@@ -362,46 +261,54 @@ export default function TopNav() {
          
         </div>
 
-        {/* Notification Bell */}
-        <div className="relative cursor-pointer" onClick={() => setShowNotifications(!showNotifications)}>
-          <BellDot className="h-6 w-6 text-gray-600 hover:text-blue-500 transition duration-300" />
-          {notifications.length > 0 && (
-            <span className="absolute top-0 right-0 block h-2 w-2 bg-red-500 rounded-full"></span>
-          )}
-        </div>
-
-        {/* User Profile (Mobile) */}
-        <Link href={cachedSettingsUrl} className="flex items-center gap-1 ml-4 cursor-pointer">
-          <div className="w-8 h-8 relative rounded-full overflow-hidden border border-gray-300">
-            {profileImageUrl && !effectiveIsLoading ? (
-              <Image
-                src={profileImageUrl}
-                alt={`${cachedShortName} Profile`}
-                width={32}
-                height={32}
-                className="rounded-full object-cover"
-                priority
-                unoptimized={profileImageUrl.startsWith('data:')}
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                <span className="text-sm font-medium text-gray-500">
-                  {cachedInitial}
-                </span>
-              </div>
+        {/* Right side icons container */}
+        <div className="flex items-center gap-3">
+          {/* Notification Bell */}
+          <div className="relative cursor-pointer" onClick={() => setShowNotifications(!showNotifications)}>
+            <BellDot className="h-6 w-6 text-gray-600 hover:text-blue-500 transition duration-300" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-4 h-4 flex items-center justify-center rounded-full">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
             )}
           </div>
-          <span className="text-sm font-medium text-gray-800">{cachedShortName}</span>
-        </Link>
+
+          {/* User Profile (Mobile) */}
+          <Link href={cachedSettingsUrl} className="flex items-center gap-2 cursor-pointer">
+            <div className="w-8 h-8 relative rounded-full overflow-hidden border border-gray-300">
+              {profileImageUrl && !effectiveIsLoading ? (
+                <Image
+                  src={profileImageUrl}
+                  alt={`${cachedShortName} Profile`}
+                  width={32}
+                  height={32}
+                  className="rounded-full object-cover"
+                  priority
+                  unoptimized={profileImageUrl.startsWith('data:')}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                  <span className="text-sm font-medium text-gray-500">
+                    {cachedInitial}
+                  </span>
+                </div>
+              )}
+            </div>
+            <span className="text-sm font-medium text-gray-800">{cachedShortName}</span>
+          </Link>
+        </div>
       </div>
 
-      {/* Render modal with portal to ensure it dims ALL content */}
-      {renderModalContent()}
+      {/* Notification Modal */}
+      {showNotifications && renderNotificationContent()}
 
-      {/* Mobile menu overlay - separate from notifications */}
+      {/* Mobile Menu Portal */}
       {mobileMenuOpen && isBrowser && createPortal(
-        <div className="sm:hidden fixed inset-0 bg-black bg-opacity-50 z-40" onClick={() => setMobileMenuOpen(false)}>
-          {/* Mobile menu content would go here */}
+        <div 
+          className="sm:hidden fixed inset-0 bg-black bg-opacity-50 z-40" 
+          onClick={() => setMobileMenuOpen(false)}
+        >
+          {/* ...existing mobile menu content... */}
         </div>,
         document.body
       )}

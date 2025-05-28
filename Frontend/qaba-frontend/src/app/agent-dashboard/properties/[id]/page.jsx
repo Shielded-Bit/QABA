@@ -519,7 +519,7 @@ export default function PropertyDetail() {
 
           {/* Description Section - Takes full width on mobile, 50% on larger screens */}
           <div className="md:w-1/2">
-            <h2 className="text-xl md:text-2xl font-bold mb-4">Home Description</h2>
+            <h2 className="text-2xl md:text-3xl font-bold text-gradient mb-4">Home Description</h2>
             <p className="text-gray-700 mb-4">
               {property.description}
             </p>

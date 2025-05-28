@@ -2,9 +2,11 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Heart, Home, Bed, Bath, SquareCode, Tag } from 'lucide-react';
+import axios from 'axios';
 
-const FavoriteCard = ({ favorite }) => {
+const FavoriteCard = ({ favorite, onRemove }) => {
   const [isRemoving, setIsRemoving] = useState(false);
   
   // Extract property data from the favorite object
@@ -34,22 +36,26 @@ const FavoriteCard = ({ favorite }) => {
       setIsRemoving(true);
       const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
       
-      const response = await fetch(`https://qaba.onrender.com/api/v1/favorites/${favorite.id}/`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+      // Use the toggle endpoint
+      const response = await axios.post(
+        'https://qaba.onrender.com/api/v1/favorites/toggle/',
+        { property_id: property.id },
+        {
+          headers: {
+            'accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          }
         }
-      });
+      );
       
-      if (response.ok) {
-        // Refresh the page to show the updated favorites list
-        window.location.reload();
-      } else {
-        console.error('Failed to remove from favorites');
+      if (response.status === 200) {
+        // Call the onRemove callback to update parent state
+        onRemove(favorite.id);
       }
     } catch (error) {
       console.error('Error removing from favorites:', error);
+      // You might want to show an error message to the user here
     } finally {
       setIsRemoving(false);
     }
@@ -61,103 +67,75 @@ const FavoriteCard = ({ favorite }) => {
   }
 
   return (
-    <div className="relative bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow duration-300">
-      {/* Property Image - Updated to use thumbnail instead of cover_image */}
-      <div className="relative h-48 overflow-hidden bg-gray-200">
-        {property.thumbnail ? (
-          <img
-            src={property.thumbnail}
+    <Link href={`/details/${property.id}`} className="block">
+      <div className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden relative">
+        {/* Property Image */}
+        <div className="relative h-48">
+          <Image
+            src={property.thumbnail || '/api/placeholder/400/320'}
             alt={property.property_name || 'Property'}
-            className="w-full h-full object-cover"
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            className="object-cover"
           />
-        ) : (
-          <div className="flex items-center justify-center h-full bg-gradient-to-br from-gray-100 to-gray-300">
-            <Home size={64} className="text-gray-400" />
+          <div className="absolute top-3 right-3">
+            <button
+              onClick={handleRemoveFavorite}
+              disabled={isRemoving}
+              className={`p-2 bg-white rounded-full shadow-md hover:bg-red-50 transition-colors ${isRemoving ? 'opacity-50 cursor-not-allowed' : ''}`}
+              aria-label="Remove from favorites"
+            >
+              <Heart
+                size={16}
+                className={`text-red-500 ${isRemoving ? 'animate-pulse' : ''}`}
+                fill="currentColor"
+              />
+            </button>
           </div>
-        )}
-        
-        {/* Listing Type Badge */}
-        <div className="absolute top-4 left-4">
-          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-            property.listing_type === 'RENT' 
-              ? 'bg-blue-600 text-white' 
-              : 'bg-green-600 text-white'
-          }`}>
-            {property.listing_type === 'RENT' ? 'For Rent' : 'For Sale'}
-          </span>
+          
+          <div className="absolute top-3 left-3">
+            <div className={`px-3 py-1 text-white text-xs font-medium rounded-full bg-gradient-to-r from-[#014d98] to-[#3ab7b1]`}>
+              {property.listing_type === 'SALE' ? 'Buy' : 'Rent'}
+            </div>
+          </div>
         </div>
-        
-        {/* Favorite Button */}
-        <button
-          onClick={handleRemoveFavorite}
-          disabled={isRemoving}
-          className="absolute top-4 right-4 p-2 rounded-full bg-white/80 backdrop-blur-sm hover:bg-white text-red-500 shadow-sm"
-          aria-label="Remove from favorites"
-        >
-          {isRemoving ? (
-            <div className="h-5 w-5 border-t-2 border-red-500 rounded-full animate-spin" />
-          ) : (
-            <Heart size={20} fill="currentColor" />
-          )}
-        </button>
+
+        {/* Property Details */}
+        <div className="p-4">
+          <h3 className="font-semibold text-lg text-gray-900 line-clamp-1">
+            {property.property_name}
+          </h3>
+          <p className="text-gray-600 text-sm mt-1 line-clamp-2">
+            {property.location}
+          </p>
+          <div className="mt-4 text-lg font-bold text-gray-900">
+            {formatPrice()}
+          </div>
+
+          {/* Property Features */}
+          <div className="mt-4 flex items-center gap-4 text-gray-600 text-sm">
+            {property.bedrooms && (
+              <div className="flex items-center gap-1">
+                <Bed size={16} />
+                <span>{property.bedrooms} bed{property.bedrooms !== 1 ? 's' : ''}</span>
+              </div>
+            )}
+            {property.bathrooms && (
+              <div className="flex items-center gap-1">
+                <Bath size={16} />
+                <span>{property.bathrooms} bath{property.bathrooms !== 1 ? 's' : ''}</span>
+              </div>
+            )}
+            {property.area_sqft && (
+              <div className="flex items-center gap-1">
+                <SquareCode size={16} />
+                <span>{property.area_sqft} sqft</span>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
-      
-      {/* Property Content */}
-      <Link href={`/details/${property.id}`} className="block p-4">
-        {/* Price - Updated with Naira symbol and better formatting */}
-        <div className="mb-2 font-bold text-xl text-gray-800">
-          {formatPrice()}
-        </div>
-        
-        {/* Property Name */}
-        <h3 className="font-semibold text-lg mb-1 line-clamp-1">
-          {property.property_name || 'Unnamed Property'}
-        </h3>
-        
-        {/* Location */}
-        <p className="text-sm text-gray-600 mb-3 line-clamp-1">
-          {property.location || 'Location not specified'}
-        </p>
-        
-        {/* Property Features */}
-        <div className="flex flex-wrap gap-3 text-sm text-gray-700">
-          {property.bedrooms && (
-            <div className="flex items-center gap-1">
-              <Bed size={16} />
-              <span>{property.bedrooms} {property.bedrooms === 1 ? 'Bed' : 'Beds'}</span>
-            </div>
-          )}
-          
-          {property.bathrooms && (
-            <div className="flex items-center gap-1">
-              <Bath size={16} />
-              <span>{property.bathrooms} {property.bathrooms === 1 ? 'Bath' : 'Baths'}</span>
-            </div>
-          )}
-          
-          {property.area_sqft > 0 && (
-            <div className="flex items-center gap-1">
-              <SquareCode size={16} />
-              <span>{property.area_sqft.toLocaleString()} sqft</span>
-            </div>
-          )}
-        </div>
-        
-        {/* Property Status */}
-        {property.property_status && (
-          <div className="mt-3 flex items-center gap-1 text-sm">
-            <Tag size={14} className="text-gray-500" />
-            <span className={`
-              ${property.property_status === 'AVAILABLE' ? 'text-green-600' : 
-                property.property_status === 'PENDING' ? 'text-orange-600' : 
-                'text-gray-600'}
-            `}>
-              {property.property_status_display || property.property_status}
-            </span>
-          </div>
-        )}
-      </Link>
-    </div>
+    </Link>
   );
 };
 
