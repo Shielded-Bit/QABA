@@ -2,35 +2,59 @@
 
 import { useState, useEffect } from 'react';
 import { Search, ChevronLeft, ChevronRight, Filter, X, Bookmark } from 'lucide-react';
+import Image from 'next/image';
 import axios from 'axios';
 
 // Property Card Component
 const PropertyCard = ({ property, isFavorite = false, toggleFavorite }) => {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleToggleFavorite = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (isLoading) return;
+    
+    setIsLoading(true);
+    try {
+      await toggleFavorite(property);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
-      <div className="relative">
-        <img 
+      <div className="relative h-48">
+        <Image 
           src={property.image || "/api/placeholder/400/320"} 
           alt={property.name} 
-          className="w-full h-48 object-cover"
+          fill
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          className="object-cover"
         />
         <div className="absolute top-3 left-3">
           <div className={`px-3 py-1 text-white text-xs font-medium rounded-full ${
             property.type === 'SALE' 
-              ? 'bg-blue-600' 
-              : 'bg-green-600'
+              ? 'bg-gradient-to-r from-[#014d98] to-[#3ab7b1]' 
+              : 'bg-gradient-to-r from-[#014d98] to-[#3ab7b1]'
           }`}>
             {property.type === 'SALE' ? 'Buy' : 'Rent'}
           </div>
         </div>
         <button 
-          onClick={() => toggleFavorite(property)}
-          className="absolute top-3 right-3 p-2 bg-white rounded-full shadow-md hover:bg-gray-100 transition-colors"
+          onClick={handleToggleFavorite}
+          disabled={isLoading}
+          className={`absolute top-3 right-3 p-2 bg-white rounded-full shadow-md hover:bg-gray-100 transition-colors ${
+            isLoading ? 'opacity-50 cursor-not-allowed' : ''
+          }`}
           aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
         >
           <Bookmark 
             size={16} 
-            className={isFavorite ? "text-blue-600 fill-blue-600" : "text-gray-500"} 
+            className={`${
+              isFavorite ? "text-[#014d98] fill-[#014d98]" : "text-gray-500"
+            } ${isLoading ? 'animate-pulse' : ''}`} 
           />
         </button>
       </div>
@@ -38,7 +62,7 @@ const PropertyCard = ({ property, isFavorite = false, toggleFavorite }) => {
       <div className="p-4">
         <h3 className="font-bold text-lg text-gray-900 line-clamp-1">{property.name}</h3>
         <p className="text-gray-600 text-sm mt-1 line-clamp-2">{property.description}</p>
-        <div className="mt-3 font-bold text-lg text-gray-900">₦{Number(property.amount).toLocaleString()}</div>
+        <div className="mt-3 font-bold text-lg text-[#014d98]">₦{Number(property.amount).toLocaleString()}</div>
       </div>
     </div>
   );
@@ -161,56 +185,43 @@ const AgentFavoritesPage = () => {
       const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
       const propertyId = property.id || property.property?.id;
       
-      // Check if property is already in favorites
-      const isFavorited = favorites.some(fav => 
-        (fav.id === property.id) || (fav.property && fav.property.id === propertyId)
+      // Use the toggle endpoint
+      const response = await axios.post(
+        'https://qaba.onrender.com/api/v1/favorites/toggle/',
+        { property_id: propertyId },
+        {
+          headers: {
+            'accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          }
+        }
       );
       
-      if (isFavorited) {
-        // Find the favorite id to remove
-        const favoriteToRemove = favorites.find(fav => 
+      if (response.status === 200) {
+        // If the property was in favorites, remove it from the state
+        const isFavorited = favorites.some(fav => 
           (fav.id === property.id) || (fav.property && fav.property.id === propertyId)
         );
         
-        if (favoriteToRemove) {
-          await axios.delete(
-            `https://qaba.onrender.com/api/v1/favorites/${favoriteToRemove.id}/`,
-            {
-              headers: {
-                'accept': 'application/json',
-                'Authorization': `Bearer ${token}`,
-              }
-            }
-          );
-          
-          // Update local state
+        if (isFavorited) {
+          // Remove from favorites state
           setFavorites(prevFavorites => 
-            prevFavorites.filter(fav => fav.id !== favoriteToRemove.id)
+            prevFavorites.filter(fav => 
+              !(fav.id === property.id || (fav.property && fav.property.id === propertyId))
+            )
           );
           setFilteredFavorites(prevFiltered => 
-            prevFiltered.filter(fav => fav.id !== favoriteToRemove.id)
+            prevFiltered.filter(fav => 
+              !(fav.id === property.id || (fav.property && fav.property.id === propertyId))
+            )
           );
-        }
-      } else {
-        // Add to favorites
-        const response = await axios.post(
-          'https://qaba.onrender.com/api/v1/favorites/',
-          { property_id: propertyId },
-          {
-            headers: {
-              'accept': 'application/json',
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`,
-            }
-          }
-        );
-        
-        if (response.status === 201) {
+        } else if (response.data.data) {
+          // Add new favorite to state
           const newFavorite = response.data.data;
-          // Update local state
           setFavorites(prevFavorites => [...prevFavorites, newFavorite]);
           
-          // Also update filtered state if it should be included
+          // Update filtered state if it matches current filters
           let shouldInclude = true;
           if (filterType !== 'all' && newFavorite.property) {
             const expectedType = filterType === 'buy' ? 'SALE' : filterType.toUpperCase();
@@ -224,6 +235,7 @@ const AgentFavoritesPage = () => {
       }
     } catch (error) {
       console.error('Error toggling favorite status:', error);
+      // You might want to show an error message to the user here
     }
   };
 
