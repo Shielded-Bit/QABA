@@ -101,7 +101,7 @@ class Property(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="properties",
-        limit_choices_to={"user_type__in": ["ADMIN", "AGENT"]},
+        limit_choices_to={"user_type__in": ["ADMIN", "AGENT", "LANDLORD"]},
     )
 
     rent_frequency = models.CharField(

@@ -373,7 +373,6 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
 
         # Add amenities
         if amenities_ids:
-            print(f"Amenities IDs: {amenities_ids}")
             property_instance.amenities.set(amenities_ids)
 
         # Handle images and video as before
@@ -405,13 +404,26 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
         return property_instance
 
     def _create_review_notification(self, property_instance):
-        admin_user = User.objects.filter(user_type=User.UserType.ADMIN).first()
-        if not admin_user:
-            raise serializers.ValidationError({"admin_user": "Admin user not found"})
-        Notification.objects.create(
-            user=admin_user,
-            message=f"New property '{property_instance.property_name}' is pending review.",
-        )
+        """Create notifications for all admin users about new property submission"""
+        admin_users = User.objects.filter(user_type=User.UserType.ADMIN)
+
+        if not admin_users.exists():
+            raise serializers.ValidationError({"admin_user": "No admin users found"})
+
+        for admin_user in admin_users:
+            Notification.objects.create(
+                user=admin_user,
+                title="New Property Pending Review",
+                message=f"New property '{property_instance.property_name}' by {property_instance.listed_by.get_full_name()} is pending review.",
+                notification_type="property_review_required",
+                metadata={
+                    "property_id": str(property_instance.id),
+                    "property_name": property_instance.property_name,
+                    "submitted_by": property_instance.listed_by.get_full_name(),
+                    "lister_type": property_instance.listed_by.get_user_type_display(),
+                    "location": property_instance.location,
+                },
+            )
 
     def _send_admin_review_notification_email(self, property_instance):
         admin_users = User.objects.filter(user_type=User.UserType.ADMIN)

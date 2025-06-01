@@ -1,8 +1,11 @@
+from apps.users.models import Notification
 from django.contrib import admin
+from django.template.loader import render_to_string
 
 # Register your models here.
-from django.utils.html import format_html
+from django.utils.html import format_html, strip_tags
 from django.utils.translation import gettext_lazy as _
+from requests import request
 
 from .models import (
     Amenity,
@@ -229,15 +232,11 @@ class PropertyAdmin(admin.ModelAdmin):
     # Admin actions
     actions = [
         "approve_properties",
+        "decline_properties",  # Add decline action
         "mark_as_available",
         "mark_as_sold",
         "mark_as_rented",
     ]
-
-    @admin.action(description="Approve selected properties")
-    def approve_properties(self, request, queryset):
-        queryset.update(listing_status=Property.ListingStatus.APPROVED)
-        self.message_user(request, f"{queryset.count()} properties were approved.")
 
     @admin.action(description="Mark selected properties as available")
     def mark_as_available(self, request, queryset):
@@ -259,6 +258,92 @@ class PropertyAdmin(admin.ModelAdmin):
         self.message_user(
             request, f"{queryset.count()} properties were marked as rented."
         )
+
+    @admin.action(description="Approve selected properties")
+    def approve_properties(self, request, queryset):
+        updated_count = 0
+        for property_obj in queryset:
+            if property_obj.listing_status != Property.ListingStatus.APPROVED:
+                property_obj.listing_status = Property.ListingStatus.APPROVED
+                property_obj.save()
+
+                # Create notification for property owner
+                Notification.objects.create(
+                    user=property_obj.listed_by,
+                    title="Property Approved",
+                    message=f"Your property '{property_obj.property_name}' has been approved and is now live on the platform.",
+                    notification_type="property_approved",
+                )
+
+                # Send email notification
+                self._send_owner_approval_notification_email(property_obj, "approved")
+                updated_count += 1
+
+        self.message_user(request, f"{updated_count} properties were approved.")
+
+    @admin.action(description="Decline selected properties")
+    def decline_properties(self, request, queryset):
+        updated_count = 0
+        for property_obj in queryset:
+            if property_obj.listing_status != Property.ListingStatus.DECLINED:
+                property_obj.listing_status = Property.ListingStatus.DECLINED
+                property_obj.save()
+
+                # Create notification for property owner
+                Notification.objects.create(
+                    user=property_obj.listed_by,
+                    title="Property Declined",
+                    message=f"Your property '{property_obj.property_name}' has been declined. Please review and resubmit with necessary changes.",
+                    notification_type="property_declined",
+                )
+
+                # Send email notification
+                self._send_owner_approval_notification_email(property_obj, "declined")
+                updated_count += 1
+
+        self.message_user(request, f"{updated_count} properties were declined.")
+
+    def _send_owner_approval_notification_email(self, property_instance, decision):
+        """Send email notification to property owner about approval/decline decision"""
+        owner = property_instance.listed_by
+
+        if owner.email:
+            subject = f"Property Listing {decision.title()}: {property_instance.property_name}"
+
+            # Determine message based on decision
+            if decision == "approved":
+                message_title = "Congratulations! Your property has been approved"
+                message_body = f"Your property '{property_instance.property_name}' is now live on QABA platform."
+            else:
+                message_title = "Property listing requires attention"
+                message_body = f"Your property '{property_instance.property_name}' needs some adjustments before it can go live."
+
+            html_message = render_to_string(
+                "email/owner_property_review_notification.html",
+                {
+                    "decision": decision.lower(),
+                    "decision_title": message_title,
+                    "message_body": message_body,
+                    "property_name": property_instance.property_name,
+                    "location": property_instance.location,
+                    "owner_name": owner.get_full_name(),
+                },
+            )
+            plain_message = strip_tags(html_message)
+
+            try:
+                from django.conf import settings
+                from django.core.mail import send_mail
+
+                send_mail(
+                    subject=subject,
+                    message=plain_message,
+                    html_message=html_message,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[owner.email],
+                )
+            except Exception as e:
+                self.message_user(request, f"Error sending email: {e}", level="WARNING")
 
 
 @admin.register(PropertyImage)

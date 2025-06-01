@@ -207,6 +207,15 @@ class AgentRegistrationSerializer(BaseUserRegistrationSerializer):
         return super().create(validated_data)
 
 
+class LandlordRegistrationSerializer(BaseUserRegistrationSerializer):
+    class Meta(BaseUserRegistrationSerializer.Meta):
+        pass
+
+    def create(self, validated_data):
+        validated_data["user_type"] = User.UserType.LANDLORD
+        return super().create(validated_data)
+
+
 class AdminRegistrationSerializer(BaseUserRegistrationSerializer):
     class Meta(BaseUserRegistrationSerializer.Meta):
         pass

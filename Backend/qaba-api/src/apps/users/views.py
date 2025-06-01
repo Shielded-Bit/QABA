@@ -18,6 +18,7 @@ from .serializers import (
     ClientProfilePatchSerializer,
     ClientProfileSerializer,
     ClientRegistrationSerializer,
+    LandlordRegistrationSerializer,
     LoginSerializer,
     NotificationSerializer,
     PasswordChangeSerializer,
@@ -92,6 +93,25 @@ class ClientRegistrationView(generics.CreateAPIView):
 class AgentRegistrationView(generics.CreateAPIView):
     permission_classes = (permissions.AllowAny,)
     serializer_class = AgentRegistrationSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+
+        send_verification_email(user)
+
+        return APIResponse.success(
+            data={"user": UserSerializer(user).data},
+            message="Registration successful. Please check your email to verify your account.",
+            status_code=status.HTTP_201_CREATED,
+        )
+
+
+@extend_schema(tags=["Authentication"])
+class LandlordRegistrationView(generics.CreateAPIView):
+    permission_classes = (permissions.AllowAny,)
+    serializer_class = LandlordRegistrationSerializer
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

@@ -1,0 +1,202 @@
+<div class="property-details-card">
+    <h4>{{ property.property_name }}</h4>
+    
+    <div class="property-info">
+        <p><strong>Type:</strong> {{ property.get_property_type_display }} | <strong>Listing:</strong> {{ property.get_listing_type_display }}</p>
+        <p><strong>Location:</strong> {{ property.location }}</p>
+        <p><strong>Price:</strong> {{ price_display }}</p>
+        <p><strong>Bedrooms:</strong> {{ property.bedrooms|default:"N/A" }} | <strong>Bathrooms:</strong> {{ property.bathrooms|default:"N/A" }}</p>
+        <p><strong>Listed by:</strong> {{ property.listed_by.get_full_name }} ({{ property.listed_by.email }})</p>
+        <p><strong>Status:</strong> 
+            <span class="status-badge">{{ property.get_listing_status_display }}</span>
+        </p>
+    </div>
+
+    <div class="property-images">
+        <strong>Images:</strong><br/>
+        <div class="image-container">
+            {% if images %}
+                {% for image in images %}
+                    <img src="{{ image.image.url }}" alt="Property image" loading="lazy" />
+                {% endfor %}
+            {% else %}
+                <span class="no-images">No images uploaded</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="property-description">
+        <strong>Description:</strong><br/>
+        <div class="description-content">
+            {% if property.description|length > 300 %}
+                {{ property.description|slice:":300" }}...
+            {% else %}
+                {{ property.description }}
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .property-details-card {
+        border: 1px solid var(--border-color, #ddd);
+        padding: 15px;
+        border-radius: 5px;
+        background: var(--body-bg, #f9f9f9);
+        color: var(--body-fg, #333);
+        margin: 10px 0;
+    }
+
+    .property-details-card h4 {
+        margin-top: 0;
+        color: var(--body-fg, #333);
+        border-bottom: 1px solid var(--border-color, #ddd);
+        padding-bottom: 8px;
+    }
+
+    .property-info p {
+        color: var(--body-fg, #333);
+        margin: 5px 0;
+        line-height: 1.4;
+    }
+
+    .status-badge {
+        background: #ff8c00;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 3px;
+        font-weight: bold;
+        font-size: 0.85em;
+    }
+
+    .property-images {
+        margin-top: 15px;
+        padding-top: 10px;
+        border-top: 1px solid var(--border-color, #eee);
+    }
+
+    .property-images strong {
+        color: var(--body-fg, #333);
+    }
+
+    .image-container {
+        margin-top: 8px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .image-container img {
+        width: 100px;
+        height: 75px;
+        object-fit: cover;
+        border-radius: 4px;
+        border: 1px solid var(--border-color, #ddd);
+        transition: transform 0.2s ease;
+    }
+
+    .image-container img:hover {
+        transform: scale(1.05);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    .no-images {
+        color: var(--body-fg, #666);
+        font-style: italic;
+        padding: 10px;
+        background: var(--darkened-bg, #f8f9fa);
+        border-radius: 3px;
+        display: inline-block;
+    }
+
+    .property-description {
+        margin-top: 15px;
+        padding-top: 10px;
+        border-top: 1px solid var(--border-color, #eee);
+    }
+
+    .property-description strong {
+        color: var(--body-fg, #333);
+    }
+
+    .description-content {
+        max-height: 120px;
+        overflow-y: auto;
+        background: var(--darkened-bg, white);
+        color: var(--body-fg, #333);
+        padding: 12px;
+        border: 1px solid var(--border-color, #ddd);
+        border-radius: 4px;
+        margin-top: 8px;
+        line-height: 1.5;
+        font-size: 0.9em;
+    }
+
+    /* Dark mode styles */
+    @media (prefers-color-scheme: dark) {
+        .property-details-card {
+            background: #2b2b2b !important;
+            color: #e8e8e8 !important;
+            border-color: #444 !important;
+        }
+        
+        .property-details-card h4,
+        .property-info p,
+        .property-images strong,
+        .property-description strong {
+            color: #e8e8e8 !important;
+        }
+        
+        .description-content {
+            background: #1a1a1a !important;
+            color: #e8e8e8 !important;
+            border-color: #444 !important;
+        }
+        
+        .no-images {
+            color: #999 !important;
+            background: #333 !important;
+        }
+
+        .image-container img {
+            border-color: #555 !important;
+        }
+    }
+
+    /* Django admin dark theme compatibility */
+    [data-theme="dark"] .property-details-card,
+    .theme-dark .property-details-card {
+        background: #2b2b2b !important;
+        color: #e8e8e8 !important;
+        border-color: #444 !important;
+    }
+
+    [data-theme="dark"] .property-details-card h4,
+    [data-theme="dark"] .property-info p,
+    [data-theme="dark"] .property-images strong,
+    [data-theme="dark"] .property-description strong,
+    .theme-dark .property-details-card h4,
+    .theme-dark .property-info p,
+    .theme-dark .property-images strong,
+    .theme-dark .property-description strong {
+        color: #e8e8e8 !important;
+    }
+
+    [data-theme="dark"] .description-content,
+    .theme-dark .description-content {
+        background: #1a1a1a !important;
+        color: #e8e8e8 !important;
+        border-color: #444 !important;
+    }
+
+    [data-theme="dark"] .no-images,
+    .theme-dark .no-images {
+        color: #999 !important;
+        background: #333 !important;
+    }
+
+    [data-theme="dark"] .image-container img,
+    .theme-dark .image-container img {
+        border-color: #555 !important;
+    }
+</style>

@@ -8,6 +8,7 @@ from .views import (
     ClientRegistrationView,
     CurrentUserView,
     EmailVerificationView,
+    LandlordRegistrationView,
     LoginView,
     LogoutView,
     NotificationListView,
@@ -68,4 +69,6 @@ urlpatterns = [
         NotificationMarkReadView.as_view(),
         name="notification-mark-read",
     ),
+    path('register/landlord/', LandlordRegistrationView.as_view(), name='register-landlord'),
+
 ]

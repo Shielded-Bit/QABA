@@ -40,10 +40,10 @@ class User(AbstractUser):
         ADMIN = "ADMIN", "Admin"
         CLIENT = "CLIENT", "Client"
         AGENT = "AGENT", "Agent"
+        LANDLORD = "LANDLORD", "Landlord"
 
     # Make email required and unique
     email = models.EmailField(_("email address"), unique=True)
-    # Make first name and last name required
     first_name = models.CharField(_("first name"), max_length=150)
     last_name = models.CharField(_("last name"), max_length=150)
     phone_number = models.CharField(max_length=15, blank=True, null=True)
@@ -82,6 +82,15 @@ class User(AbstractUser):
     def is_agent(self):
         return self.user_type == self.UserType.AGENT
 
+    @property
+    def is_landlord(self):
+        return self.user_type == self.UserType.LANDLORD
+
+    @property
+    def is_agent_or_landlord(self):
+        """Helper property to check if user is agent or landlord"""
+        return self.user_type in [self.UserType.AGENT, self.UserType.LANDLORD]
+
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -118,12 +127,19 @@ class AgentProfile(Profile):
     pass
 
 
+class LandlordProfile(Profile):
+    pass
+
+
 class Notification(models.Model):
     user = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications"
+        User, on_delete=models.CASCADE, related_name="notifications"
     )
+    title = models.CharField(max_length=255, default="Notification")
     message = models.TextField()
+    notification_type = models.CharField(max_length=50, default="general")
     is_read = models.BooleanField(default=False)
+    metadata = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

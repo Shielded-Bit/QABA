@@ -9,7 +9,6 @@ from django.utils.html import strip_tags
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import filters, generics, permissions, serializers, viewsets
-from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.views import APIView
 
@@ -186,34 +185,6 @@ class PropertyViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(queryset, many=True)
         return APIResponse.success(data=serializer.data)
-
-    @action(
-        detail=True,
-        methods=["POST"],
-        url_path="review",
-        permission_classes=[permissions.IsAdminUser],
-    )
-    def review_property(self, request, pk=None):
-        property_instance = self.get_object()
-
-        if property_instance.listing_status != Property.ListingStatus.PENDING:
-            return APIResponse.bad_request("Property is not pending review")
-
-        decision = request.data.get("decision", "").upper()
-        if decision not in ["APPROVED", "DECLINED"]:
-            return APIResponse.bad_request("Invalid decision")
-
-        property_instance.listing_status = decision
-        property_instance.save()
-
-        self._send_owner_review_notification_email(property_instance, decision)
-
-        return APIResponse.success(
-            data=PropertyDetailSerializer(
-                property_instance, context={"request": request}
-            ).data,
-            message=f"Property has been {decision.lower()}",
-        )
 
     def _create_review_notification(self, property_instance):
         owner = property_instance.listed_by
