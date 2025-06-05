@@ -217,13 +217,28 @@ const Register = () => {
         
         // Optional: send verification email if needed
         // await sendVerificationEmail(formData.email);
-      } else if (response.errors) {
-        // Format API errors for display
-        const apiErrors = {};
-        Object.entries(response.errors).forEach(([key, messages]) => {
-          apiErrors[key] = Array.isArray(messages) ? messages[0] : messages;
-        });
-        setErrors(apiErrors);
+      } else {
+        // Handle errors from the response
+        if (response.errors) {
+          const apiErrors = {};
+          // Iterate through each error field
+          Object.entries(response.errors).forEach(([field, messages]) => {
+            // Handle both array and string error messages
+            if (Array.isArray(messages)) {
+              apiErrors[field] = messages[0]; // Take first error message if array
+            } else if (typeof messages === 'string') {
+              apiErrors[field] = messages;
+            } else if (typeof messages === 'object') {
+              // Handle nested error objects if they exist
+              apiErrors[field] = Object.values(messages)[0];
+            }
+          });
+          
+          setErrors(apiErrors);
+        } else {
+          // If there's a general error message
+          setErrors({ general: response.message || "Registration failed. Please try again." });
+        }
         setShowFailedModal(true);
       }
     } catch (error) {

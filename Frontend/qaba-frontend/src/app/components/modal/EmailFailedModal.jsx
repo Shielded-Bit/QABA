@@ -38,7 +38,7 @@ const EmailFailedModal = ({ showModal, setShowModal, onClose }) => {
 
         {/* Message */}
         <p className="text-gray-600 mt-2">
-          Email verification failed. You can go back to recreate your account.
+          Email verification failed. Please double-check your email address and try again.
         </p>
 
         {/* Try Again Button */}
