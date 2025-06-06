@@ -26,7 +26,7 @@ export default function PropertyDetail() {
       try {
         setLoading(true);
         
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API}/api/v1/properties/${params.id}/`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/properties/${params.id}/`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -88,7 +88,7 @@ export default function PropertyDetail() {
     try {
       setDeleteLoading(true);
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API}/api/v1/properties/${params.id}/`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/properties/${params.id}/`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

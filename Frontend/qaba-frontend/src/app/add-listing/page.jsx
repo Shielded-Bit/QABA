@@ -23,12 +23,12 @@ const AddListingPage = () => {
         {/* Content */}
         <div className="relative z-20 flex flex-col justify-center h-full max-w-6xl mx-auto px-4 md:px-8">
           <h1 className="text-3xl md:text-5xl font-bold text-white mb-4">
-            List your property for rent and buy with us
+            List your property with us for rent or for sale
           </h1>
           <p className="text-white text-lg md:text-xl max-w-2xl">
             Looking to rent or sell your property? Partner with us for a seamless
             experience. List your property today and explore the best deals when
-            you buy with us.
+            you list with us.
           </p>
         </div>
       </div>
@@ -74,7 +74,7 @@ const AddListingPage = () => {
                     </svg>
                   </div>
                   <div className="ml-3">
-                    <h3 className="text-lg font-medium text-gray-900">Free listing creation</h3>
+                    <h3 className="text-lg font-medium text-gray-900">Listing creation</h3>
                     <p className="mt-1 text-gray-600">Create attractive property listings with unlimited photos</p>
                   </div>
                 </div>

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, Search, Filter, X } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { PropertyCardSkeleton, PropertySectionSkeleton, SearchFilterSkeleton } from './LoadingSkeletons';
 
 const PropertyCard = ({ house }) => {
     const router = useRouter();
@@ -199,7 +200,7 @@ export default function DraftProperties() {
       try {
         setLoading(true);
         // Use the specific endpoint for draft properties
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API}/api/v1/properties/?listing_status=DRAFT`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/properties/?listing_status=DRAFT`, {
             method: 'GET',
             headers: {
               'Content-Type': 'application/json',
@@ -310,8 +311,9 @@ export default function DraftProperties() {
 
   if (loading) {
     return (
-      <div className="w-full mx-auto px-6 md:px-12 bg-gray-100 py-12 flex justify-center items-center min-h-screen">
-        <p className="text-xl">Loading draft properties...</p>
+      <div className="w-full mx-auto px-4 md:px-0 bg-gray-100 py-8">
+        <SearchFilterSkeleton />
+        <PropertySectionSkeleton />
       </div>
     );
   }

@@ -5,7 +5,7 @@ import SuccessModal from "./SuccessModal";
 import ConfirmationModal from "./ConfirmationModal";
 import DocumentUploadModal from "../../components/DocumentUploadModal"; // Import the new modal component
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://qaba.onrender.com/api/v1";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // Helper functions
 const formatNumberWithCommas = (value) => {
@@ -124,11 +124,9 @@ const createProperty = async (data, mediaFiles, documents) => {
       throw new Error('No access token found. Please log in.');
     }
 
-    const response = await axios.post(`${API_BASE_URL}/properties/`, formData, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`
-      },
-    });
+   const response = await axios.post(`${API_BASE_URL}/api/v1/properties/`, formData, {
+        headers: { 'Authorization': `Bearer ${accessToken}` },
+      });
 
     return {
       success: true,
@@ -153,11 +151,9 @@ const fetchAmenities = async () => {
       throw new Error('No access token found. Please log in.');
     }
 
-    const response = await axios.get(`${API_BASE_URL}/amenities/`, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`
-      }
-    });
+   const response = await axios.get(`${API_BASE_URL}/api/v1/amenities`, {
+        headers: { 'Authorization': `Bearer ${accessToken}` }
+      });
 
     return response.data.success ? response.data.data : [];
   } catch (error) {
@@ -176,7 +172,7 @@ const AddForSell = () => {
     submit_for_review: false,
     location: "",
     bedrooms: 1,
-    bathrooms: 1,
+    bazthrooms: 1,
     area_sqft: 0,
     sale_price: "",
     property_status: "New",
@@ -405,7 +401,7 @@ const AddForSell = () => {
 
   return (
     <div className="rounded-lg py-6 md:px-3">
-      <h2 className="text-3xl font-bold text-gradient mb-6">Property Details</h2>
+      <h2 className="text-2xl font-normal text-[#014d98] mb-6">Property Details</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <FormField label="What best describes you?">

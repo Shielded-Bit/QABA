@@ -1,4 +1,5 @@
 import { FaFacebookF, FaInstagram, FaTwitter, FaLinkedin } from "react-icons/fa";
+import Link from 'next/link';
 
 const Footer = () => {
   return (
@@ -20,28 +21,32 @@ const Footer = () => {
           <div>
             <h3 className="font-bold mb-3">Company</h3>
             <ul className="space-y-3">
-              <li><a href="#" className="hover:text-[#014d98]">About Us</a></li>
-              <li><a href="#" className="hover:text-[#014d98]">Properties</a></li>
-              <li><a href="#" className="hover:text-[#014d98]">Blog</a></li>
-              <li><a href="#" className="hover:text-[#014d98]">Contact Us</a></li>
+              <li><a href="/about-us" className="hover:text-[#014d98]">About Us</a></li>
+              <li><a href="/buy" className="hover:text-[#014d98]">Buy Properties</a></li>
+              <li><a href="/rent" className="hover:text-[#014d98]">Rent Properties</a></li>
+              <li><a href="/blog" className="hover:text-[#014d98]">Blog</a></li>
+              <li><a href="/contact" className="hover:text-[#014d98]">Contact Us</a></li>
             </ul>
           </div>
           <div>
             <h3 className="font-bold mb-3">Quick Links</h3>
             <ul className="space-y-3">
-              <li><a href="#" className="hover:text-[#014d98]">Home</a></li>
-              <li><a href="#" className="hover:text-[#014d98]">Properties</a></li>
-              <li><a href="#" className="hover:text-[#014d98]">About Us</a></li>
-              <li><a href="#" className="hover:text-[#014d98]">Login</a></li>
+              <li>
+                <Link href="/" className="hover:text-[#014d98]">Home</Link>
+              </li>
+              <li><a href="/add-listing" className="hover:text-[#014d98]">Add Listing</a></li>
+              <li><a href="/create-account" className="hover:text-[#014d98]">Become an Agent</a></li>
+              <li><a href="/signin" className="hover:text-[#014d98]">Login</a></li>
+              <li><a href="/create-account" className="hover:text-[#014d98]">Sign Up</a></li>
             </ul>
           </div>
           <div>
             <h3 className="font-bold mb-3">Resources</h3>
             <ul className="space-y-3">
-              <li><a href="#" className="hover:text-[#014d98]">Privacy Policy</a></li>
-              <li><a href="#" className="hover:text-[#014d98]">Terms of Condition</a></li>
-              <li><a href="#" className="hover:text-[#014d98]">Support</a></li>
-              <li><a href="#" className="hover:text-[#014d98]">FAQs</a></li>
+              <li><a href="/dashboard/help-support" className="hover:text-[#014d98]">Support</a></li>
+              <li><a href="/dashboard/help-support" className="hover:text-[#014d98]">FAQs</a></li>
+              <li><a href="/privacy-policy" className="hover:text-[#014d98]">Privacy Policy</a></li>
+              <li><a href="/terms-conditions" className="hover:text-[#014d98]">Terms & Conditions</a></li>
             </ul>
           </div>
           {/* <div>

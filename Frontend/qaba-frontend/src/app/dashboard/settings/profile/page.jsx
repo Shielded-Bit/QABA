@@ -39,10 +39,7 @@ const FormInput = ({
 
 export default function ProfilePage() {
   // Use shared profile context
-  const { userData, profileImage, isLoading, error, fetchProfile, updateProfileImage } = useProfile();
-  
-  // Always set userType to CLIENT for this version
-  const userType = "CLIENT";
+  const { userData, profileImage, isLoading, error, fetchProfile, updateProfileImage, userType } = useProfile();
   
   // Use the notifications hook with fallback
   const notificationsContext = useNotifications();
@@ -177,7 +174,7 @@ export default function ProfilePage() {
     }
     
     // Otherwise, ensure it's properly joined with the API base URL
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://qaba.onrender.com';
     
     // Remove leading slash from imageUrl if it exists and the baseUrl ends with slash
     if (imageUrl.startsWith('/') && baseUrl.endsWith('/')) {
@@ -197,8 +194,10 @@ export default function ProfilePage() {
     setImgLoading(true);
     
     try {
-      // Always use client endpoint in this version
-      const endpoint = '/api/v1/profile/client/';
+      // Determine the correct endpoint based on user type
+      const endpoint = userType === "AGENT" 
+        ? '/api/v1/profile/agent/' 
+        : '/api/v1/profile/client/';
       
       const response = await apiRequest(endpoint);
       const profileData = await response.json();
@@ -287,7 +286,7 @@ export default function ProfilePage() {
       }
       
       // Set form values for profile data
-      const profileData = userData.client_profile || {};
+      const profileData = userData.agent_profile || userData.client_profile || {};
       const newLocationData = {
         country: profileData.country || locationData.country,
         state: profileData.state || locationData.state,
@@ -321,62 +320,56 @@ export default function ProfilePage() {
       // Use the new endpoint for contact information updates, otherwise use the standard endpoint
       const endpoint = formType === 'contact' 
         ? '/api/v1/users/update'  // New endpoint for contact info
-        : '/api/v1/profile/client/';  // Standard endpoint for other profile updates (like location)
-      
-      // Always use FormData for any profile updates
-      const formData = new FormData();
-      
+        : userType === "AGENT" 
+          ? '/api/v1/profile/agent/' 
+          : '/api/v1/profile/client/';  // Standard endpoints for other profile updates (like location)
+
       if (formType === 'contact') {
-        // For contact info, add fields to FormData
-        formData.append('first_name', data.first_name);
-        formData.append('last_name', data.last_name);
-        formData.append('phone_number', data.phone_number);
-        
-        console.log("Sending contact update with FormData payload to endpoint:", endpoint);
-        // Show FormData content for debugging
-        for (let [key, value] of formData.entries()) {
-          console.log(`${key}: ${value}`);
+        // Send JSON for contact info
+        const body = {
+          first_name: data.first_name,
+          last_name: data.last_name,
+          phone_number: data.phone_number,
+        };
+        const response = await apiRequest(endpoint, {
+          method: 'PATCH',
+          isFormData: false,
+          body,
+        });
+        const result = await response.json();
+        if (result.success) {
+          toast.success('Contact information updated successfully');
+          await createNotification(`Contact information updated successfully on ${new Date().toLocaleDateString()}`);
+          await fetchProfile();
+        } else {
+          toast.error(result.message || 'Failed to update contact information');
         }
       } else if (formType === 'location') {
-        // For location info
+        // Use FormData for location info
+        const formData = new FormData();
         formData.append('country', data.country);
         formData.append('state', data.state);
         formData.append('city', data.city);
         formData.append('address', data.address);
-        
-        console.log("Sending location update with FormData payload to endpoint:", endpoint);
-        // Show FormData content for debugging
-        for (let [key, value] of formData.entries()) {
-          console.log(`${key}: ${value}`);
+        const response = await apiRequest(endpoint, {
+          method: 'PATCH',
+          isFormData: true,
+          body: formData,
+        });
+        const result = await response.json();
+        if (result.success) {
+          toast.success('Location information updated successfully');
+          await createNotification && createNotification(`Location information updated successfully on ${new Date().toLocaleDateString()}`);
+          await fetchProfile();
+          await fetchProfileData();
+          setIsEditingLocation(false);
+        } else {
+          toast.error(result.message || 'Failed to update location information');
         }
-      }
-      
-      const response = await apiRequest(endpoint, {
-        method: 'PATCH',
-        isFormData: true, // Always use FormData
-        body: formData
-      });
-      
-      const result = await response.json();
-      console.log(`${formType} update response:`, result);
-      
-      // Show success notification right away
-      toast.success(`${formType === 'contact' ? 'Contact' : 'Location'} information updated successfully`);
-      
-      // Create notification
-      await createNotification(`${formType === 'contact' ? 'Contact' : 'Location'} information updated successfully on ${new Date().toLocaleDateString()}`);
-      
-      // Update global context
-      await fetchProfile();
-      
-      // Only fetch profile data after location update (more efficient)
-      if (formType === 'location') {
-        await fetchProfileData();
-        setIsEditingLocation(false);
       }
     } catch (err) {
       toast.error(err.message);
-      console.error("Update error:", err);
+      console.error('Update error:', err);
     }
   };
 
@@ -398,7 +391,7 @@ export default function ProfilePage() {
     setIsEditingLocation(false);
   };
 
-  // Updated method to upload profile image - still using the client profile endpoint
+  // Updated method to upload profile image
   const uploadProfileImage = async () => {
     if (!selectedImage) return;
     
@@ -412,8 +405,10 @@ export default function ProfilePage() {
       // Append file with the correct field name
       formData.append('profile_photo', selectedImage);
       
-      // Use the client profile endpoint for image uploads
-      const endpoint = '/api/v1/profile/client/';
+      // Determine the correct endpoint based on user type
+      const endpoint = userType === "AGENT" 
+        ? '/api/v1/profile/agent/' 
+        : '/api/v1/profile/client/';
       
       // Send PATCH request to update profile photo
       const response = await apiRequest(endpoint, {

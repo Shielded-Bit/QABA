@@ -14,9 +14,9 @@ import {
   Search, 
   Home, 
   PlusCircle, 
-  Info, 
+  InfoIcon, // Changed from Info to InfoIcon
   Newspaper,
-  Cog,
+  Settings, // Changed from Cog to Settings
 } from "lucide-react";
 
 const Navbar = () => {
@@ -121,7 +121,7 @@ const Navbar = () => {
       <div className="max-w-[95%] mx-auto flex justify-between items-center py-4 px-2 sm:px-6">
         {/* Logo */}
         <div className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#014d98] to-[#3ab7b1]">
-          <Link href="/">QABA</Link>
+          <Link href="/">QARBA</Link>
         </div>
 
         {/* Desktop Navigation Links */}
@@ -130,9 +130,9 @@ const Navbar = () => {
             { name: "Buy", path: "/buy" },
             { name: "Rent", path: "/rent" },
             { name: "Add Listing", path: "/add-listing" },
-            // { name: "Landlord / Agent", path: "/landlord-agent" },
             { name: "About Us", path: "/about-us" },
             { name: "Blog", path: "/blog" },
+            { name: "Contact Us", path: "/contact" },
           ].map(({ name, path }) => (
             <li key={path}>
               <Link
@@ -235,8 +235,9 @@ const Navbar = () => {
       { name: "Buy", path: "/buy", icon: Search },
       { name: "Rent", path: "/rent", icon: Home },
       { name: "Add Listing", path: "/add-listing", icon: PlusCircle },
-      { name: "About Us", path: "/about-us", icon: Info },
+      { name: "About Us", path: "/about-us", icon: InfoIcon }, // Fixed icon name
       { name: "Blog", path: "/blog", icon: Newspaper },
+      { name: "Contact Us", path: "/contact", icon: Settings }, // Fixed icon name
     ].map(({ name, path, icon: Icon }) => (
       <Link
         key={path}
@@ -317,7 +318,7 @@ const Navbar = () => {
             className="flex flex-col items-center justify-center bg-white border border-gray-200 rounded-xl p-2 text-xs text-gray-700 hover:bg-gray-100 hover:shadow-sm transition-all"
             onClick={() => setMenuOpen(false)}
           >
-            <Cog size={20} className="mb-1 text-[#014d98]" />
+            <Settings size={20} className="mb-1 text-[#014d98]" /> {/* Fixed icon name */}
             Settings
           </Link>
           <button

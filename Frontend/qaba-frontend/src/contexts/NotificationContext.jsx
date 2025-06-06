@@ -57,43 +57,6 @@ export const NotificationProvider = ({ children }) => {
     }
   };
 
-  // Create a new notification
-  const createNotification = async (message) => {
-    try {
-      const token = getToken();
-      
-      if (!token) {
-        throw new Error('Authentication token not found');
-      }
-
-      const response = await fetch(`${API_BASE_URL}/api/v1/notifications/create`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          message: message
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-      
-      const newNotification = await response.json();
-      
-      // Update local state with the new notification
-      setNotifications(prev => [newNotification, ...prev]);
-      setUnreadCount(prev => prev + 1);
-      
-      return newNotification;
-    } catch (err) {
-      console.error("Failed to create notification:", err);
-      throw err;
-    }
-  };
-
   // Mark a notification as read
   const markAsRead = async (id) => {
     try {
@@ -103,8 +66,9 @@ export const NotificationProvider = ({ children }) => {
         throw new Error('Authentication token not found');
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/v1/notifications/${id}/read`, {
-        method: 'POST',
+      // Use PATCH for marking as read
+      const response = await fetch(`${API_BASE_URL}/api/v1/notifications/${id}/read/`, {
+        method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -150,7 +114,6 @@ export const NotificationProvider = ({ children }) => {
         loading, 
         error, 
         fetchNotifications, 
-        createNotification, 
         markAsRead 
       }}
     >
