@@ -13,7 +13,7 @@ const PropertyVerifications = ({ propertyId }) => {
         setLoading(true);
         
         // When the backend endpoint is ready, replace this with an actual API call
-        // const response = await fetch(`${process.env.NEXT_PUBLIC_API}/api/v1/properties/${propertyId}/verifications`);
+        // const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/properties/${propertyId}/verifications`);
         // if (!response.ok) throw new Error('Failed to fetch verifications');
         // const data = await response.json();
         // setVerifications(data.verifications);
@@ -23,31 +23,31 @@ const PropertyVerifications = ({ propertyId }) => {
           setVerifications([
             {
               id: 1,
-              agency: 'Shieldedbit',
+              agency: 'Qarba ',
               verified: true,
               verifiedDate: '2025-04-15',
               logo: '/assets/images/shieldedbit-logo.png', // Replace with your actual logo path
               isPrimary: true,
-              verificationDetails: 'Property inspected and verified by Shieldedbit team.'
+              verificationDetails: 'Property inspected and verified by Qarba team.'
             },
-            {
-              id: 2,
-              agency: 'Nigerian Real Estate Association',
-              verified: true,
-              verifiedDate: '2025-04-10',
-              logo: '/api/placeholder/64/64', // Replace with actual logo when available
-              isPrimary: false,
-              verificationDetails: 'Property meets NREA standards.'
-            },
-            {
-              id: 3,
-              agency: 'Ebonyi Housing Authority',
-              verified: false,
-              verifiedDate: null,
-              logo: '/api/placeholder/64/64', // Replace with actual logo when available
-              isPrimary: false,
-              verificationDetails: 'Verification pending.'
-            }
+            // {
+            //   id: 2,
+            //   agency: 'Nigerian Real Estate Association',
+            //   verified: true,
+            //   verifiedDate: '2025-04-10',
+            //   logo: '/api/placeholder/64/64', // Replace with actual logo when available
+            //   isPrimary: false,
+            //   verificationDetails: 'Property meets NREA standards.'
+            // },
+            // {
+            //   id: 3,
+            //   agency: 'Ebonyi Housing Authority',
+            //   verified: false,
+            //   verifiedDate: null,
+            //   logo: '/api/placeholder/64/64', // Replace with actual logo when available
+            //   isPrimary: false,
+            //   verificationDetails: 'Verification pending.'
+            // }
           ]);
           setLoading(false);
         }, 500); // Simulate API delay

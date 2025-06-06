@@ -53,8 +53,8 @@ export default function HelpAndSupport() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Head>
-        <title>Help & Support - Estate Software</title>
-        <meta name="description" content="Get help and support for your estate software. Find FAQs, contact support, and access resources." />
+        <title>Help & Support - Estate application</title>
+        <meta name="description" content="Get help and support for your estate application. Find FAQs, contact support, and access resources." />
       </Head>
 
       {/* Hero Header */}
@@ -74,7 +74,7 @@ export default function HelpAndSupport() {
                 placeholder="Search for help..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-white bg-opacity-95 border-0 rounded-full shadow-lg focus:ring-2 focus:ring-white focus:outline-none transition-all duration-300"
+                className="w-full pl-10 pr-4 py-3 bg-white bg-opacity-95 border-0 rounded-full shadow-lg focus:ring-2 focus:ring-white focus:outline-none transition-all duration-300 text-black placeholder-gray-500"
               />
             </div>
           </div>
@@ -155,10 +155,10 @@ export default function HelpAndSupport() {
               </div>
               <p className="text-gray-600 mb-4">Get a response within 24 hours on business days</p>
               <a 
-                href="mailto:support@estatesoftware.com" 
+                href="mailto:contact@qarba.com" 
                 className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium"
               >
-                support@estatesoftware.com
+                contact@qarba.com
               </a>
             </div>
             
@@ -186,10 +186,10 @@ export default function HelpAndSupport() {
               </div>
               <p className="text-gray-600 mb-4">For urgent inquiries during business hours</p>
               <a 
-                href="tel:+1234567890" 
+                href="tel:+2347076647640" 
                 className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium"
               >
-                +1 (234) 567-890
+                +234 707 664 7640
               </a>
             </div>
           </div>
@@ -207,7 +207,7 @@ export default function HelpAndSupport() {
               </div>
               <div className="p-6">
                 <h3 className="text-lg font-medium text-gray-800 mb-2">User Guides</h3>
-                <p className="text-gray-600 mb-4">Access our comprehensive user guides to learn how to use all features of the software.</p>
+                <p className="text-gray-600 mb-4">Access our comprehensive user guides to learn how to use all features of the application.</p>
                 <a 
                   href="#" 
                   className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium"
@@ -223,7 +223,7 @@ export default function HelpAndSupport() {
               </div>
               <div className="p-6">
                 <h3 className="text-lg font-medium text-gray-800 mb-2">Video Tutorials</h3>
-                <p className="text-gray-600 mb-4">Watch step-by-step video tutorials to get the most out of your estate software.</p>
+                <p className="text-gray-600 mb-4">Watch step-by-step video tutorials to get the most out of your estate application.</p>
                 <a 
                   href="#" 
                   className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium"

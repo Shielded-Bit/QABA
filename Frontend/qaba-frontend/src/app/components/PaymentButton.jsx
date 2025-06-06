@@ -105,7 +105,7 @@ const PaymentButton = ({ propertyId, propertyType, price, buttonText = 'Proceed 
         throw new Error('Authentication required. Please log in again.');
       }
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API}/api/v1/initiate-property-payment/`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/initiate-property-payment/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

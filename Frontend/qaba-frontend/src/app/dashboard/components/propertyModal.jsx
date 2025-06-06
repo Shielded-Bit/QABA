@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Search } from "lucide-react";
@@ -29,22 +29,44 @@ const PropertyModal = ({ isOpen, onClose, filterType }) => {
     return Array.from(stateSet).sort();
   }, [allProperties]);
 
-  useEffect(() => {
-    if (isOpen) {
-      fetchAllProperties();
+  // Wrap applyFilters in useCallback to prevent unnecessary re-renders
+  const applyFilters = useCallback((properties = allProperties) => {
+    let result = [...properties];
+    
+    // Apply listing type filter
+    if (activeFilter !== "ALL") {
+      result = result.filter(p => p.listingType === activeFilter);
     }
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (allProperties.length > 0) {
-      applyFilters();
+    
+    // Apply state filter
+    if (selectedState) {
+      result = result.filter(property => {
+        const addressParts = property.address.split(',');
+        if (addressParts.length > 1) {
+          const state = addressParts[addressParts.length - 1].trim();
+          return state === selectedState;
+        }
+        return false;
+      });
     }
-  }, [activeFilter, searchTerm, selectedState, allProperties]);
+    
+    // Apply search term filter (property name)
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(property => 
+        property.name.toLowerCase().includes(term) ||
+        property.address.toLowerCase().includes(term)
+      );
+    }
+    
+    setFilteredProperties(result);
+  }, [allProperties, activeFilter, selectedState, searchTerm]);
 
-  const fetchAllProperties = async () => {
+  // Wrap fetchAllProperties in useCallback to prevent dependency issues
+  const fetchAllProperties = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API}/api/v1/properties/?listing_status=APPROVED`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/properties/?listing_status=APPROVED`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -76,39 +98,19 @@ const PropertyModal = ({ isOpen, onClose, filterType }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [applyFilters]);
 
-  const applyFilters = (properties = allProperties) => {
-    let result = [...properties];
-    
-    // Apply listing type filter
-    if (activeFilter !== "ALL") {
-      result = result.filter(p => p.listingType === activeFilter);
+  useEffect(() => {
+    if (isOpen) {
+      fetchAllProperties();
     }
-    
-    // Apply state filter
-    if (selectedState) {
-      result = result.filter(property => {
-        const addressParts = property.address.split(',');
-        if (addressParts.length > 1) {
-          const state = addressParts[addressParts.length - 1].trim();
-          return state === selectedState;
-        }
-        return false;
-      });
+  }, [isOpen, fetchAllProperties]);
+
+  useEffect(() => {
+    if (allProperties.length > 0) {
+      applyFilters();
     }
-    
-    // Apply search term filter (property name)
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      result = result.filter(property => 
-        property.name.toLowerCase().includes(term) ||
-        property.address.toLowerCase().includes(term)
-      );
-    }
-    
-    setFilteredProperties(result);
-  };
+  }, [activeFilter, searchTerm, selectedState, allProperties, applyFilters]);
 
   const resetFilters = () => {
     setSearchTerm("");

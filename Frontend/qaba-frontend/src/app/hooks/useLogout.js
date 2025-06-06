@@ -19,7 +19,7 @@ const useLogout = () => {
       }
 
       // Make a POST request to the logout endpoint with the access token
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API || 'https://qaba.onrender.com'}/api/v1/auth/logout/`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://qaba.onrender.com'}/api/v1/auth/logout/`, {
         method: 'POST',
         credentials: 'include', // Include cookies
         headers: {

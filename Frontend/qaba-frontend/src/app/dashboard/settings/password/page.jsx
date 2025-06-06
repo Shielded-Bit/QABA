@@ -6,7 +6,7 @@ import { Mail, CheckCircle2, AlertCircle, Shield, Key } from 'lucide-react';
 import Cookies from 'js-cookie';
 import useLogout from "../../../hooks/useLogout";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ;
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function PasswordPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -66,24 +66,38 @@ export default function PasswordPage() {
 
     setIsRequestingReset(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/auth/password-reset/`, {
+      console.log('Attempting to send password reset email to:', email);
+      const url = `${API_BASE_URL}/api/v1/auth/password-reset/`;
+      console.log('API URL:', url);
+      
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getAuthToken()}`,
         },
         body: JSON.stringify({ email }),
       });
 
-      if (response.ok) {
-        setEmailSent(true);
-        toast.success('Password reset email sent successfully!');
-        await logout();
-      } else {
-        const errorData = await response.json();
-        toast.error(errorData.message || 'Failed to send password reset email');
+      console.log('Response status:', response.status);
+      
+      try {
+        const responseData = await response.json();
+        console.log('Response data:', responseData);
+
+        if (response.ok) {
+          setEmailSent(true);
+          toast.success('Password reset email sent successfully!');
+          await logout();
+        } else {
+          toast.error(responseData.message || 'Failed to send password reset email');
+        }
+      } catch (jsonError) {
+        console.error('Error parsing response:', jsonError);
+        toast.error('Failed to process server response');
       }
     } catch (error) {
-      console.error('Error sending password reset email:', error);
+      console.error('Detailed error:', error);
       toast.error('Failed to send password reset email. Please try again.');
     } finally {
       setIsRequestingReset(false);

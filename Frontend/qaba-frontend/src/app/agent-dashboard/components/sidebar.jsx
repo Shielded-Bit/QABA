@@ -11,6 +11,7 @@ import {
   Settings,
   HelpCircle,
   ChevronDown,
+  ChevronRight,
   LayoutDashboard,
   ChartNoAxesCombined,
 } from "lucide-react";
@@ -28,7 +29,9 @@ export default function Sidebar() {
   useEffect(() => {
     // Check if current path matches any properties routes
     if (pathname.startsWith("/agent-dashboard/myListings") || 
-        pathname.startsWith("/agent-dashboard/draft")) {
+        pathname.startsWith("/agent-dashboard/draft") ||
+        pathname.startsWith("/agent-dashboard/for-rent") || 
+        pathname.startsWith("/agent-dashboard/for-sell")) {
       setIsPropertiesOpen(true);
     }
     
@@ -77,15 +80,7 @@ export default function Sidebar() {
       <nav className="flex-1 p-4 space-y-4 relative">
         {renderLink("/agent-dashboard", "Dashboard", pathname, LayoutDashboard, isSidebarCollapsed)}
 
-        {renderDropdown("Properties", Building2, isPropertiesOpen, setIsPropertiesOpen, [
-          { href: "/agent-dashboard/myListings", label: "My Listings", icon: HousePlug },
-          { href: "/agent-dashboard/draft", label: "My Draft", icon: SquarePlus },
-        ], pathname, isSidebarCollapsed)}
-
-        {renderDropdown("Add Property", SquarePlus, isAddPropertyOpen, setIsAddPropertyOpen, [
-          { href: "/agent-dashboard/for-rent", label: "For Renting", icon: SquarePlus },
-          { href: "/agent-dashboard/for-sell", label: "For Selling", icon: SquarePlus },
-        ], pathname, isSidebarCollapsed)}
+        {renderPropertiesDropdown(isPropertiesOpen, setIsPropertiesOpen, isAddPropertyOpen, setIsAddPropertyOpen, pathname, isSidebarCollapsed)}
 
         {renderLink("/agent-dashboard/favourites", "Favourite", pathname, Heart, isSidebarCollapsed)}
         {renderLink("/agent-dashboard/transactions", "Transactions", pathname, CreditCard, isSidebarCollapsed)}
@@ -103,33 +98,39 @@ export default function Sidebar() {
   );
 }
 
-function renderDropdown(label, Icon, isOpen, setIsOpen, links, pathname, isCollapsed) {
-  // Check if any sublink is active to keep dropdown open
-  const isAnySubLinkActive = links.some(link => checkActiveLink(pathname, link.href));
+function renderPropertiesDropdown(isPropertiesOpen, setIsPropertiesOpen, isAddPropertyOpen, setIsAddPropertyOpen, pathname, isCollapsed) {
+  // Check if any property-related link is active
+  const isAnyPropertyLinkActive = checkActiveLink(pathname, "/agent-dashboard/myListings") ||
+                                   checkActiveLink(pathname, "/agent-dashboard/draft") ||
+                                   checkActiveLink(pathname, "/agent-dashboard/for-rent") ||
+                                   checkActiveLink(pathname, "/agent-dashboard/for-sell");
   
+  const isAnyAddPropertyActive = checkActiveLink(pathname, "/agent-dashboard/for-rent") ||
+                                checkActiveLink(pathname, "/agent-dashboard/for-sell");
+
   return (
     <div className="relative">
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => setIsPropertiesOpen(!isPropertiesOpen)}
         className={`w-full flex items-center ${
           isCollapsed ? "justify-center px-2" : "justify-between px-3"
         } py-2 rounded-md hover:bg-gradient-to-r from-[#014d98] to-[#3ab7b1] hover:text-white ${
-          isAnySubLinkActive ? "text-blue-600" : ""
+          isAnyPropertyLinkActive ? "text-blue-600" : ""
         }`}
       >
         <div className="flex items-center">
           <div className="relative">
-            <Icon className={getIconClass(isCollapsed)} />
+            <Building2 className={getIconClass(isCollapsed)} />
             {isCollapsed && (
               <div className="absolute left-full z-50 ml-2 bg-black text-white text-xs px-2 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-                {label}
+                Properties
               </div>
             )}
           </div>
-          <span className={getTextClass(isCollapsed)}>{label}</span>
+          <span className={getTextClass(isCollapsed)}>Properties</span>
         </div>
         {!isCollapsed && (
-          <ChevronDown className={`transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+          <ChevronDown className={`transition-transform duration-200 ${isPropertiesOpen ? "rotate-180" : ""}`} />
         )}
       </button>
 
@@ -138,12 +139,55 @@ function renderDropdown(label, Icon, isOpen, setIsOpen, links, pathname, isColla
 
         <div
           className={`ml-4 mt-1 space-y-1 overflow-hidden transition-all duration-300 text-gray-400 ${
-            isOpen ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
+            isPropertiesOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
           }`}
         >
-          {links.map((link, index) => (
-            renderSubLink(link.href, link.label, pathname, link.icon, isCollapsed, index)
-          ))}
+          {/* My Listings */}
+          {renderSubLink("/agent-dashboard/myListings", "My Listings", pathname, HousePlug, isCollapsed, "myListings")}
+          
+          {/* My Draft */}
+          {renderSubLink("/agent-dashboard/draft", "My Draft", pathname, SquarePlus, isCollapsed, "draft")}
+          
+          {/* Add Property Nested Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setIsAddPropertyOpen(!isAddPropertyOpen)}
+              className={`w-full group flex items-center ${
+                isCollapsed ? "justify-center px-2" : "justify-between px-3"
+              } py-2 rounded-md hover:bg-gradient-to-r from-[#014d98] to-[#3ab7b1] hover:text-white ${
+                isAnyAddPropertyActive ? "bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white" : ""
+              }`}
+            >
+              <div className="flex items-center">
+                <div className="relative">
+                  <SquarePlus className={getIconClass(isCollapsed)} />
+                  {isCollapsed && (
+                    <div className="absolute left-full z-50 ml-2 bg-black text-white text-xs px-2 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                      Add Property
+                    </div>
+                  )}
+                </div>
+                <span className={getTextClass(isCollapsed)}>Add Property</span>
+              </div>
+              {!isCollapsed && (
+                <ChevronRight className={`transition-transform duration-200 ${isAddPropertyOpen ? "rotate-90" : ""}`} />
+              )}
+            </button>
+
+            {/* Nested Add Property Items */}
+            <div className="relative">
+              <div className="absolute left-2 top-0 h-full w-px bg-gray-300"></div>
+              
+              <div
+                className={`ml-4 mt-1 space-y-1 overflow-hidden transition-all duration-300 text-gray-400 ${
+                  isAddPropertyOpen ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
+                }`}
+              >
+                {renderSubLink("/agent-dashboard/for-rent", "For Renting", pathname, SquarePlus, isCollapsed, "forRent")}
+                {renderSubLink("/agent-dashboard/for-sell", "For Selling", pathname, SquarePlus, isCollapsed, "forSell")}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -4,7 +4,7 @@ import axios from "axios";
 import SuccessModal from "./SuccessModal"; 
 import ConfirmationModal from "./ConfirmationModal";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://qaba.onrender.com/api/v1";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // Constants moved to top for reusability
 const PROPERTY_TYPES = [
@@ -84,7 +84,7 @@ const propertyService = {
       const accessToken = localStorage.getItem('access_token');
       if (!accessToken) throw new Error('No access token found. Please log in.');
 
-      const response = await axios.post(`${API_BASE_URL}/properties/`, formData, {
+      const response = await axios.post(`${API_BASE_URL}/api/v1/properties/`, formData, {
         headers: { 'Authorization': `Bearer ${accessToken}` },
       });
 
@@ -104,13 +104,16 @@ const propertyService = {
       const accessToken = localStorage.getItem('access_token');
       if (!accessToken) throw new Error('No access token found');
 
-      const response = await axios.get(`${API_BASE_URL}/amenities/`, {
+      const response = await axios.get(`${API_BASE_URL}/api/v1/amenities`, {
         headers: { 'Authorization': `Bearer ${accessToken}` }
       });
 
       return response.data.success ? response.data.data : [];
     } catch (error) {
-      console.error("Error fetching amenities:", error);
+      console.error("Error fetching amenities:", error.response?.data || error.message);
+      if (error.response?.status === 404) {
+        console.error("API endpoint not found. Please check if the API URL and endpoint path are correct.");
+      }
       return [];
     }
   }

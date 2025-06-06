@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import FavoriteCard from '../components/favoriteCard';
-import { Search, ChevronLeft, ChevronRight, Filter, X } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, Filter, X, Bookmark } from 'lucide-react';
 import axios from 'axios';
+import PropertyCard from './propertyCard';
 
 const FavoritesPage = () => {
   // State management
@@ -375,18 +375,18 @@ const FavoritesPage = () => {
       
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
-          <div className="relative w-16 h-16">
-            <div className="absolute top-0 left-0 w-full h-full border-4 border-gray-200 rounded-full"></div>
-            <div className="absolute top-0 left-0 w-full h-full border-4 border-t-blue-900 border-r-green-600 border-b-blue-600 border-l-green-400 rounded-full animate-spin"></div>
+          <div className="flex flex-col items-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+            <p className="mt-4 text-sm text-gray-500">Loading favorites...</p>
           </div>
         </div>
       ) : Array.isArray(filteredFavorites) && filteredFavorites.length > 0 ? (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {currentItems.map((favorite) => (
-              <FavoriteCard 
-                key={favorite.id} 
-                favorite={favorite} 
+              <PropertyCard
+                key={favorite.id}
+                property={favorite.property}
                 onRemove={handleRemoveFavorite}
               />
             ))}
@@ -398,7 +398,7 @@ const FavoritesPage = () => {
         <div className="text-center py-16 bg-gray-50 rounded-xl">
           <div className="mb-4 flex justify-center">
             <div className="w-16 h-16 flex items-center justify-center rounded-full bg-gray-100">
-              <Search size={24} className="text-gray-400" />
+              <Bookmark size={24} className="text-gray-400" />
             </div>
           </div>
           <p className="text-xl text-gray-600 font-medium">No favorites found</p>

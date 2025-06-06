@@ -1,6 +1,6 @@
 import axios from 'axios';
 import qs from 'qs';
-export const API_BASE_URL = `${process.env.NEXT_PUBLIC_API}/api/v1`;
+export const API_BASE_URL = `${process.env.NEXT_PUBLIC_API_URL}/api/v1`;
 
 // Register a new client
 // Helper function to handle API errors properly

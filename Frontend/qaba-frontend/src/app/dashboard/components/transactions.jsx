@@ -23,11 +23,12 @@ const Transactions = () => {
         }
 
         const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_API}/api/v1/history/`,
+          `${process.env.NEXT_PUBLIC_API_URL || 'https://qaba.onrender.com'}/api/v1/history/`,
           {
             headers: {
               'accept': '*/*',
-              'Authorization': `Bearer ${token}`
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
             }
           }
         );

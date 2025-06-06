@@ -12,12 +12,9 @@ export default function TopNav() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isBrowser, setIsBrowser] = useState(false);
+  
+  // Cache state - initialize from localStorage on mount
   const [cachedProfileImage, setCachedProfileImage] = useState(null);
-  
-  // Add a flag to force a single fetch only on first mount
-  const hasFetchedProfile = useRef(false);
-  
-  // Store user data locally
   const [cachedUserData, setCachedUserData] = useState(null);
   const [cachedUserType, setCachedUserType] = useState(null);
   const [cachedDisplayName, setCachedDisplayName] = useState("Guest");
@@ -25,22 +22,68 @@ export default function TopNav() {
   const [cachedRole, setCachedRole] = useState("User");
   const [cachedInitial, setCachedInitial] = useState("U");
   const [cachedSettingsUrl, setCachedSettingsUrl] = useState("/dashboard/settings");
-  const [isProfileLoading, setIsProfileLoading] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false);
   
-  // Use the shared profile context
+  // Use the shared profile context - but don't trigger refetch if we have cached data
   const { userData, profileImage, isLoading, userType } = useProfile();
   
   // Use the notifications context
   const { notifications = [], unreadCount = 0, markAsRead } = useNotifications() || {};
 
-  // Check if we're in browser environment
+  // Initialize from localStorage on component mount
   useEffect(() => {
     setIsBrowser(true);
+    
+    // Load cached data from localStorage
+    const savedUserData = localStorage.getItem('user_data');
+    const savedUserType = localStorage.getItem('user_type');
+    const savedProfileImage = localStorage.getItem('profile_photo_url');
+    
+    if (savedUserData) {
+      try {
+        const parsedUserData = JSON.parse(savedUserData);
+        setCachedUserData(parsedUserData);
+        
+        // Set user display properties from cached data
+        const firstName = parsedUserData.first_name || parsedUserData.data?.first_name || "";
+        const lastName = parsedUserData.last_name || parsedUserData.data?.last_name || "";
+        
+        if (firstName && lastName) {
+          setCachedDisplayName(`${firstName} ${lastName}`);
+        } else if (firstName) {
+          setCachedDisplayName(firstName);
+        } else if (lastName) {
+          setCachedDisplayName(lastName);
+        } else if (parsedUserData.email) {
+          setCachedDisplayName(parsedUserData.email.split('@')[0]);
+        }
+        
+        setCachedShortName(firstName || "User");
+        setCachedInitial(firstName ? firstName.charAt(0).toUpperCase() : "U");
+      } catch (error) {
+        console.error('Error parsing cached user data:', error);
+      }
+    }
+    
+    if (savedUserType) {
+      setCachedUserType(savedUserType);
+      const role = savedUserType === "AGENT" ? "Agent" : "Client";
+      setCachedRole(role);
+      setCachedSettingsUrl(savedUserType === "AGENT" ? "/agent-dashboard/settings/profile" : "/dashboard/settings");
+    }
+    
+    if (savedProfileImage) {
+      setCachedProfileImage(savedProfileImage);
+    }
+    
+    setIsInitialized(true);
   }, []);
   
-  // Update cache only when actual new data arrives
+  // Only update cache when new data arrives AND it's different from what we have
   useEffect(() => {
-    if (userData && !isLoading) {
+    if (!isInitialized) return; // Don't update until we've loaded from localStorage
+    
+    if (userData && !isLoading && JSON.stringify(userData) !== JSON.stringify(cachedUserData)) {
       setCachedUserData(userData);
       localStorage.setItem('user_data', JSON.stringify(userData));
       
@@ -60,27 +103,32 @@ export default function TopNav() {
       
       setCachedShortName(firstName || "User");
       setCachedInitial(firstName ? firstName.charAt(0).toUpperCase() : "U");
-      
-      setIsProfileLoading(false);
     }
+  }, [userData, isLoading, cachedUserData, isInitialized]);
+  
+  // Only update user type cache when it actually changes
+  useEffect(() => {
+    if (!isInitialized) return;
     
-    if (userType) {
+    if (userType && userType !== cachedUserType) {
       setCachedUserType(userType);
       localStorage.setItem('user_type', userType);
       
-      const type = userType;
-      setCachedRole(type === "AGENT" ? "Agent" : "Client");
-      setCachedSettingsUrl(type === "AGENT" ? "/agent-dashboard/settings/profile" : "/dashboard/settings");
+      const role = userType === "AGENT" ? "Agent" : "Client";
+      setCachedRole(role);
+      setCachedSettingsUrl(userType === "AGENT" ? "/agent-dashboard/settings/profile" : "/dashboard/settings");
     }
-  }, [userData, isLoading, userType]);
+  }, [userType, cachedUserType, isInitialized]);
   
-  // Cache the profile image only when it actually changes
+  // Only update profile image cache when it actually changes
   useEffect(() => {
+    if (!isInitialized) return;
+    
     if (profileImage && profileImage !== cachedProfileImage) {
       setCachedProfileImage(profileImage);
       localStorage.setItem('profile_photo_url', profileImage);
     }
-  }, [profileImage, cachedProfileImage]);
+  }, [profileImage, cachedProfileImage, isInitialized]);
 
   // Add body class to prevent scrolling when notifications are open
   useEffect(() => {
@@ -102,19 +150,19 @@ export default function TopNav() {
     }
   };
 
-  // Get the profile image URL with priority on cached version
+  // Get the profile image URL - returns null if no real image is available
   const getProfileImageUrl = () => {
-    // First check our cached state value
+    // Always prioritize cached version first
     if (cachedProfileImage) {
       return cachedProfileImage;
     }
     
-    // Then check the context value
+    // Then check the context value (only if we don't have cached)
     if (profileImage) {
       return profileImage;
     } 
     
-    // Then try to get from userData or cachedUserData as backup
+    // Then try to get from userData as backup
     const userDataToUse = cachedUserData || userData;
     if (userDataToUse) {
       const photoUrl = userDataToUse?.profile_photo_url || 
@@ -125,19 +173,13 @@ export default function TopNav() {
       }
     }
     
-    // Last resort - check localStorage directly
-    const savedImage = localStorage.getItem('profile_photo_url');
-    if (savedImage) {
-      return savedImage;
-    }
-    
-    // Default placeholder if no image is found
-    return "https://i.pravatar.cc/150";
+    // Return null instead of placeholder - no mockup image
+    return null;
   };
 
-  // Use memoized data and loading state
+  // Only show loading if we haven't initialized from cache yet
+  const shouldShowLoading = !isInitialized || (!cachedUserData && isLoading);
   const profileImageUrl = getProfileImageUrl();
-  const effectiveIsLoading = isProfileLoading && isLoading;
 
   // Render the modal overlay and notification content with portal
   const renderNotificationContent = () => {
@@ -223,7 +265,7 @@ export default function TopNav() {
           {/* User Profile */}
           <Link href={cachedSettingsUrl} className="flex items-center gap-2 cursor-pointer">
             <div className="w-10 h-10 relative rounded-full overflow-hidden border border-gray-300 shadow-sm">
-              {profileImageUrl && !effectiveIsLoading ? (
+              {profileImageUrl && !shouldShowLoading ? (
                 <Image
                   src={profileImageUrl}
                   alt={`${cachedDisplayName} Profile`}
@@ -276,7 +318,7 @@ export default function TopNav() {
           {/* User Profile (Mobile) */}
           <Link href={cachedSettingsUrl} className="flex items-center gap-2 cursor-pointer">
             <div className="w-8 h-8 relative rounded-full overflow-hidden border border-gray-300">
-              {profileImageUrl && !effectiveIsLoading ? (
+              {profileImageUrl && !shouldShowLoading ? (
                 <Image
                   src={profileImageUrl}
                   alt={`${cachedShortName} Profile`}

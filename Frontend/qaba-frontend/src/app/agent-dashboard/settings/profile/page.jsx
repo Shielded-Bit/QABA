@@ -323,61 +323,53 @@ export default function ProfilePage() {
         : userType === "AGENT" 
           ? '/api/v1/profile/agent/' 
           : '/api/v1/profile/client/';  // Standard endpoints for other profile updates (like location)
-      
-      // Always use FormData for any profile updates
-      const formData = new FormData();
-      
+
       if (formType === 'contact') {
-        // For contact info, add fields to FormData
-        formData.append('first_name', data.first_name);
-        formData.append('last_name', data.last_name);
-        formData.append('phone_number', data.phone_number);
-        
-        console.log("Sending contact update with FormData payload to endpoint:", endpoint);
-        // Show FormData content for debugging
-        for (let [key, value] of formData.entries()) {
-          console.log(`${key}: ${value}`);
+        // Send JSON for contact info
+        const body = {
+          first_name: data.first_name,
+          last_name: data.last_name,
+          phone_number: data.phone_number,
+        };
+        const response = await apiRequest(endpoint, {
+          method: 'PATCH',
+          isFormData: false,
+          body,
+        });
+        const result = await response.json();
+        if (result.success) {
+          toast.success('Contact information updated successfully');
+          await createNotification(`Contact information updated successfully on ${new Date().toLocaleDateString()}`);
+          await fetchProfile();
+        } else {
+          toast.error(result.message || 'Failed to update contact information');
         }
       } else if (formType === 'location') {
-        // For location info
+        // Use FormData for location info
+        const formData = new FormData();
         formData.append('country', data.country);
         formData.append('state', data.state);
         formData.append('city', data.city);
         formData.append('address', data.address);
-        
-        console.log("Sending location update with FormData payload to endpoint:", endpoint);
-        // Show FormData content for debugging
-        for (let [key, value] of formData.entries()) {
-          console.log(`${key}: ${value}`);
+        const response = await apiRequest(endpoint, {
+          method: 'PATCH',
+          isFormData: true,
+          body: formData,
+        });
+        const result = await response.json();
+        if (result.success) {
+          toast.success('Location information updated successfully');
+          await createNotification && createNotification(`Location information updated successfully on ${new Date().toLocaleDateString()}`);
+          await fetchProfile();
+          await fetchProfileData();
+          setIsEditingLocation(false);
+        } else {
+          toast.error(result.message || 'Failed to update location information');
         }
-      }
-      
-      const response = await apiRequest(endpoint, {
-        method: 'PATCH',
-        isFormData: true, // Always use FormData
-        body: formData
-      });
-      
-      const result = await response.json();
-      console.log(`${formType} update response:`, result);
-      
-      // Show success notification right away
-      toast.success(`${formType === 'contact' ? 'Contact' : 'Location'} information updated successfully`);
-      
-      // Create notification
-      await createNotification(`${formType === 'contact' ? 'Contact' : 'Location'} information updated successfully on ${new Date().toLocaleDateString()}`);
-      
-      // Update global context
-      await fetchProfile();
-      
-      // Only fetch profile data after location update (more efficient)
-      if (formType === 'location') {
-        await fetchProfileData();
-        setIsEditingLocation(false);
       }
     } catch (err) {
       toast.error(err.message);
-      console.error("Update error:", err);
+      console.error('Update error:', err);
     }
   };
 
