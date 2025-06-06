@@ -207,7 +207,9 @@ const AddForSell = () => {
     if (formData.sale_price) {
       setDisplayPrice(formatNumberWithCommas(formData.sale_price));
     }
-    
+  }, [formData.sale_price]);
+
+  useEffect(() => {
     const getAmenities = async () => {
       setIsLoadingAmenities(true);
       try {
