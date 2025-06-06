@@ -330,7 +330,7 @@ const AllListedProperties = () => {
                   <span className="text-gray-600"> found</span>
                   {activeFilter !== "ALL" && <span className="text-gray-600"> for {activeFilter.toLowerCase()}</span>}
                   {selectedState && <span className="text-gray-600"> in {selectedState}</span>}
-                  {searchTerm && <span className="text-gray-600"> matching "{searchTerm}"</span>}
+                  {searchTerm && <span className="text-gray-600"> matching &quot;{searchTerm}&quot;</span>}
                 </p>
               </div>
             </div>
