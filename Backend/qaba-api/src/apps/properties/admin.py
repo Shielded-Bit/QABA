@@ -1,6 +1,10 @@
+from datetime import timezone
+
 from apps.users.models import Notification
 from django.contrib import admin
+from django.http import HttpResponseRedirect
 from django.template.loader import render_to_string
+from django.urls import reverse
 
 # Register your models here.
 from django.utils.html import format_html, strip_tags
@@ -13,6 +17,7 @@ from .models import (
     Property,
     PropertyDocument,
     PropertyImage,
+    PropertyReview,
     PropertyVideo,
 )
 
@@ -488,3 +493,172 @@ class PropertyDocumentAdmin(admin.ModelAdmin):
     def verify_documents(self, request, queryset):
         updated = queryset.update(is_verified=True)
         self.message_user(request, f"{updated} documents were verified.")
+
+
+@admin.register(PropertyReview)
+class PropertyReviewAdmin(admin.ModelAdmin):
+    list_display = (
+        "property_name",
+        "reviewer_name",
+        "rating",
+        "status",
+        "created_at",
+        "action_buttons",
+    )
+    list_filter = ("status", "rating", "created_at", "reviewer__user_type")
+    search_fields = (
+        "property__property_name",
+        "reviewer__email",
+        "reviewer__first_name",
+        "reviewer__last_name",
+        "comment",
+    )
+    readonly_fields = ("created_at", "approved_by")
+    date_hierarchy = "created_at"
+    list_per_page = 25
+
+    fieldsets = (
+        (None, {"fields": ("property", "reviewer", "rating", "comment")}),
+        ("Status", {"fields": ("status", "approved_by")}),
+        (
+            "Timestamps",
+            {"fields": ("created_at",), "classes": ("collapse",)},
+        ),
+    )
+
+    def property_name(self, obj):
+        return obj.property.property_name
+
+    property_name.short_description = "Property"
+
+    def reviewer_name(self, obj):
+        return obj.reviewer.get_full_name()
+
+    reviewer_name.short_description = "Reviewer"
+
+    def action_buttons(self, obj):
+        if obj.status == PropertyReview.ReviewStatus.PENDING:
+            return format_html(
+                '<a class="button" href="{}?action=approve&review_id={}" style="background: #28a745; color: white; padding: 5px 10px; margin-right: 5px;" onclick="return confirm(\'Approve this review?\')">Approve</a>'
+                '<a class="button" href="{}?action=reject&review_id={}" style="background: #dc3545; color: white; padding: 5px 10px;" onclick="return confirm(\'Reject this review?\')">Reject</a>',
+                reverse("admin:properties_propertyreview_changelist"),
+                obj.id,
+                reverse("admin:properties_propertyreview_changelist"),
+                obj.id,
+            )
+        return f"Status: {obj.get_status_display()}"
+
+    action_buttons.short_description = "Actions"
+
+    def changelist_view(self, request, extra_context=None):
+        # Handle approve/reject actions
+        if request.GET.get("action") and request.GET.get("review_id"):
+            return self._handle_review_action(request)
+
+        return super().changelist_view(request, extra_context)
+
+    def _handle_review_action(self, request):
+        action = request.GET.get("action")
+        review_id = request.GET.get("review_id")
+
+        try:
+            review = PropertyReview.objects.get(id=review_id)
+
+            if action == "approve":
+                review.status = PropertyReview.ReviewStatus.APPROVED
+                review.approved_by = request.user
+                review.approved_at = timezone.now()
+                review.save()
+
+                # Create notification for reviewer
+                from apps.users.models import Notification
+
+                Notification.objects.create(
+                    user=review.reviewer,
+                    title="Review Approved",
+                    message=f"Your review for '{review.property.property_name}' has been approved and is now visible.",
+                    notification_type="review_approved",
+                )
+
+                self.message_user(
+                    request,
+                    f"Review by {review.reviewer.get_full_name()} has been approved.",
+                )
+
+            elif action == "reject":
+                review.status = PropertyReview.ReviewStatus.REJECTED
+                review.save()
+
+                # Create notification for reviewer
+                from apps.users.models import Notification
+
+                Notification.objects.create(
+                    user=review.reviewer,
+                    title="Review Rejected",
+                    message=f"Your review for '{review.property.property_name}' has been rejected and will not be displayed.",
+                    notification_type="review_rejected",
+                )
+
+                self.message_user(
+                    request,
+                    f"Review by {review.reviewer.get_full_name()} has been rejected.",
+                )
+
+        except PropertyReview.DoesNotExist:
+            self.message_user(request, "Review not found.", level="ERROR")
+        except Exception as e:
+            self.message_user(
+                request, f"Error processing action: {str(e)}", level="ERROR"
+            )
+
+        return HttpResponseRedirect(
+            reverse("admin:properties_propertyreview_changelist")
+        )
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("property", "reviewer")
+
+    # Bulk actions
+    actions = ["approve_reviews", "reject_reviews"]
+
+    @admin.action(description="Approve selected reviews")
+    def approve_reviews(self, request, queryset):
+        from django.utils import timezone
+
+        updated = 0
+        for review in queryset.filter(status=PropertyReview.ReviewStatus.PENDING):
+            review.status = PropertyReview.ReviewStatus.APPROVED
+            review.approved_by = request.user
+            review.approved_at = timezone.now()
+            review.save()
+
+            from apps.users.models import Notification
+
+            Notification.objects.create(
+                user=review.reviewer,
+                title="Review Approved",
+                message=f"Your review for '{review.property.property_name}' has been approved and is now visible.",
+                notification_type="review_approved",
+            )
+            updated += 1
+
+        self.message_user(request, f"{updated} reviews were approved.")
+
+    @admin.action(description="Reject selected reviews")
+    def reject_reviews(self, request, queryset):
+        updated = 0
+        for review in queryset.filter(status=PropertyReview.ReviewStatus.PENDING):
+            review.status = PropertyReview.ReviewStatus.REJECTED
+            review.save()
+
+            from apps.users.models import Notification
+
+            Notification.objects.create(
+                user=review.reviewer,
+                title="Review Rejected",
+                message=f"Your review for '{review.property.property_name}' has been rejected and will not be displayed.",
+                notification_type="review_rejected",
+            )
+            updated += 1
+
+        self.message_user(request, f"{updated} reviews were rejected.")

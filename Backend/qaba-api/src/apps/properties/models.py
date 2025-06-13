@@ -162,6 +162,34 @@ class Property(models.Model):
         verbose_name_plural = "Properties"
         ordering = ["-listed_date"]
 
+    @property
+    def average_rating(self):
+        """Calculate average rating from approved reviews"""
+        approved_reviews = self.reviews.filter(
+            status=PropertyReview.ReviewStatus.APPROVED
+        )
+        if approved_reviews.exists():
+            return approved_reviews.aggregate(avg_rating=models.Avg("rating"))[
+                "avg_rating"
+            ]
+        return 0
+
+    @property
+    def total_reviews(self):
+        """Get total count of approved reviews"""
+        return self.reviews.filter(status=PropertyReview.ReviewStatus.APPROVED).count()
+
+    @property
+    def rating_breakdown(self):
+        """Get breakdown of ratings"""
+        approved_reviews = self.reviews.filter(
+            status=PropertyReview.ReviewStatus.APPROVED
+        )
+        breakdown = {}
+        for i in range(1, 6):
+            breakdown[f"{i}_star"] = approved_reviews.filter(rating=i).count()
+        return breakdown
+
 
 class PropertyImage(models.Model):
     property = models.ForeignKey(
@@ -218,7 +246,6 @@ class Favorite(models.Model):
     class Meta:
         verbose_name = "Favorite Property"
         verbose_name_plural = "Favorite Properties"
-        # Ensure a user can't favorite the same property twice
         unique_together = ["user", "property"]
         ordering = ["-created_at"]
 
@@ -273,3 +300,55 @@ class PropertyDocument(models.Model):
 
     def __str__(self):
         return f"{self.get_document_type_display()} - {self.property.property_name}"
+
+
+class PropertyReview(models.Model):
+    class Rating(models.IntegerChoices):
+        ONE_STAR = 1, "1 Star"
+        TWO_STARS = 2, "2 Stars"
+        THREE_STARS = 3, "3 Stars"
+        FOUR_STARS = 4, "4 Stars"
+        FIVE_STARS = 5, "5 Stars"
+
+    class ReviewStatus(models.TextChoices):
+        PENDING = "PENDING", "Pending Review"
+        APPROVED = "APPROVED", "Approved"
+        REJECTED = "REJECTED", "Rejected"
+
+    # Change 'property' to 'reviewed_property'
+    reviewed_property = models.ForeignKey(
+        Property, on_delete=models.CASCADE, related_name="reviews"
+    )
+    reviewer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="property_reviews",
+    )
+    rating = models.IntegerField(
+        choices=Rating.choices, help_text="Rating from 1 to 5 stars"
+    )
+    comment = models.TextField(help_text="Review comment")
+    status = models.CharField(
+        max_length=10, choices=ReviewStatus.choices, default=ReviewStatus.PENDING
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    approved_at = models.DateTimeField(null=True, blank=True)
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="approved_reviews",
+    )
+
+    class Meta:
+        unique_together = ["reviewed_property", "reviewer"]  # Update this too
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.reviewer.get_full_name()} - {self.reviewed_property.property_name} ({self.rating} stars)"
+
+    @property
+    def is_approved(self):
+        return self.status == self.ReviewStatus.APPROVED

@@ -289,6 +289,7 @@ class NotificationAdmin(admin.ModelAdmin):
         "metadata",
         "created_at",
         "property_details",
+        "review_details",
         "action_buttons",
     )
     date_hierarchy = "created_at"
@@ -306,6 +307,13 @@ class NotificationAdmin(admin.ModelAdmin):
             _("Property Details"),
             {
                 "fields": ("property_details", "action_buttons"),
+                "classes": ("wide",),
+            },
+        ),
+        (
+            _("Review Details"),
+            {
+                "fields": ("review_details",),
                 "classes": ("wide",),
             },
         ),
@@ -588,9 +596,16 @@ class NotificationAdmin(admin.ModelAdmin):
             logger.error(f"Failed to send email notification: {str(e)}")
 
     def get_queryset(self, request):
+        """Show property review and review approval notifications"""
         return (
             super()
             .get_queryset(request)
+            .filter(
+                notification_type__in=[
+                    "property_review_required",
+                    "review_approval_required",
+                ]
+            )
             .select_related("user")
             .prefetch_related("user__groups")
         )
@@ -620,3 +635,43 @@ class NotificationAdmin(admin.ModelAdmin):
         count = read_notifications.count()
         read_notifications.delete()
         self.message_user(request, f"{count} read notifications were deleted.")
+
+    def review_details(self, obj):
+        """Display review details for review approval notifications"""
+        if obj.notification_type == "review_approval_required" and obj.metadata:
+            try:
+                review_id = obj.metadata.get("review_id")
+                if review_id:
+                    from apps.properties.models import PropertyReview
+
+                    review = PropertyReview.objects.get(id=review_id)
+
+                    return format_html(
+                        """
+                        <div style="border: 1px solid #ddd; padding: 10px; border-radius: 5px;">
+                            <h4>{} - {} Stars</h4>
+                            <p><strong>Property:</strong> {}</p>
+                            <p><strong>Reviewer:</strong> {} ({})</p>
+                            <p><strong>Comment:</strong></p>
+                            <div style="background: #f8f9fa; padding: 8px; border-radius: 3px;">
+                                {}
+                            </div>
+                            <p><strong>Status:</strong> {}</p>
+                        </div>
+                        """,
+                        review.reviewer.get_full_name(),
+                        review.rating,
+                        review.property.property_name,
+                        review.reviewer.get_full_name(),
+                        review.reviewer.email,
+                        review.comment,
+                        review.get_status_display(),
+                    )
+            except Exception as e:
+                return format_html(
+                    '<p style="color: red;">Error loading review details: {}</p>',
+                    str(e),
+                )
+        return "-"
+
+    review_details.short_description = "Review Information"

@@ -90,3 +90,23 @@ class IsClientOrAgent(permissions.BasePermission):
             and request.user.user_type
             in ["CLIENT", "AGENT", "LANDLORD"]  # Add LANDLORD
         )
+
+
+class CanReviewProperty(permissions.BasePermission):
+    """
+    Permission to allow only agents and clients to review properties.
+    Users cannot review their own properties.
+    """
+
+    def has_permission(self, request, view):
+        return bool(
+            request.user
+            and request.user.is_authenticated
+            and request.user.user_type in ["CLIENT", "AGENT", "LANDLORD"]
+        )
+
+    def has_object_permission(self, request, view, obj):
+        # Users cannot review their own properties
+        if hasattr(obj, "property"):
+            return obj.property.listed_by != request.user
+        return True

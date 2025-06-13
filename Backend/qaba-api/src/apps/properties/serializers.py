@@ -13,6 +13,7 @@ from .models import (
     Property,
     PropertyDocument,
     PropertyImage,
+    PropertyReview,
     PropertyVideo,
 )
 
@@ -139,46 +140,6 @@ class AmenitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Amenity
         fields = ["id", "name", "icon"]
-
-
-class PropertyDetailSerializer(PropertyListSerializer):
-    images = PropertyImageSerializer(many=True, read_only=True)
-    video = PropertyVideoSerializer(read_only=True)
-    rent_frequency_display = serializers.CharField(
-        source="get_rent_frequency_display", read_only=True
-    )
-    amenities = AmenitySerializer(many=True, read_only=True)
-    documents = PropertyDocumentSerializer(many=True, read_only=True)
-
-    class Meta(PropertyListSerializer.Meta):
-        fields = PropertyListSerializer.Meta.fields + [
-            "amenities",
-            "description",
-            "images",
-            "video",
-            "rent_frequency",
-            "rent_frequency_display",
-            "rent_price",
-            "documents",
-            "agent_commission",
-            "qaba_fee",
-            "total_price",
-        ]
-
-    def get_documents(self, obj):
-        request = self.context.get("request")
-        if not request or not request.user.is_authenticated:
-            # For unauthenticated users, return no documents
-            return []
-
-        # For staff or property owner, return all documents
-        if request.user.is_staff or obj.listed_by == request.user:
-            documents = obj.documents.all()
-        else:
-            # For other authenticated users, return only verified documents
-            documents = obj.documents.filter(is_verified=True)
-
-        return PropertyDocumentSerializer(documents, many=True).data
 
 
 class AmenityListField(serializers.ListField):
@@ -527,10 +488,8 @@ class PropertyDocumentUploadSerializer(serializers.ModelSerializer):
         fields = ["document_type", "file"]
 
     def validate_file(self, value):
-        # Get file extension
         ext = value.name.split(".")[-1].lower()
 
-        # List of allowed file extensions
         allowed_extensions = ["pdf", "doc", "docx", "jpg", "jpeg", "png"]
 
         if ext not in allowed_extensions:
@@ -538,8 +497,167 @@ class PropertyDocumentUploadSerializer(serializers.ModelSerializer):
                 f"Unsupported file type. Allowed types: {', '.join(allowed_extensions)}"
             )
 
-        # Check file size (limit to 10MB)
         if value.size > 10 * 1024 * 1024:
             raise serializers.ValidationError("File size cannot exceed 10MB")
 
         return value
+
+
+class PropertyReviewSerializer(serializers.ModelSerializer):
+    reviewer_name = serializers.CharField(
+        source="reviewer.get_full_name", read_only=True
+    )
+    reviewer_type = serializers.CharField(
+        source="reviewer.get_user_type_display", read_only=True
+    )
+    property_name = serializers.CharField(
+        source="reviewed_property.property_name", read_only=True
+    )
+
+    class Meta:
+        model = PropertyReview
+        fields = [
+            "id",
+            "reviewed_property",
+            "property_name",
+            "reviewer",
+            "reviewer_name",
+            "reviewer_type",
+            "rating",
+            "comment",
+            "status",
+            "created_at",
+            "approved_by",
+        ]
+        read_only_fields = ["reviewer", "status", "approved_by"]
+
+    def validate_rating(self, value):
+        if value < 1 or value > 5:
+            raise serializers.ValidationError("Rating must be between 1 and 5")
+        return value
+
+    def validate(self, attrs):
+        # Check if user is trying to review their own property
+        request = self.context.get("request")
+        property_obj = attrs.get("reviewed_property")
+
+        if request and property_obj and property_obj.listed_by == request.user:
+            raise serializers.ValidationError("You cannot review your own property")
+
+        return attrs
+
+
+class PropertyReviewCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PropertyReview
+        fields = ["reviewed_property", "rating", "comment"]
+
+    def validate_rating(self, value):
+        if value < 1 or value > 5:
+            raise serializers.ValidationError("Rating must be between 1 and 5")
+        return value
+
+    def validate_reviewed_property(self, value):
+        # Ensure property exists and is approved
+        if value.listing_status != Property.ListingStatus.APPROVED:
+            raise serializers.ValidationError("You can only review approved properties")
+        return value
+
+    def validate(self, attrs):
+        request = self.context.get("request")
+        property_obj = attrs.get("reviewed_property")
+
+        # Check if user is trying to review their own property
+        if property_obj.listed_by == request.user:
+            raise serializers.ValidationError("You cannot review your own property")
+
+        # Check if user has already reviewed this property
+        if PropertyReview.objects.filter(
+            reviewed_property=property_obj, reviewer=request.user
+        ).exists():
+            raise serializers.ValidationError("You have already reviewed this property")
+
+        return attrs
+
+    def create(self, validated_data):
+        validated_data["reviewer"] = self.context["request"].user
+        review = PropertyReview.objects.create(**validated_data)
+
+        # Create notification for admin users
+        self._create_review_notification(review)
+
+        return review
+
+    def _create_review_notification(self, review):
+        """Create notifications for admin users about new review submission"""
+        from apps.users.models import Notification, User
+
+        admin_users = User.objects.filter(user_type=User.UserType.ADMIN)
+
+        for admin_user in admin_users:
+            Notification.objects.create(
+                user=admin_user,
+                title="New Property Review Pending Approval",
+                message=f"New review for '{review.reviewed_property.property_name}' by {review.reviewer.get_full_name()} is pending approval.",
+                notification_type="review_approval_required",
+                metadata={
+                    "review_id": str(review.id),
+                    "property_id": str(review.reviewed_property.id),
+                    "property_name": review.reviewed_property.property_name,
+                    "reviewer_name": review.reviewer.get_full_name(),
+                    "rating": review.rating,
+                },
+            )
+
+
+class PropertyDetailSerializer(PropertyListSerializer):
+    images = PropertyImageSerializer(many=True, read_only=True)
+    video = PropertyVideoSerializer(read_only=True)
+    rent_frequency_display = serializers.CharField(
+        source="get_rent_frequency_display", read_only=True
+    )
+    amenities = AmenitySerializer(many=True, read_only=True)
+    documents = PropertyDocumentSerializer(many=True, read_only=True)
+    listed_by_name = serializers.CharField(
+        source="listed_by.get_full_name", read_only=True
+    )
+    reviews = PropertyReviewSerializer(
+        many=True,
+        read_only=True,
+        source='reviews.filter(status="APPROVED")',
+    )
+    average_rating = serializers.ReadOnlyField()
+    total_reviews = serializers.ReadOnlyField()
+    rating_breakdown = serializers.ReadOnlyField()
+
+    class Meta(PropertyListSerializer.Meta):
+        fields = PropertyListSerializer.Meta.fields + [
+            "amenities",
+            "description",
+            "images",
+            "video",
+            "rent_frequency",
+            "rent_frequency_display",
+            "rent_price",
+            "documents",
+            "agent_commission",
+            "qaba_fee",
+            "total_price",
+            "listed_by_name",
+            "reviews",
+            "average_rating",
+            "total_reviews",
+            "rating_breakdown",
+        ]
+
+    def get_documents(self, obj):
+        request = self.context.get("request")
+        if not request or not request.user.is_authenticated:
+            return []
+
+        if request.user.is_staff or obj.listed_by == request.user:
+            documents = obj.documents.all()
+        else:
+            documents = obj.documents.filter(is_verified=True)
+
+        return PropertyDocumentSerializer(documents, many=True).data

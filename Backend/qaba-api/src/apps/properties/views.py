@@ -12,7 +12,7 @@ from rest_framework import filters, generics, permissions, serializers, viewsets
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.views import APIView
 
-from .models import Amenity, Favorite, Property, PropertyDocument
+from .models import Amenity, Favorite, Property, PropertyDocument, PropertyReview
 from .permissions import IsClientOrAgent
 from .serializers import (
     AmenitySerializer,
@@ -23,6 +23,8 @@ from .serializers import (
     PropertyDocumentUploadSerializer,
     PropertyFavoriteToggleSerializer,
     PropertyListSerializer,
+    PropertyReviewCreateSerializer,
+    PropertyReviewSerializer,
     PropertyUpdateSerializer,
 )
 
@@ -404,3 +406,62 @@ class PropertyDocumentDetailView(APIView):
 
         document.delete()
         return APIResponse.success(message="Document deleted successfully")
+
+@extend_schema(tags=["Property Reviews"])
+class CreatePropertyReviewView(generics.CreateAPIView):
+    """Create a new property review"""
+
+    serializer_class = PropertyReviewCreateSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        review = serializer.save()
+
+        return APIResponse.success(
+            data=PropertyReviewSerializer(review).data,
+            message="Review submitted successfully. It will be visible after admin approval.",
+        )
+
+@extend_schema(tags=["Property Reviews"])
+class ListPropertyReviewsView(generics.ListAPIView):
+    """List all approved reviews for a specific property"""
+
+    serializer_class = PropertyReviewSerializer
+    permission_classes = [permissions.AllowAny]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["rating"]
+
+    def get_queryset(self):
+        property_id = self.kwargs.get("property_id")
+        return (
+            PropertyReview.objects.filter(
+                reviewed_property_id=property_id,
+                status=PropertyReview.ReviewStatus.APPROVED,
+            )
+            .select_related("reviewer", "reviewed_property")
+            .order_by("-created_at")
+        )
+
+    def list(self, request, *args, **kwargs):
+        property_id = self.kwargs.get("property_id")
+
+        property_obj = get_object_or_404(Property, id=property_id)
+
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+
+        total_reviews = queryset.count()
+        average_rating = property_obj.average_rating
+
+        return APIResponse.success(
+            data={
+                "reviews": serializer.data,
+                "total_reviews": total_reviews,
+                "average_rating": round(average_rating, 1) if average_rating else 0,
+                "property_name": property_obj.property_name,
+                "rating_breakdown": property_obj.rating_breakdown,
+            },
+            message="Reviews retrieved successfully",
+        )

@@ -3,8 +3,10 @@ from rest_framework_nested import routers
 
 from .views import (
     AmenityView,
+    CreatePropertyReviewView,
     FavoriteListView,
     FavoriteToggleView,
+    ListPropertyReviewsView,
     PropertyDocumentDetailView,
     PropertyDocumentView,
     PropertyViewSet,
@@ -29,6 +31,7 @@ register_converter(IntConverter, "int")
 router = routers.DefaultRouter()
 router.register(r"properties", PropertyViewSet, basename="property")
 
+
 properties_router = routers.NestedDefaultRouter(
     router, r"properties", lookup="property"
 )
@@ -49,5 +52,11 @@ urlpatterns = [
         "properties/<uuid:property_id>/documents/<uuid:document_id>/",
         PropertyDocumentDetailView.as_view(),
         name="property-document-detail",
+    ),
+    path("reviews/create/", CreatePropertyReviewView.as_view(), name="create-review"),
+    path(
+        "reviews/property/<int:property_id>/",
+        ListPropertyReviewsView.as_view(),
+        name="property-reviews",
     ),
 ]
