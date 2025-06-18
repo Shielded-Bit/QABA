@@ -180,6 +180,26 @@ const FavoritesPage = () => {
     document.body.removeChild(link);
   };
 
+  // Skeleton for Favorite Property Card (matches PropertyCard layout)
+  const PropertyCardSkeleton = () => (
+    <div className="bg-white rounded-xl shadow-sm transition-all duration-300 overflow-hidden">
+      <div className="relative h-48 bg-gray-200">
+        <div className="absolute top-3 left-3">
+          <div className="h-6 w-16 bg-gradient-to-r from-[#014d98]/30 to-[#3ab7b1]/30 rounded-full" />
+        </div>
+        <div className="absolute top-3 right-3">
+          <div className="h-8 w-8 bg-white rounded-full border border-gray-200" />
+        </div>
+      </div>
+      <div className="p-4">
+        <div className="h-6 w-3/4 bg-gray-200 rounded mb-2" />
+        <div className="h-4 w-full bg-gray-100 rounded mb-2" />
+        <div className="h-4 w-2/3 bg-gray-100 rounded mb-4" />
+        <div className="h-6 w-24 bg-gradient-to-r from-[#014d98]/30 to-[#3ab7b1]/30 rounded" />
+      </div>
+    </div>
+  );
+
   // Responsive pagination controls
   const renderPaginationControls = () => {
     if (totalPages <= 0) return null;
@@ -374,11 +394,10 @@ const FavoritesPage = () => {
       )}
       
       {isLoading ? (
-        <div className="flex justify-center items-center h-64">
-          <div className="flex flex-col items-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-            <p className="mt-4 text-sm text-gray-500">Loading favorites...</p>
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[...Array(itemsPerPage)].map((_, idx) => (
+            <PropertyCardSkeleton key={idx} />
+          ))}
         </div>
       ) : Array.isArray(filteredFavorites) && filteredFavorites.length > 0 ? (
         <>

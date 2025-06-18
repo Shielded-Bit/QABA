@@ -8,6 +8,44 @@ import { useNotifications } from "../../../../contexts/NotificationContext";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
+// Profile Page Skeleton
+const ProfilePageSkeleton = () => (
+  <div className="max-w-4xl mx-auto sm:p-6 animate-pulse">
+    <div className="h-8 w-48 bg-gray-200 rounded mb-8" />
+    {/* Profile Image Skeleton */}
+    <div className="mb-6 pl-1 flex items-center">
+      <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-gray-200 border-2 border-gray-300 mr-6" />
+      <div className="h-8 w-32 bg-gray-200 rounded" />
+    </div>
+    {/* Contact Info Skeleton */}
+    <div className="mb-6 border-b pb-4">
+      <div className="h-6 w-40 bg-gray-200 rounded mb-6" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="h-12 bg-gray-100 rounded-md" />
+        ))}
+      </div>
+      <div className="mt-6 flex justify-end">
+        <div className="h-10 w-40 bg-gray-200 rounded" />
+      </div>
+    </div>
+    {/* Location Info Skeleton */}
+    <div className="mb-6">
+      <div className="flex justify-between items-center mb-3">
+        <div className="h-6 w-32 bg-gray-200 rounded" />
+        <div className="h-6 w-16 bg-gray-200 rounded" />
+      </div>
+      <div className="mt-4 bg-gray-50 p-4 rounded-md">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-10 bg-gray-100 rounded-md" />
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
 // Reusable Input Component with improved mobile styling
 const FormInput = ({ 
   label, name, register, errors, type = "text", required = false, readOnly = false, value = "", className = "", colSpan = "" 
@@ -442,11 +480,7 @@ export default function ProfilePage() {
 
   // Loading, Error and Empty States
   if (isLoading && !userData && !apiUserData.id) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-blue-500"></div>
-      </div>
-    );
+    return <ProfilePageSkeleton />;
   }
   
   if (error && !userData && !apiUserData.id) {
@@ -587,7 +621,7 @@ export default function ProfilePage() {
       {/* Location Information Section */}
       <div className="mb-6">
         <div className="flex justify-between items-center mb-3">
-          <h2 className="text-lg sm:text-xl font-semibold pl-1">Location Information</h2>
+          <h2 className="text-lg sm:text-xl font-semibold pl-1">Address</h2>
           
           {!isEditingLocation && (
             <button

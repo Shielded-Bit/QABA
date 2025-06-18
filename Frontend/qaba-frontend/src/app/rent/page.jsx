@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import ListingCard from '../components/listingCard/ListingCard';
 import Button from '../components/shared/Button';
 import { IoMdArrowDropdown } from "react-icons/io";
+import { PropertyCardSkeleton } from '../agent-dashboard/favourites/components/LoadingSkeletons';
 
 export default function Rent() {
   const [properties, setProperties] = useState([]);
@@ -164,10 +165,12 @@ export default function Rent() {
         </span>
       </h1>
 
-      {/* Loading State */}
+      {/* Loading State - Use Skeletons */}
       {loading && (
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[...Array(6)].map((_, idx) => (
+            <PropertyCardSkeleton key={idx} />
+          ))}
         </div>
       )}
 

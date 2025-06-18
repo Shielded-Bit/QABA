@@ -208,7 +208,9 @@ const SignIn = () => {
       // Redirect based on role after a short delay
       setTimeout(() => {
         if (userType === "AGENT") {
-          router.push("/agent-dashboard");
+          // Show choose property type page after login
+          localStorage.setItem("hasSeenChoosePropertyType", "true");
+          router.push("/agent-dashboard/choose-property-type");
         } else if (userType === "CLIENT") {
           router.push("/dashboard/all-listed-properties");
         } else {

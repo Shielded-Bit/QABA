@@ -1,4 +1,3 @@
-
 "use client";
 import Header2 from './components/header2';
 import PropertiesNumber from './components/propertiesnumber';
@@ -8,14 +7,11 @@ import Transactions from './components/transactions';
 export default function DashboardPage() {
   return (
     <div className="bg-gray-100">
-      
-
       <div className=''>
         {/* Header Wrapper */}
         <div className="dashboard-header lg:ml-4 ml-3 ">
           <Header2 />
         </div>
-
         <main className="p-1 lg:p-4 overflow-auto ml-14 lg:ml-2 " role="main">
           {/* Top Numbers Row Wrapper */}
           <div className="dashboard-numbers">
@@ -23,7 +19,6 @@ export default function DashboardPage() {
               <PropertiesNumber />
             </section>
           </div>
-
           {/* Middle Section Wrapper */}
           <div className="dashboard-cards mt-5">
             <section>
@@ -32,7 +27,6 @@ export default function DashboardPage() {
               </div>
             </section>
           </div>
-
           {/* Transaction History Wrapper */}
           <div className="dashboard-transactions mt-4 ">
             <section>

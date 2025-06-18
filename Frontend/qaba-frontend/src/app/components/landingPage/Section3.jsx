@@ -7,6 +7,7 @@ import { Pagination, Autoplay } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/pagination';
 import Button from '../shared/Button';
+import { PropertyCardSkeleton } from '../../agent-dashboard/favourites/components/LoadingSkeletons';
 
 const Section3 = () => {
   const [properties, setProperties] = useState([]);
@@ -123,10 +124,12 @@ const Section3 = () => {
         Best Properties Available
       </h2>
 
-      {/* Loading State */}
+      {/* Loading State - Use Skeletons */}
       {loading && (
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-8">
+          {[...Array(3)].map((_, idx) => (
+            <PropertyCardSkeleton key={idx} />
+          ))}
         </div>
       )}
 

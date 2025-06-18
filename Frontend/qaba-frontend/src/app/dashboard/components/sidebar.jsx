@@ -78,7 +78,7 @@ export default function Sidebar() {
               href="/" 
               className="font-bold text-xl transition-all duration-300 bg-gradient-to-r from-[#014d98] to-[#3ab7b1] bg-clip-text text-transparent hover:opacity-80"
             >
-              QABA
+              QARBA
             </Link>
           </div>
         )}
