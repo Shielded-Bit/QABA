@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import TransactionTableSkeleton from "./TransactionTableSkeleton";
 
 const TransactionTable = () => {
   const [transactions, setTransactions] = useState([]);
@@ -178,12 +179,7 @@ const TransactionTable = () => {
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center items-center h-64">
-          <div className="flex flex-col items-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-            <p className="mt-4 text-sm text-gray-500">Loading transactions...</p>
-          </div>
-        </div>
+        <TransactionTableSkeleton />
       ) : error ? (
         <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-sm mb-4" role="alert">
           <div className="flex">

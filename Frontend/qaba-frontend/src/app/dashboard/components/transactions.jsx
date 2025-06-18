@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import axios from "axios";
+import TransactionRowSkeleton from "./TransactionRowSkeleton";
 
 const Transactions = () => {
   const [transactions, setTransactions] = useState([]);
@@ -110,8 +111,24 @@ const Transactions = () => {
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center items-center h-32">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+        <div className="overflow-x-auto w-full relative">
+          <table className="min-w-[700px] w-full text-left">
+            <thead>
+              <tr className="border-b">
+                <th className="p-2 text-xs text-gray-500">Description</th>
+                <th className="p-2 text-xs text-gray-500">Date</th>
+                <th className="p-2 text-xs text-gray-500">Property Type</th>
+                <th className="p-2 text-xs text-gray-500">Property Name</th>
+                <th className="p-2 text-xs text-gray-500">Status</th>
+                <th className="p-2 text-xs text-gray-500">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[...Array(3)].map((_, idx) => (
+                <TransactionRowSkeleton key={idx} />
+              ))}
+            </tbody>
+          </table>
         </div>
       ) : error ? (
         <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded" role="alert">

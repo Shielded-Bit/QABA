@@ -11,11 +11,14 @@ import { Pagination, Autoplay } from 'swiper/modules';
 import { useRouter } from 'next/navigation';
 import GoogleMap from '@/app/components/GoogleMap';
 import PaymentButton from '@/app/components/PaymentButton';
-import PaymentVerifier from '@/app/components/PaymentVerifier';
+// import PaymentVerifier from '@/app/components/PaymentVerifier';
 import PriceBreakdown from '@/app/components/shared/PriceBreakdown';
 import PropertyVerifications from '@/app/components/PropertyVerifications';
+import ScheduleVisitModal from '@/app/components/modal/ScheduleVisitModal';
+import EnquiryModal from '@/app/components/modal/EnquiryModal';
 import 'swiper/css';
 import 'swiper/css/pagination';
+import PropertyDetailsSkeleton from "./PropertyDetailsSkeleton";
 
 const similarListings = [
   { id: 11, title: 'Elegant Villa in Abakaliki', price: '₦120,000,000', type: 'buy', location: 'Ebonyi', city: 'Abakaliki' },
@@ -32,6 +35,8 @@ const PropertyDetails = ({ params }) => {
   const [unwrappedParams, setUnwrappedParams] = useState(null);
   const [similarProperties, setSimilarProperties] = useState(similarListings);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [showEnquiryModal, setShowEnquiryModal] = useState(false);
 
   useEffect(() => {
     const unwrapParams = async () => {
@@ -134,11 +139,7 @@ const PropertyDetails = ({ params }) => {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex justify-center items-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
+    return <PropertyDetailsSkeleton />;
   }
 
   if (error) {
@@ -179,10 +180,29 @@ const PropertyDetails = ({ params }) => {
 
   return (
     <div className="bg-slate-50 min-h-screen">
-      <PaymentVerifier 
-        onSuccess={handlePaymentSuccess}
-        onError={(message) => console.error("Payment verification error:", message)}
-      />
+      {/* Modals */}
+      {showScheduleModal && property && (
+        <ScheduleVisitModal
+          isOpen={showScheduleModal}
+          onClose={() => setShowScheduleModal(false)}
+          property={{
+            id: property.id,
+            name: property.property_name,
+            link: typeof window !== 'undefined' ? window.location.href : '',
+          }}
+        />
+      )}
+      {showEnquiryModal && property && (
+        <EnquiryModal
+          isOpen={showEnquiryModal}
+          onClose={() => setShowEnquiryModal(false)}
+          property={{
+            id: property.id,
+            name: property.property_name,
+            link: typeof window !== 'undefined' ? window.location.href : '',
+          }}
+        />
+      )}
 
       {/* Header Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -310,7 +330,7 @@ const PropertyDetails = ({ params }) => {
             <PriceBreakdown property={property} />
 
             {/* Description */}
-            <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
+            <div className="bg-white rounded-lg shadow-sm p-6 mb used-8">
               <h2 className="text-2xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-900 to-green-600">
                 Home Description
               </h2>
@@ -421,11 +441,17 @@ const PropertyDetails = ({ params }) => {
                       price={property.total_price || property.listing_type === "SALE" ? property.sale_price : property.rent_price}
                     />
                     <div className="space-y-4">
-                      <Button label="Schedule a Property Tour" variant="primary" className="w-full" />
                       <Button 
-                        label="Contact Agent for Inquiries" 
+                        label="Schedule a visit to view property" 
+                        variant="primary" 
+                        className="w-full"
+                        onClick={() => setShowScheduleModal(true)}
+                      />
+                      <Button 
+                        label="Contact us for enquiries" 
                         variant="outline" 
                         className="w-full"
+                        onClick={() => setShowEnquiryModal(true)}
                       />
                       <p className="text-sm text-gray-500 text-center">
                         Not ready to make a payment? Contact the agent directly to discuss pricing, 
@@ -449,7 +475,7 @@ const PropertyDetails = ({ params }) => {
         {/* Comment Section */}
         <section className="mt-12">
           <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
-            <CommentBox property={property} />
+            <CommentBox propertyId={property?.id} />
           </div>
         </section>
 

@@ -162,6 +162,24 @@ const AllListedProperties = () => {
     </Link>
   );
 
+  // Skeleton for All Listed Properties
+  const PropertyCardSkeleton = () => (
+    <div className="group bg-white rounded-2xl border border-gray-200/50 p-4 animate-pulse">
+      <div className="flex items-start gap-4">
+        <div className="w-28 h-28 rounded-xl overflow-hidden flex-shrink-0 bg-gray-200" />
+        <div className="flex-1 min-w-0 space-y-2">
+          <div className="h-5 w-3/4 bg-gray-200 rounded" />
+          <div className="h-4 w-1/2 bg-gray-200 rounded" />
+          <div className="h-4 w-2/3 bg-gray-200 rounded" />
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 pt-2">
+            <div className="h-6 w-24 bg-gray-200 rounded-full" />
+            <div className="h-4 w-20 bg-gray-200 rounded" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div 
       className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 ml-12 lg:ml-0"
@@ -341,11 +359,10 @@ const AllListedProperties = () => {
       {/* Main Content */}
       <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8 py-6 sm:py-8">
         {isLoading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#014d98] mx-auto"></div>
-              <p className="text-gray-500 mt-4">Loading properties...</p>
-            </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+            {[...Array(6)].map((_, idx) => (
+              <PropertyCardSkeleton key={idx} />
+            ))}
           </div>
         ) : filteredProperties.length > 0 ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">

@@ -38,12 +38,11 @@ const AboutPage = () => {
 
   // Intersection Observer to trigger animation when section is visible
   useEffect(() => {
-    const currentRef = statsRef.current; // Store ref value
+    const currentRef = statsRef.current;
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            // Reset counters to 0 before starting new animation
             setCounters({
               properties: 0,
               customers: 0,
@@ -51,7 +50,6 @@ const AboutPage = () => {
               support: 0
             });
             
-            // Animate all counters simultaneously
             animateCounter(0, 25000, 2000, (value) => {
               setCounters(prev => ({ ...prev, properties: value }));
             });
@@ -104,135 +102,145 @@ const AboutPage = () => {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Banner Section */}
-      <div className="relative h-80 md:h-96">
-        {/* Background Image with Gradient */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-[#014d98]/80 to-[#3ab7b1]/80 z-10"></div>
-          <Image
-            src="https://res.cloudinary.com/dqbbm0guw/image/upload/v1737723125/Rectangle_133_2_sblujb.png"
-            alt="Modern office building"
-            layout="fill"
-            objectFit="cover"
-            className="z-0"
-          />
-        </div>
-        
-        {/* Content */}
-        <div className="relative z-20 flex flex-col justify-center h-full max-w-6xl mx-auto px-4 md:px-8">
-          <h1 className="text-3xl md:text-5xl font-bold text-white mb-4">
-            About Our Story
-          </h1>
-          <p className="text-white text-lg md:text-xl max-w-2xl">
-            Connecting property owners with qualified buyers and renters through 
-            innovative technology and exceptional service since 2020.
-          </p>
+      <div className="relative bg-gray-50 py-6 md:py-10">
+        <div className="w-full mx-auto px-8 md:px-8">
+          <div className="grid md:grid-cols-2 gap-8 items-center ">
+            {/* Left Content */}
+            <div>
+              <p className="text-xl font-medium text-gray-600 mb-2">About us</p>
+              <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#014d98] to-[#3ab7b1] mb-6 leading-tight">
+                Welcome to Qarba, Your Trusted Partner in Real Estate
+              </h1>
+              <p className="text-gray-600 text-lg leading-relaxed">
+                At QARBA, we are on a mission to redefine how people discover, buy, rent, and list properties across Nigeria.
+              </p>
+            </div>
+            
+            {/* Right Side with Images */}
+            <div className="relative">
+              <div className="relative h-80 md:h-96 rounded-lg overflow-hidden">
+                <Image
+                  src="https://res.cloudinary.com/dqbbm0guw/image/upload/v1737723125/Rectangle_133_2_sblujb.png"
+                  alt="Modern residential neighborhood"
+                  layout="fill"
+                  objectFit="cover"
+                  className="rounded-lg"
+                />
+              </div>
+              
+              <div className="absolute -bottom-6 -left-6 md:-bottom-8 md:-left-8">
+                <div className="relative w-32 h-32 md:w-40 md:h-40">
+                  <div className="w-full h-full rounded-full overflow-hidden border-4 border-white shadow-lg bg-white">
+                    <div className="w-full h-full bg-white flex items-center justify-center">
+                      <span className="text-[#3ab7b1] font-bold text-lg md:text-xl">QARBA</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       <div className="max-w-6xl mx-auto px-4 md:px-8 py-16">
-        {/* Our Mission Section */}
-        <div className="mb-20">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#014d98] to-[#3ab7b1] bg-clip-text text-transparent mb-6">
-              Our Mission
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              To revolutionize the real estate experience by making property transactions 
-              transparent, efficient, and accessible for everyone.
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div className="space-y-6">
-              <h3 className="text-2xl font-semibold text-gray-900">Transforming Real Estate</h3>
-              <p className="text-gray-600 leading-relaxed">
-                We believe that finding the perfect property or the right buyer shouldn&apos;t be 
-                complicated. Our platform combines cutting-edge technology with personalized 
-                service to create seamless experiences for property owners, buyers, and renters.
-              </p>
-              <p className="text-gray-600 leading-relaxed">
-                From our humble beginnings as a small startup to becoming a trusted platform 
-                for thousands of users, we&apos;ve maintained our commitment to innovation, 
-                transparency, and customer satisfaction.
-              </p>
-            </div>
-            <div className="bg-gradient-to-r from-[#014d98]/10 to-[#3ab7b1]/10 p-8 rounded-xl">
-              <div className="flex justify-center mb-6">
-                <svg className="w-24 h-24" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <defs>
-                    <linearGradient id="mission-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="#014d98" />
-                      <stop offset="100%" stopColor="#3ab7b1" />
-                    </linearGradient>
-                  </defs>
-                  <path 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    strokeWidth="2" 
-                    stroke="url(#mission-gradient)"
-                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                  />
-                </svg>
-              </div>
-              <div className="text-center">
-                <h4 className="text-lg font-semibold text-gray-800 mb-2">25,000+</h4>
-                <p className="text-gray-600">Properties Listed</p>
-              </div>
-            </div>
-          </div>
+        {/* Introduction Text */}
+        <div className="text-center mb-20 max-w-4xl mx-auto">
+          <p className="text-lg text-gray-600 leading-relaxed mb-8">
+            Whether you&apos;re looking for your first home, seeking an investment property, or trying 
+            to find the perfect tenant, our platform provides you with a smart, reliable, and 
+            stress-free solution.
+          </p>
+          <p className="text-lg text-gray-600 leading-relaxed">
+            We believe property transactions should be simple, safe, and accessible, and that&apos;s 
+            exactly what we&apos;re here to offer.
+          </p>
         </div>
 
-        {/* Our Values Section */}
-        <div className="mb-20">
-          <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">Our Core Values</h2>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="mb-6 flex justify-center">
-                <div className="w-16 h-16 bg-gradient-to-r from-[#014d98] to-[#3ab7b1] rounded-full flex items-center justify-center">
-                  <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                </div>
-              </div>
-              <h3 className="text-xl font-semibold mb-3">Trust & Transparency</h3>
-              <p className="text-gray-600">
-                We build trust through transparent processes, verified listings, 
-                and honest communication at every step.
-              </p>
-            </div>
-            
-            <div className="text-center">
-              <div className="mb-6 flex justify-center">
-                <div className="w-16 h-16 bg-gradient-to-r from-[#014d98] to-[#3ab7b1] rounded-full flex items-center justify-center">
-                  <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                </div>
-              </div>
-              <h3 className="text-xl font-semibold mb-3">Innovation</h3>
-              <p className="text-gray-600">
-                We continuously evolve our platform with the latest technology 
-                to provide the best user experience.
-              </p>
-            </div>
-            
-            <div className="text-center">
-              <div className="mb-6 flex justify-center">
-                <div className="w-16 h-16 bg-gradient-to-r from-[#014d98] to-[#3ab7b1] rounded-full flex items-center justify-center">
-                  <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                  </svg>
-                </div>
-              </div>
-              <h3 className="text-xl font-semibold mb-3">Customer First</h3>
-              <p className="text-gray-600">
-                Every decision we make is guided by what&apos;s best for our users 
-                and their property journey.
-              </p>
-            </div>
-          </div>
+ {/* Our Mission Section - Updated to match the image exactly */}
+<div className="mb-20">
+  <div className="grid md:grid-cols-2 gap-16 items-center mb-20">
+    {/* Mission Image */}
+    <div className="relative overflow-visible">
+      <div className="absolute -top-6 -left-6 w-16 h-16 bg-[#4a90e2] rounded-2xl transform rotate-12 z-0"></div>
+      <div className="relative bg-white rounded-2xl shadow-xl overflow-hidden z-10">
+        <div className="h-80 relative">
+          <Image
+            src="https://res.cloudinary.com/dqbbm0guw/image/upload/v1750167908/4744e3fba07a6711d66f357c1757555c8306b0a3_ftxspq.jpg"
+            alt="Modern residential neighborhood"
+            layout="fill"
+            objectFit="cover"
+            className="rounded-2xl"
+          />
         </div>
+      </div>
+      {/* Small overlay image positioned outside the main image container - increased height */}
+      <div className="absolute top-1/2 -right-6 md:right-0 transform -translate-y-1/2 md:translate-x-12 bg-white p-3 rounded-xl shadow-lg z-20">
+        <div className="w-24 h-32 md:w-28 md:h-36 relative rounded-lg overflow-hidden">
+          <Image
+            src="https://res.cloudinary.com/dqbbm0guw/image/upload/v1750167907/75e38b33199d3659e9dafaf019ce76d1eaadc7e6_ica1ok.jpg"
+            alt="Aerial view of properties"
+            layout="fill"
+            objectFit="cover"
+            className="rounded-lg"
+          />
+        </div>
+      </div>
+    </div>
+    
+    {/* Mission Content */}
+    <div className="space-y-4 mt-8 md:mt-0">
+      <h2 className="text-3xl md:text-4xl font-bold text-[#4a90e2] mb-4">
+        Our Mission
+      </h2>
+      <p className="text-gray-700 text-base md:text-lg leading-relaxed">
+        To simplify real estate transactions by creating a transparent, secure, and user-friendly digital 
+        environment for property buyers, renters, and sellers in Nigeria.
+      </p>
+    </div>
+  </div>
+  
+  {/* Our Vision Section - Updated to match the image exactly */}
+  <div className="grid md:grid-cols-2 gap-16 items-center">
+    {/* Vision Content */}
+    <div className="space-y-4 md:order-1 mt-8 md:mt-0">
+      <h2 className="text-3xl md:text-4xl font-bold text-[#4a90e2] mb-4">
+        Our Vision
+      </h2>
+      <p className="text-gray-700 text-base md:text-lg leading-relaxed">
+        To become Nigeria&apos;s most trusted digital real estate marketplace, empowering millions to find and list 
+        properties without hassle or fear.
+      </p>
+    </div>
+    
+    {/* Vision Image */}
+    <div className="relative overflow-visible md:order-2">
+      <div className="absolute -top-6 -left-6 w-16 h-16 bg-[#4a90e2] rounded-2xl transform rotate-12 z-0"></div>
+      <div className="relative bg-white rounded-2xl shadow-xl overflow-hidden z-10">
+        <div className="h-80 relative">
+          <Image
+            src="https://res.cloudinary.com/dqbbm0guw/image/upload/v1750167907/bbef79fe26ddca2a59cc4804b4cbce5b512b18c9_qbps2s.jpg"
+            alt="Modern residential neighborhood"
+            layout="fill"
+            objectFit="cover"
+            className="rounded-2xl"
+          />
+        </div>
+      </div>
+      {/* Small overlay image positioned outside the main image container - increased height */}
+      <div className="absolute top-1/2 -right-6 md:right-0 transform -translate-y-1/2 md:translate-x-12 bg-white p-3 rounded-xl shadow-lg z-20">
+        <div className="w-24 h-32 md:w-28 md:h-36 relative rounded-lg overflow-hidden">
+          <Image
+            src="https://res.cloudinary.com/dqbbm0guw/image/upload/v1750167908/7260c1bcbd2e7d9da3c2e041a545ccdad2162d75_gnkcfu.jpg"
+            alt="Aerial view of properties"
+            layout="fill"
+            objectFit="cover"
+            className="rounded-lg"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
        {/* Our Team Section */}
 <div className="mb-20">

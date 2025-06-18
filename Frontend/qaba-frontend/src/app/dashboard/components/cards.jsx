@@ -3,20 +3,17 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSwipeable } from "react-swipeable";
-import PropertyModal from "../components/propertyModal";
 import { useNotifications } from "../../../contexts/NotificationContext";
+import { PropertyCardSkeleton } from "../components/LoadingSkeletons";
 
 const Dashboard = () => {
   const [properties, setProperties] = useState([]);
-  const [isPropertyModalOpen, setIsPropertyModalOpen] = useState(false);
-
-  const openPropertyModal = () => {
-    setIsPropertyModalOpen(true);
-  };
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchProperties = async () => {
       try {
+        setIsLoading(true);
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/properties/?listing_status=APPROVED`, {
           method: 'GET',
           headers: {
@@ -46,6 +43,8 @@ const Dashboard = () => {
         setProperties(latest);
       } catch (error) {
         console.error("Error fetching properties:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -55,7 +54,7 @@ const Dashboard = () => {
   return (
     <div className="px-2 py-1">
       <div className="hidden md:grid md:grid-cols-2 gap-4">
-        <PropertiesSection properties={properties} onViewAll={openPropertyModal} />
+        <PropertiesSection properties={properties} isLoading={isLoading} />
         <NotificationsSection />
       </div>
 
@@ -63,7 +62,7 @@ const Dashboard = () => {
         <MobileSwiper items={[
           { 
             id: 'properties', 
-            content: <PropertiesList properties={properties} onViewAll={openPropertyModal} /> 
+            content: <PropertiesList properties={properties} isLoading={isLoading} /> 
           },
           { 
             id: 'notifications', 
@@ -71,12 +70,6 @@ const Dashboard = () => {
           }
         ]} />
       </div>
-
-      {/* Property Modal */}
-      <PropertyModal 
-        isOpen={isPropertyModalOpen} 
-        onClose={() => setIsPropertyModalOpen(false)}
-      />
     </div>
   );
 };
@@ -103,13 +96,15 @@ const MobileSwiper = ({ items }) => {
   );
 };
 
-const PropertiesSection = ({ properties, onViewAll }) => (
+const PropertiesSection = ({ properties, isLoading }) => (
   <div className="bg-white shadow-md rounded-lg p-4 text-gray-600">
-    <Header title="Recent Added Properties" onViewAll={onViewAll} />
+    <Header title="Recent Added Properties" />
     <div className="space-y-3 mt-7">
-      {properties.map((property) => (
-        <PropertyCard key={property.id} {...property} />
-      ))}
+      {isLoading
+        ? [...Array(3)].map((_, idx) => <PropertyCardSkeleton key={idx} />)
+        : properties.map((property) => (
+            <PropertyCard key={property.id} {...property} />
+          ))}
     </div>
   </div>
 );
@@ -122,9 +117,15 @@ const NotificationsSection = () => {
       <h2 className="text-lg font-semibold mb-4">Notifications</h2>
       <div className="space-y-3 mt-7 max-h-[400px] overflow-y-auto">
         {loading ? (
-          <div className="flex justify-center items-center h-40">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-          </div>
+          [...Array(3)].map((_, idx) => (
+            <div key={idx} className="flex items-start gap-2 border-b pb-3 last:border-b-0 w-full animate-pulse">
+              <div className="w-10 h-10 rounded-full bg-gray-200 flex-shrink-0"></div>
+              <div className="flex-1 min-w-0 space-y-2">
+                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                <div className="h-3 bg-gray-100 rounded w-1/2"></div>
+              </div>
+            </div>
+          ))
         ) : error ? (
           <div className="text-red-500 text-center py-4">
             Error loading notifications: {error}
@@ -146,23 +147,6 @@ const NotificationsSection = () => {
     </div>
   );
 };
-
-const PropertiesList = ({ properties, onViewAll }) => (
-  <div className="bg-white shadow-md rounded-lg p-4 w-full">
-    <h2 className="text-lg font-semibold mb-4 text-gray-600">Recent Added Properties</h2>
-    <div className="space-y-3">
-      {properties.map((property) => (
-        <PropertyCard key={property.id} {...property} />
-      ))}
-    </div>
-    <button 
-      onClick={onViewAll}
-      className="mt-4 text-center block w-full text-blue-600 hover:underline"
-    >
-      View All
-    </button>
-  </div>
-);
 
 const NotificationsList = () => {
   const { notifications = [], loading = true, error = null, markAsRead } = useNotifications() || {};
@@ -172,9 +156,15 @@ const NotificationsList = () => {
       <h2 className="text-lg font-semibold mb-4 text-gray-600">Notifications</h2>
       <div className="space-y-3 max-h-[400px] overflow-y-auto">
         {loading ? (
-          <div className="flex justify-center items-center h-40">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-          </div>
+          [...Array(3)].map((_, idx) => (
+            <div key={idx} className="flex items-start gap-2 border-b pb-3 last:border-b-0 w-full animate-pulse">
+              <div className="w-10 h-10 rounded-full bg-gray-200 flex-shrink-0"></div>
+              <div className="flex-1 min-w-0 space-y-2">
+                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                <div className="h-3 bg-gray-100 rounded w-1/2"></div>
+              </div>
+            </div>
+          ))
         ) : error ? (
           <div className="text-red-500 text-center py-4">
             Error loading notifications: {error}
@@ -196,6 +186,25 @@ const NotificationsList = () => {
     </div>
   );
 };
+
+const PropertiesList = ({ properties, isLoading }) => (
+  <div className="bg-white shadow-md rounded-lg p-4 w-full">
+    <h2 className="text-lg font-semibold mb-4 text-gray-600">Recent Added Properties</h2>
+    <div className="space-y-3">
+      {isLoading
+        ? [...Array(3)].map((_, idx) => <PropertyCardSkeleton key={idx} />)
+        : properties.map((property) => (
+            <PropertyCard key={property.id} {...property} />
+          ))}
+    </div>
+    <a 
+      href="/dashboard/all-listed-properties"
+      className="mt-4 text-center block w-full text-blue-600 hover:underline"
+    >
+      View All
+    </a>
+  </div>
+);
 
 // Updated PropertyCard with Next.js Link component instead of useRouter
 const PropertyCard = ({ id, image, name, address, status, price }) => (
@@ -237,15 +246,15 @@ const NotificationCard = ({ notification, onMarkAsRead }) => (
   </div>
 );
 
-const Header = ({ title, onViewAll }) => (
+const Header = ({ title }) => (
   <div className="flex justify-between items-center mb-4">
     <h2 className="text-lg font-semibold">{title}</h2>
-    <button 
-      onClick={onViewAll}
+    <a 
+      href="/dashboard/all-listed-properties"
       className="text-sm bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white rounded-lg px-5 py-2 transition-all duration-300 hover:from-[#3ab7b1] hover:to-[#014d98]"
     >
       View All
-    </button>
+    </a>
   </div>
 );
 
