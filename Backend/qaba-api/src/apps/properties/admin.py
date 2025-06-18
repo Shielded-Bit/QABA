@@ -507,7 +507,7 @@ class PropertyReviewAdmin(admin.ModelAdmin):
     )
     list_filter = ("status", "rating", "created_at", "reviewer__user_type")
     search_fields = (
-        "property__property_name",
+        "reviewed_property__property_name",  # UPDATED
         "reviewer__email",
         "reviewer__first_name",
         "reviewer__last_name",
@@ -518,7 +518,10 @@ class PropertyReviewAdmin(admin.ModelAdmin):
     list_per_page = 25
 
     fieldsets = (
-        (None, {"fields": ("property", "reviewer", "rating", "comment")}),
+        (
+            None,
+            {"fields": ("reviewed_property", "reviewer", "rating", "comment")},
+        ),  # UPDATED
         ("Status", {"fields": ("status", "approved_by")}),
         (
             "Timestamps",
@@ -527,7 +530,7 @@ class PropertyReviewAdmin(admin.ModelAdmin):
     )
 
     def property_name(self, obj):
-        return obj.property.property_name
+        return obj.reviewed_property.property_name  # UPDATED
 
     property_name.short_description = "Property"
 
@@ -576,7 +579,7 @@ class PropertyReviewAdmin(admin.ModelAdmin):
                 Notification.objects.create(
                     user=review.reviewer,
                     title="Review Approved",
-                    message=f"Your review for '{review.property.property_name}' has been approved and is now visible.",
+                    message=f"Your review for '{review.reviewed_property.property_name}' has been approved and is now visible.",  # UPDATED
                     notification_type="review_approved",
                 )
 
@@ -595,7 +598,7 @@ class PropertyReviewAdmin(admin.ModelAdmin):
                 Notification.objects.create(
                     user=review.reviewer,
                     title="Review Rejected",
-                    message=f"Your review for '{review.property.property_name}' has been rejected and will not be displayed.",
+                    message=f"Your review for '{review.reviewed_property.property_name}' has been rejected and will not be displayed.",  # UPDATED
                     notification_type="review_rejected",
                 )
 
@@ -616,7 +619,11 @@ class PropertyReviewAdmin(admin.ModelAdmin):
         )
 
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related("property", "reviewer")
+        return (
+            super()
+            .get_queryset(request)
+            .select_related("reviewed_property", "reviewer")
+        )  # UPDATED
 
     # Bulk actions
     actions = ["approve_reviews", "reject_reviews"]
@@ -637,7 +644,7 @@ class PropertyReviewAdmin(admin.ModelAdmin):
             Notification.objects.create(
                 user=review.reviewer,
                 title="Review Approved",
-                message=f"Your review for '{review.property.property_name}' has been approved and is now visible.",
+                message=f"Your review for '{review.reviewed_property.property_name}' has been approved and is now visible.",  # UPDATED
                 notification_type="review_approved",
             )
             updated += 1
@@ -656,7 +663,7 @@ class PropertyReviewAdmin(admin.ModelAdmin):
             Notification.objects.create(
                 user=review.reviewer,
                 title="Review Rejected",
-                message=f"Your review for '{review.property.property_name}' has been rejected and will not be displayed.",
+                message=f"Your review for '{review.reviewed_property.property_name}' has been rejected and will not be displayed.",  # UPDATED
                 notification_type="review_rejected",
             )
             updated += 1
