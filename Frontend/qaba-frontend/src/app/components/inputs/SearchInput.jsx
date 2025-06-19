@@ -22,7 +22,7 @@ const SearchInput = ({ onSearch, placeholder = "e.g Abakiliki" }) => {
           }`}
           onClick={() => handleTabClick("buy")}
         >
-          To Buy
+          Buy
         </button>
         <button
           className={`px-4 sm:px-6 py-2 text-sm sm:text-lg font-medium ${
@@ -32,7 +32,7 @@ const SearchInput = ({ onSearch, placeholder = "e.g Abakiliki" }) => {
           }`}
           onClick={() => handleTabClick("rent")}
         >
-          To Rent
+          Rent
         </button>
       </div>
 

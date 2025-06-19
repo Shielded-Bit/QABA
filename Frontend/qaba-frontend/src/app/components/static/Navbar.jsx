@@ -130,6 +130,7 @@ const Navbar = () => {
             { name: "Buy", path: "/buy" },
             { name: "Rent", path: "/rent" },
             { name: "Add Listing", path: "/add-listing" },
+            { name: "Manage", path: "/manage" },
             { name: "About Us", path: "/about-us" },
             { name: "Blog", path: "/blog" },
             { name: "Contact Us", path: "/contact" },
@@ -235,6 +236,7 @@ const Navbar = () => {
       { name: "Buy", path: "/buy", icon: Search },
       { name: "Rent", path: "/rent", icon: Home },
       { name: "Add Listing", path: "/add-listing", icon: PlusCircle },
+      { name: "Manage", path: "/manage",icon: PlusCircle  },
       { name: "About Us", path: "/about-us", icon: InfoIcon }, // Fixed icon name
       { name: "Blog", path: "/blog", icon: Newspaper },
       { name: "Contact Us", path: "/contact", icon: Settings }, // Fixed icon name
