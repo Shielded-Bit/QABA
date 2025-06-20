@@ -33,7 +33,7 @@ export default function ChoosePropertyType() {
           <h1 className="text-5xl md:text-6xl font-extrabold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-[#014d98] to-[#3ab7b1] tracking-tight leading-tight">
             Welcome
             <span className="block text-4xl md:text-5xl mt-2 bg-gradient-to-r from-[#3ab7b1] to-[#014d98] bg-clip-text text-transparent">
-              Agent!
+            
             </span>
           </h1>
           <p className="text-lg md:text-xl text-gray-700 font-normal max-w-2xl mx-auto leading-relaxed">
@@ -68,7 +68,7 @@ export default function ChoosePropertyType() {
                 className="w-full py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white hover:from-[#013366] hover:to-[#1e8e8e] transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-[#3ab7b1]/30"
                 onClick={() => router.push("/agent-dashboard/for-rent")}
               >
-                Create Rental Listing
+                List Property For Rent
                 <span className="ml-2 group-hover:translate-x-1 inline-block transition-transform duration-300">→</span>
               </button>
               <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-[#3ab7b1]/30 to-transparent rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -99,7 +99,7 @@ export default function ChoosePropertyType() {
                 className="w-full py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-[#3ab7b1] to-[#014d98] text-white hover:from-[#1e8e8e] hover:to-[#013366] transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-[#014d98]/30"
                 onClick={() => router.push("/agent-dashboard/for-sell")}
               >
-                Create Sale Listing
+                List Property For Sale
                 <span className="ml-2 group-hover:translate-x-1 inline-block transition-transform duration-300">→</span>
               </button>
               <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-[#014d98]/30 to-transparent rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
