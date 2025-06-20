@@ -353,9 +353,11 @@ const SignIn = () => {
                 type="button"
                 className="mt-10 flex w-full items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-600 shadow-sm hover:bg-gray-200 transition-all duration-300"
               >
-                <img
+                <Image
                   src={bgpict[1].src}
                   alt={bgpict[1].alt}
+                  width={20}
+                  height={20}
                   className="w-5 h-5 mr-2"
                 />
                 Sign in with Google
@@ -468,9 +470,11 @@ const SignIn = () => {
                 type="button"
                 className="mt-8 flex w-full items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-600 shadow-sm hover:bg-gray-200 transition-all duration-300"
               >
-                <img
+                <Image
                   src={bgpict[1].src}
                   alt={bgpict[1].alt}
+                  width={20}
+                  height={20}
                   className="w-5 h-5 mr-2"
                 />
                 Sign in with Google

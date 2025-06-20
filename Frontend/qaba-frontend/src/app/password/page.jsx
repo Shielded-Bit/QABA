@@ -51,7 +51,7 @@ const SignIn = () => {
               Forget <br className="md:block" /> your password
             </h2>
             <p className="mt-2 text-sm font-bold text-gray-900 py-3">
-              Please enter your registered email address. A confirmation OTP 
+              Please enter your registered email address. A confirmation OTP
               <br className="md:block" />
               passcode will be sent to you. Thank you.
             </p>
@@ -68,7 +68,7 @@ const SignIn = () => {
                   required
                 />
               </div>
-            
+
               <button
                 type="submit"
                 className="mt-10 w-full rounded-md bg-gradient-to-r from-[#014d98] to-[#3ab7b1] px-4 py-2 text-white transition-all duration-300 hover:from-[#3ab7b1] hover:to-[#014d98]"
@@ -78,11 +78,14 @@ const SignIn = () => {
             </form>
             <div className="mt-5 text-left">
               <a href="signin" className="text-sm text-gradient flex">
-                <img
+                <Image
                   src={bgpict[1].src}
                   alt={bgpict[1].alt}
+                  width={20}
+                  height={20}
                   className="w-5 h-5 mr-2 text-gradient"
-                /> Back to Login
+                />{' '}
+                Back to Login
               </a>
             </div>
           </div>
@@ -133,11 +136,14 @@ const SignIn = () => {
 
             <div className="mt-5 text-left">
               <a href="signin" className="text-sm text-gradient flex">
-                <img
+                <Image
                   src={bgpict[1].src}
                   alt={bgpict[1].alt}
+                  width={20}
+                  height={20}
                   className="w-5 h-5 mr-2 text-gradient"
-                /> Back to Login
+                />{' '}
+                Back to Login
               </a>
             </div>
           </div>

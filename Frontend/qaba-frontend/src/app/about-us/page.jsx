@@ -20,21 +20,21 @@ const AboutPage = () => {
       quote: "Thanks to this platform, I found my dream home in no time! The search feature made it incredibly easy to navigate through listings.",
       name: "Emeka Anara",
       title: "Homebuyer in Abuja",
-      image: "https://res.cloudinary.com/dqbbm0guw/image/upload/v1750167907/testimonial1.jpg"
+      image: "https://res.cloudinary.com/dqbbm0guw/image/upload/v1749026641/Franc_syeixd.jpg"
     },
     {
       id: 2,
       quote: "The best real estate platform I've used. Professional service and excellent customer support throughout my property search.",
       name: "Sarah Johnson",
       title: "Property Investor",
-      image: "https://res.cloudinary.com/dqbbm0guw/image/upload/v1750167907/testimonial2.jpg"
+      image: "https://res.cloudinary.com/dqbbm0guw/image/upload/v1749026641/Franc_syeixd.jpg"
     },
     {
       id: 3,
       quote: "QARBA made selling my property effortless. The listing process was smooth and I got genuine buyers quickly.",
       name: "Michael Okafor",
       title: "Property Seller in Lagos",
-      image: "https://res.cloudinary.com/dqbbm0guw/image/upload/v1750167907/testimonial3.jpg"
+      image: "https://res.cloudinary.com/dqbbm0guw/image/upload/v1749026641/Franc_syeixd.jpg"
     }
   ];
 

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 // Loading Skeleton Components
 const PropertyCardSkeleton = () => (
@@ -70,9 +71,11 @@ const PropertyCard = ({ house }) => {
             onClick={handleCardClick}
         >
             <div className="relative w-full h-40 sm:h-48 rounded-xl overflow-hidden bg-gray-100">
-                <img 
+                <Image 
                     src={house.image || "/api/placeholder/400/320"} 
                     alt={house.name}
+                    fill
+                    style={{objectFit: "cover"}}
                     className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                 />
                 <span
