@@ -5,9 +5,12 @@ import { useRouter } from "next/navigation";
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const [isAuthorized, setAuthorized] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
+    // Only run on client
+    if (typeof window === "undefined") return;
     const token = localStorage.getItem("access_token");
     const userType = localStorage.getItem("user_type");
 
@@ -16,8 +19,10 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     } else {
       setAuthorized(true);
     }
-  }, [allowedRoles, router]); // ✅ Added dependencies
+    setIsLoading(false);
+  }, [allowedRoles, router]);
 
+  if (isLoading) return null;
   if (!isAuthorized) return null;
   return children;
 };

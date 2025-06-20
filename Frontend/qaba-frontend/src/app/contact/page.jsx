@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { FaPhone, FaEnvelope, FaMapMarkerAlt, FaClock, FaWhatsapp } from 'react-icons/fa';
+import Image from "next/image";
 
 const ContactPage = () => {
   const [formData, setFormData] = useState({
@@ -96,10 +97,11 @@ const ContactPage = () => {
         {/* Background Image with Gradient - matching About page */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-[#014d98]/80 to-[#3ab7b1]/80 z-10"></div>
-          <img
+          <Image
             src="https://res.cloudinary.com/dqbbm0guw/image/upload/v1737723125/Rectangle_133_2_sblujb.png"
             alt="Modern office building - Contact us"
-            className="absolute inset-0 w-full h-full object-cover z-0"
+            fill
+            style={{objectFit: "cover"}}
           />
         </div>
         

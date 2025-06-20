@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import axios from "axios";
+import Image from "next/image";
 
 const EditProperty = () => {
   const params = useParams();
@@ -512,9 +513,11 @@ const EditProperty = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
             {existingImages.map((imageUrl, index) => (
               <div key={index} className="relative border rounded-md overflow-hidden h-48">
-                <img 
+                <Image 
                   src={imageUrl} 
-                  alt={`Property image ${index+1}`} 
+                  alt={`Property image ${index+1}`}
+                  fill
+                  style={{objectFit: "cover"}}
                   className="w-full h-full object-cover"
                 />
                 <button

@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import { User, Smile, Send } from 'lucide-react';
+import Image from 'next/image';
 
 const people = [
   { id: 1, name: 'John Doe', lastMessage: 'Hey, how are you?', avatar: 'https://i.pravatar.cc/150', unreadCount: 2 },
@@ -76,7 +77,7 @@ export default function ChatPage() {
                   }`}
                 >
                   <div className="flex items-center space-x-3">
-                    <img src={person.avatar} alt={person.name} className="w-8 h-8 rounded-full" />
+                    <Image src={person.avatar} alt={person.name} width={32} height={32} className="w-8 h-8 rounded-full" />
                     <div className="text-left">
                       <p className={`text-sm ${selectedPerson === person.id ? 'font-semibold text-gradient' : 'font-medium'}`}>
                         {person.name}
@@ -121,7 +122,7 @@ export default function ChatPage() {
                   }`}
                 >
                   {message.sender !== 'You' && (
-                    <img src={message.avatar} alt={message.sender} className="w-8 h-8 rounded-full" />
+                    <Image src={message.avatar} alt={message.sender} width={32} height={32} className="w-8 h-8 rounded-full" />
                   )}
                   <div
                     className={`p-3 rounded-lg max-w-xs ${
@@ -131,7 +132,7 @@ export default function ChatPage() {
                     <p>{message.text}</p>
                   </div>
                   {message.sender === 'You' && (
-                    <img src={message.avatar} alt={message.sender} className="w-8 h-8 rounded-full" />
+                    <Image src={message.avatar} alt={message.sender} width={32} height={32} className="w-8 h-8 rounded-full" />
                   )}
                 </div>
               ))}
