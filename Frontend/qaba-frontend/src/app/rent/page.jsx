@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import ListingCard from '../components/listingCard/ListingCard';
 import Button from '../components/shared/Button';
 import { IoMdArrowDropdown } from "react-icons/io";
 import { PropertyCardSkeleton } from '../agent-dashboard/favourites/components/LoadingSkeletons';
+import { useSearchParams } from 'next/navigation';
+import { propertyLocationIndex } from "../utils/propertyLocationIndex";
 
-export default function Rent() {
+function RentContent() {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -19,6 +21,9 @@ export default function Rent() {
     type: 'rent',
     purpose: '',
   });
+
+  const searchParams = useSearchParams();
+  const searchQuery = searchParams.get('q')?.toLowerCase() || '';
 
   // Function to extract and format price from property data
   const extractPrice = (property) => {
@@ -40,7 +45,7 @@ export default function Rent() {
     const fetchProperties = async () => {
       try {
         setLoading(true);
-        const response = await fetch('https://qaba.onrender.com/api/v1/properties/?listing_status=APPROVED&listing_type=RENT', {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/properties/?listing_status=APPROVED&listing_type=RENT`, {
           headers: {
             'accept': 'application/json',
           }
@@ -115,11 +120,51 @@ export default function Rent() {
     </div>
   );
 
-  // Get filtered properties
-  const filteredProperties = properties.filter((property) =>
-    (filters.location ? property.location === filters.location : true) &&
-    (filters.city ? property.city === filters.city : true)
-  );
+  // Get filtered properties based on search query and filters
+  const filteredProperties = properties.filter((property) => {
+    const matchesLocation = filters.location ? property.location === filters.location : true;
+    const matchesCity = filters.city ? property.city === filters.city : true;
+    const matchesSearch = searchQuery
+      ? property.title.toLowerCase().includes(searchQuery) ||
+        property.location.toLowerCase().includes(searchQuery) ||
+        property.city.toLowerCase().includes(searchQuery)
+      : true;
+    return matchesLocation && matchesCity && matchesSearch;
+  });
+
+  // Find similar properties if no exact match
+  let similarProperties = [];
+  if (searchQuery && filteredProperties.length === 0) {
+    // Try to match by state/city/LGA using the index
+    let foundState = null;
+    Object.keys(propertyLocationIndex).forEach((state) => {
+      if (searchQuery.includes(state)) foundState = state;
+    });
+    if (foundState) {
+      // Find properties in the state or its LGAs
+      similarProperties = properties.filter((property) => {
+        const city = property.city?.toLowerCase() || "";
+        const location = property.location?.toLowerCase() || "";
+        return (
+          city.includes(foundState) ||
+          location.includes(foundState) ||
+          propertyLocationIndex[foundState].some((lga) =>
+            city.includes(lga.toLowerCase()) || location.includes(lga.toLowerCase())
+          )
+        );
+      });
+    }
+    // If still none, fallback to partial match
+    if (similarProperties.length === 0) {
+      similarProperties = properties.filter((property) => {
+        return (
+          property.title.toLowerCase().includes(searchQuery.slice(0, 3)) ||
+          property.location.toLowerCase().includes(searchQuery.slice(0, 3)) ||
+          property.city.toLowerCase().includes(searchQuery.slice(0, 3))
+        );
+      });
+    }
+  }
 
   return (
     <div className="px-2 sm:px-14 py-4">
@@ -201,6 +246,33 @@ export default function Rent() {
                 />
               ))}
             </div>
+          ) : searchQuery ? (
+            <div className="text-center py-8">
+              <p className="text-xl text-gray-600 mb-4">No properties found for &quot;{searchQuery}&quot;.</p>
+              {similarProperties.length > 0 ? (
+                <>
+                  <p className="text-lg text-gray-500 mb-4">Showing similar properties:</p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {similarProperties.slice(0, visibleListings).map((property) => (
+                      <ListingCard
+                        key={property.id}
+                        id={property.id}
+                        title={property.title}
+                        price={property.price}
+                        description={property.description}
+                        image={property.image}
+                        type={property.type}
+                      />
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-col items-center">
+                  <p className="text-gray-500 mb-2">No similar properties found.</p>
+                  <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-500 rounded-full animate-spin mt-4"></div>
+                </div>
+              )}
+            </div>
           ) : (
             <div className="text-center py-8">
               <p className="text-xl text-gray-600">No properties found matching your criteria.</p>
@@ -257,5 +329,13 @@ export default function Rent() {
         </>
       )}
     </div>
+  );
+}
+
+export default function Rent() {
+  return (
+    <Suspense fallback={<div className="w-full flex justify-center py-10"><PropertyCardSkeleton /></div>}>
+      <RentContent />
+    </Suspense>
   );
 }

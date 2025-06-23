@@ -16,7 +16,7 @@ export default function DashboardPage() {
 
         {/* Main Content */}
         <div className='mt-6 px-4'>
-          <PropertiesNumber />
+          {/* <PropertiesNumber /> */}
           <div className='mt-8'>
             <Cards />
           </div>

@@ -30,7 +30,7 @@ export default function ChoosePropertyType() {
               Real Estate Agent Portal
             </span>
           </div>
-          <h1 className="text-5xl md:text-6xl font-extrabold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-[#014d98] to-[#3ab7b1] tracking-tight leading-tight">
+          <h1 className="text-3xl md:text-4xl font-extrabold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-[#014d98] to-[#3ab7b1] tracking-tight leading-tight">
             Welcome
             <span className="block text-4xl md:text-5xl mt-2 bg-gradient-to-r from-[#3ab7b1] to-[#014d98] bg-clip-text text-transparent">
             
@@ -58,7 +58,7 @@ export default function ChoosePropertyType() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2V7zm0 0V5a2 2 0 012-2h6l2 2h6a2 2 0 012 2v2M7 13h10v-2H7v2z" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold text-[#014d98] mb-3 group-hover:text-[#3ab7b1] transition-colors duration-300">
+              <h3 className="text-1xl font-bold text-[#014d98] mb-3 group-hover:text-[#3ab7b1] transition-colors duration-300">
                 Property For Rent
               </h3>
               <p className="text-gray-600 mb-6 leading-relaxed">
@@ -89,7 +89,7 @@ export default function ChoosePropertyType() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold text-[#3ab7b1] mb-3 group-hover:text-[#014d98] transition-colors duration-300">
+              <h3 className="text-1xl font-bold text-[#3ab7b1] mb-3 group-hover:text-[#014d98] transition-colors duration-300">
                 Property For Sale
               </h3>
               <p className="text-gray-600 mb-6 leading-relaxed">

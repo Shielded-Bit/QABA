@@ -162,7 +162,7 @@ export default function BlogDetailPage({ params }) {
 								{post.readTime}
 							</span>
 						</div>
-						<h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-4">
+						<h1 className="text-2xl md:text-3xl lg:text-4xl font-bold leading-tight mb-4">
 							{post.title}
 						</h1>
 						<div className="flex items-center gap-4 text-lg">
