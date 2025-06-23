@@ -2,12 +2,25 @@
 import { CiSearch } from "react-icons/ci";
 import { useState } from "react";
 import Button from "../shared/Button"; // Assuming the Button component exists in the same directory
+import { useRouter } from "next/navigation";
 
 const SearchInput = ({ onSearch, placeholder = "e.g Abakiliki" }) => {
   const [activeTab, setActiveTab] = useState("buy");
+  const [searchTerm, setSearchTerm] = useState("");
+  const router = useRouter();
 
   const handleTabClick = (tab) => {
     setActiveTab(tab);
+  };
+
+  const handleInputChange = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const handleSearch = () => {
+    if (!searchTerm.trim()) return;
+    // Route to /buy or /rent with query param
+    router.push(`/${activeTab}?q=${encodeURIComponent(searchTerm.trim())}`);
   };
 
   return (
@@ -54,7 +67,9 @@ const SearchInput = ({ onSearch, placeholder = "e.g Abakiliki" }) => {
             id="search"
             type="text"
             placeholder={placeholder}
-            className="flex-grow bg-transparent outline-none text-gray-900 px-2 py-2 w-full text-sm sm:text-base placeholder:text-gray-600" // Darker placeholder color
+            value={searchTerm}
+            onChange={handleInputChange}
+            className="flex-grow bg-transparent outline-none text-gray-900 px-2 py-2 w-full text-sm sm:text-base placeholder:text-gray-600"
           />
           <Button
             label={
@@ -62,7 +77,7 @@ const SearchInput = ({ onSearch, placeholder = "e.g Abakiliki" }) => {
                 Search <CiSearch />
               </span>
             }
-            onClick={onSearch}
+            onClick={handleSearch}
             className="mt-2 sm:mt-0 sm:ml-4 bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-black font-semibold px-4 sm:px-6 py-2 rounded-md hover:opacity-90"
           />
         </div>

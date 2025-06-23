@@ -47,6 +47,12 @@ const GoogleMap = ({ address, apiKey }) => {
     document.head.appendChild(script);
   };
 
+  // Memoize loadGoogleMapsScript to avoid missing dependency warning
+  const loadScript = useRef(loadGoogleMapsScript);
+  useEffect(() => {
+    loadScript.current = loadGoogleMapsScript;
+  }, [loadGoogleMapsScript]);
+
   // Initial validation check
   useEffect(() => {
     if (!address) {
@@ -61,14 +67,11 @@ const GoogleMap = ({ address, apiKey }) => {
       return;
     }
     
-    loadGoogleMapsScript();
+    loadScript.current();
     
     // Cleanup
     return () => {
-      if (mapInstance) {
-        // Clean up map instance if needed
-        setMapInstance(null);
-      }
+      setMapInstance(null);
     };
   }, [address, apiKey]);
 

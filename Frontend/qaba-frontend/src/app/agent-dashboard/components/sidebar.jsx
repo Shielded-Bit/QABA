@@ -67,7 +67,7 @@ export default function Sidebar() {
       <div className="px-6 sm:px-6 py-3 sm:py-7 flex items-center justify-between border-b">
         <div className={`text-xl font-bold ${isSidebarCollapsed ? "hidden" : "block"}`}>
           <Link href="/" className="text-gradient hover:opacity-80 transition-opacity">
-            QABA
+            QARBA
           </Link>
         </div>
         {isMobile && (

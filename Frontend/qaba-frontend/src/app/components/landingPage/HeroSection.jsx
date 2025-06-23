@@ -13,7 +13,7 @@ export default function Page() {
       >
         {/* Main Heading */}
         <h1 className="text-[1.9rem] md:text-[3.0rem] font-semibold text-transparent bg-clip-text bg-gradient-to-r from-[#014d98] to-[#3ab7b1] mt-2 md:mt-4 text-left md:text-center">
-          Discover the best <span className="text-[#3ab7b1]">Properties</span>
+          Discover the best <span className="text-[#3ab7b1]">Properties in Nigeria</span>
         </h1>
 
         {/* Sub Heading */}

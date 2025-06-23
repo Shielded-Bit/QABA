@@ -164,7 +164,7 @@ const BlogPage = () => {
               Blog
             </span>
           </div>
-          <h1 className="text-5xl lg:text-6xl font-bold bg-gradient-to-r from-[#014d98] to-[#3ab7b1] bg-clip-text text-transparent mb-6 leading-tight">
+          <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-[#014d98] to-[#3ab7b1] bg-clip-text text-transparent mb-6 leading-tight">
             Discover Real Estate Insights
           </h1>
           <p className="text-gray-600 text-xl max-w-3xl mx-auto leading-relaxed">
