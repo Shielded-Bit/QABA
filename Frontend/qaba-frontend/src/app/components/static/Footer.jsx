@@ -21,11 +21,11 @@ const Footer = () => {
           <div>
             <h3 className="font-bold mb-3">Company</h3>
             <ul className="space-y-3">
-              <li><a href="/about-us" className="hover:text-[#014d98]">About Us</a></li>
-              <li><a href="/buy" className="hover:text-[#014d98]">Buy Properties</a></li>
-              <li><a href="/rent" className="hover:text-[#014d98]">Rent Properties</a></li>
-              <li><a href="/blog" className="hover:text-[#014d98]">Blog</a></li>
-              <li><a href="/contact" className="hover:text-[#014d98]">Contact Us</a></li>
+              <li><Link href="/about-us" className="hover:text-[#014d98]">About Us</Link></li>
+              <li><Link href="/buy" className="hover:text-[#014d98]">Buy Properties</Link></li>
+              <li><Link href="/rent" className="hover:text-[#014d98]">Rent Properties</Link></li>
+              <li><Link href="/blog" className="hover:text-[#014d98]">Blog</Link></li>
+              <li><Link href="/contact" className="hover:text-[#014d98]">Contact Us</Link></li>
             </ul>
           </div>
           <div>
@@ -34,19 +34,35 @@ const Footer = () => {
               <li>
                 <Link href="/" className="hover:text-[#014d98]">Home</Link>
               </li>
-              <li><a href="/add-listing" className="hover:text-[#014d98]">Add Listing</a></li>
-              <li><a href="/create-account" className="hover:text-[#014d98]">Become an Agent</a></li>
-              <li><a href="/signin" className="hover:text-[#014d98]">Login</a></li>
-              <li><a href="/create-account" className="hover:text-[#014d98]">Sign Up</a></li>
+              <li>
+                <Link href="/add-listing" className="hover:text-[#014d98]">Add Listing</Link>
+              </li>
+              <li>
+                <Link href="/create-account" className="hover:text-[#014d98]">Become an Agent</Link>
+              </li>
+              <li>
+                <Link href="/signin" className="hover:text-[#014d98]">Login</Link>
+              </li>
+              <li>
+                <Link href="/create-account" className="hover:text-[#014d98]">Sign Up</Link>
+              </li>
             </ul>
           </div>
           <div>
             <h3 className="font-bold mb-3">Resources</h3>
             <ul className="space-y-3">
-              <li><a href="/dashboard/help-support" className="hover:text-[#014d98]">Support</a></li>
-              <li><a href="/dashboard/help-support" className="hover:text-[#014d98]">FAQs</a></li>
-              <li><a href="/privacy-policy" className="hover:text-[#014d98]">Privacy Policy</a></li>
-              <li><a href="/terms-conditions" className="hover:text-[#014d98]">Terms & Conditions</a></li>
+              <li>
+                <Link href="/dashboard/help-support" className="hover:text-[#014d98]">Support</Link>
+              </li>
+              <li>
+                <Link href="/dashboard/help-support" className="hover:text-[#014d98]">FAQs</Link>
+              </li>
+              <li>
+                <Link href="/privacy-policy" className="hover:text-[#014d98]">Privacy Policy</Link>
+              </li>
+              <li>
+                <Link href="/terms-conditions" className="hover:text-[#014d98]">Terms & Conditions</Link>
+              </li>
             </ul>
           </div>
           {/* <div>

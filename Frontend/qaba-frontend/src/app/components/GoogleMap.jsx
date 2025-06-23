@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef, useState, useLayoutEffect } from 'react';
+import { useEffect, useRef, useState, useLayoutEffect, useCallback } from 'react';
 
 const GoogleMap = ({ address, apiKey }) => {
   const mapRef = useRef(null);
@@ -9,7 +9,7 @@ const GoogleMap = ({ address, apiKey }) => {
   const [scriptLoaded, setScriptLoaded] = useState(false);
   
   // Function to load Google Maps script
-  const loadGoogleMapsScript = () => {
+  const loadGoogleMapsScript = useCallback(() => {
     if (window.google && window.google.maps) {
       setScriptLoaded(true);
       return;
@@ -45,7 +45,7 @@ const GoogleMap = ({ address, apiKey }) => {
     };
     
     document.head.appendChild(script);
-  };
+  }, [apiKey]);
 
   // Memoize loadGoogleMapsScript to avoid missing dependency warning
   const loadScript = useRef(loadGoogleMapsScript);
