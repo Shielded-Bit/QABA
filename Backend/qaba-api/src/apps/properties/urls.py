@@ -2,6 +2,7 @@ from django.urls import include, path, register_converter
 from rest_framework_nested import routers
 
 from .views import (
+    AgentPropertyAnalyticsView,
     AmenityView,
     CreatePropertyReviewView,
     FavoriteListView,
@@ -58,5 +59,10 @@ urlpatterns = [
         "reviews/property/<int:property_id>/",
         ListPropertyReviewsView.as_view(),
         name="property-reviews",
+    ),
+    path(
+        "analytics/agent/",
+        AgentPropertyAnalyticsView.as_view(),
+        name="agent-property-analytics",
     ),
 ]

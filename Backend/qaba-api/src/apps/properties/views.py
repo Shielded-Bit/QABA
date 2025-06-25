@@ -1,5 +1,8 @@
+from datetime import datetime
+
 from core.utils.permissions import IsAgentOrAdmin, IsOwnerOrReadOnly
 from core.utils.response import APIResponse
+from django.db.models import Sum
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema
@@ -10,6 +13,7 @@ from rest_framework.views import APIView
 from .models import Amenity, Favorite, Property, PropertyDocument, PropertyReview
 from .permissions import IsClientOrAgent
 from .serializers import (
+    AgentPropertyAnalyticsSerializer,
     AmenitySerializer,
     FavoriteSerializer,
     PropertyCreateSerializer,
@@ -490,3 +494,223 @@ class ListPropertyReviewsView(generics.ListAPIView):
             },
             message="Reviews retrieved successfully",
         )
+
+
+@extend_schema(tags=["Property Analytics"])
+class AgentPropertyAnalyticsView(APIView):
+    """
+    View for agent users to retrieve analytics about their properties
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="period_type",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                description="Period type: 'monthly' or 'yearly'",
+                required=False,
+                default="monthly",
+            ),
+            OpenApiParameter(
+                name="year",
+                type=int,
+                location=OpenApiParameter.QUERY,
+                description="Filter by year (e.g., 2023)",
+                required=False,
+            ),
+        ],
+        responses=AgentPropertyAnalyticsSerializer(many=True),
+    )
+    def get(self, request):
+        """Get property analytics for the authenticated agent user"""
+        # Check if user is an agent
+        if request.user.user_type != "AGENT":
+            return APIResponse.forbidden("Only agent users can access this endpoint")
+
+        # Get query parameters
+        period_type = request.query_params.get("period_type", "monthly")
+        year = request.query_params.get("year", datetime.now().year)
+
+        try:
+            year = int(year)
+        except ValueError:
+            return APIResponse.bad_request("Invalid year format")
+
+        # Get analytics data based on period type
+        if period_type == "yearly":
+            analytics_data = self._get_yearly_analytics(request.user, year)
+        else:
+            analytics_data = self._get_monthly_analytics(request.user, year)
+
+        # Calculate totals for the summary
+        summary = {
+            "period": "Total",
+            "total_properties": sum(
+                item["total_properties"] for item in analytics_data
+            ),
+            "sold_properties": sum(item["sold_properties"] for item in analytics_data),
+            "rented_properties": sum(
+                item["rented_properties"] for item in analytics_data
+            ),
+            "pending_properties": sum(
+                item["pending_properties"] for item in analytics_data
+            ),
+            "published_properties": sum(
+                item["published_properties"] for item in analytics_data
+            ),
+            "total_revenue": sum(item["total_revenue"] for item in analytics_data),
+        }
+
+        # Add summary to the response
+        analytics_data.append(summary)
+
+        serializer = AgentPropertyAnalyticsSerializer(analytics_data, many=True)
+        return APIResponse.success(
+            data=serializer.data, message="Property analytics retrieved successfully"
+        )
+
+    def _get_monthly_analytics(self, user, year):
+        """Get monthly analytics for the specified year"""
+        # Get all properties created by the agent
+        agent_properties = Property.objects.filter(listed_by=user)
+
+        # Filter properties for the specified year
+        start_date = datetime(year, 1, 1)
+        end_date = datetime(year + 1, 1, 1)
+        year_properties = agent_properties.filter(
+            listed_date__gte=start_date, listed_date__lt=end_date
+        )
+
+        # Prepare result data structure
+        months = []
+        for month in range(1, 13):
+            month_start = datetime(year, month, 1)
+            month_name = month_start.strftime("%B")
+
+            # Calculate next month for range filtering
+            if month == 12:
+                month_end = datetime(year + 1, 1, 1)
+            else:
+                month_end = datetime(year, month + 1, 1)
+
+            # Filter properties for this month
+            month_properties = year_properties.filter(
+                listed_date__gte=month_start, listed_date__lt=month_end
+            )
+
+            # Calculate metrics
+            total_properties = month_properties.count()
+            sold_properties = month_properties.filter(
+                property_status=Property.PropertyStatus.SOLD
+            ).count()
+            rented_properties = month_properties.filter(
+                property_status=Property.PropertyStatus.RENTED
+            ).count()
+            pending_properties = month_properties.filter(
+                listing_status=Property.ListingStatus.PENDING
+            ).count()
+            published_properties = month_properties.filter(
+                listing_status=Property.ListingStatus.APPROVED
+            ).count()
+
+            # Calculate revenue
+            # For sold properties, use sale_price; for rented, use rent_price
+            sold_revenue = (
+                month_properties.filter(
+                    property_status=Property.PropertyStatus.SOLD
+                ).aggregate(revenue=Sum("sale_price"))["revenue"]
+                or 0
+            )
+
+            rented_revenue = (
+                month_properties.filter(
+                    property_status=Property.PropertyStatus.RENTED
+                ).aggregate(revenue=Sum("rent_price"))["revenue"]
+                or 0
+            )
+
+            total_revenue = sold_revenue + rented_revenue
+
+            months.append(
+                {
+                    "period": month_name,
+                    "total_properties": total_properties,
+                    "sold_properties": sold_properties,
+                    "rented_properties": rented_properties,
+                    "pending_properties": pending_properties,
+                    "published_properties": published_properties,
+                    "total_revenue": total_revenue,
+                }
+            )
+
+        return months
+
+    def _get_yearly_analytics(self, user, start_year=None, num_years=5):
+        """Get yearly analytics for the last num_years"""
+        # Get all properties created by the agent
+        agent_properties = Property.objects.filter(listed_by=user)
+
+        # Determine the year range
+        current_year = datetime.now().year
+        if start_year is None:
+            start_year = current_year - num_years + 1
+
+        # Prepare result data structure
+        years = []
+        for year in range(start_year, current_year + 1):
+            start_date = datetime(year, 1, 1)
+            end_date = datetime(year + 1, 1, 1)
+
+            # Filter properties for this year
+            year_properties = agent_properties.filter(
+                listed_date__gte=start_date, listed_date__lt=end_date
+            )
+
+            # Calculate metrics
+            total_properties = year_properties.count()
+            sold_properties = year_properties.filter(
+                property_status=Property.PropertyStatus.SOLD
+            ).count()
+            rented_properties = year_properties.filter(
+                property_status=Property.PropertyStatus.RENTED
+            ).count()
+            pending_properties = year_properties.filter(
+                listing_status=Property.ListingStatus.PENDING
+            ).count()
+            published_properties = year_properties.filter(
+                listing_status=Property.ListingStatus.APPROVED
+            ).count()
+
+            # Calculate revenue
+            sold_revenue = (
+                year_properties.filter(
+                    property_status=Property.PropertyStatus.SOLD
+                ).aggregate(revenue=Sum("sale_price"))["revenue"]
+                or 0
+            )
+
+            rented_revenue = (
+                year_properties.filter(
+                    property_status=Property.PropertyStatus.RENTED
+                ).aggregate(revenue=Sum("rent_price"))["revenue"]
+                or 0
+            )
+
+            total_revenue = sold_revenue + rented_revenue
+
+            years.append(
+                {
+                    "period": str(year),
+                    "total_properties": total_properties,
+                    "sold_properties": sold_properties,
+                    "rented_properties": rented_properties,
+                    "pending_properties": pending_properties,
+                    "published_properties": published_properties,
+                    "total_revenue": total_revenue,
+                }
+            )
+
+        return years

@@ -667,3 +667,17 @@ class PropertyDetailSerializer(PropertyListSerializer):
             documents = obj.documents.filter(is_verified=True)
 
         return PropertyDocumentSerializer(documents, many=True).data
+
+
+class AgentPropertyAnalyticsSerializer(serializers.Serializer):
+    """Serializer for agent property analytics"""
+
+    period = serializers.CharField(read_only=True)
+    total_properties = serializers.IntegerField(read_only=True)
+    sold_properties = serializers.IntegerField(read_only=True)
+    rented_properties = serializers.IntegerField(read_only=True)
+    pending_properties = serializers.IntegerField(read_only=True)
+    published_properties = serializers.IntegerField(read_only=True)
+    total_revenue = serializers.DecimalField(
+        max_digits=12, decimal_places=2, read_only=True
+    )
