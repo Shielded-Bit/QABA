@@ -85,6 +85,18 @@ class Property(models.Model):
         default=ListerType.AGENT,
         help_text="Type of lister (landlord or agent)",
     )
+    state = models.CharField(
+        max_length=100,
+        help_text="State where the property is located",
+        null=True,
+        blank=True,
+    )
+    city = models.CharField(
+        max_length=100,
+        help_text="City where the property is located",
+        null=True,
+        blank=True,
+    )
     bedrooms = models.PositiveIntegerField(null=True, blank=True)
     bathrooms = models.PositiveIntegerField(null=True, blank=True)
     area_sqft = models.FloatField(null=True, blank=True)

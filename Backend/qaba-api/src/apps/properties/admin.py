@@ -137,7 +137,7 @@ class PropertyAdmin(admin.ModelAdmin):
         "listing_type",
         "location",
         "price_display",
-        "lister_type",  # Add lister_type
+        "lister_type",
         "bedrooms",
         "bathrooms",
         "property_status",
@@ -151,7 +151,9 @@ class PropertyAdmin(admin.ModelAdmin):
         "listing_type",
         "property_status",
         "listing_status",
-        "lister_type",  # Add lister_type filter
+        "lister_type",
+        "state",
+        "city",
         "listed_date",
         "amenities",
     )
@@ -159,6 +161,8 @@ class PropertyAdmin(admin.ModelAdmin):
         "property_name",
         "description",
         "location",
+        "state",
+        "city",
         "listed_by__email",
         "listed_by__first_name",
         "listed_by__last_name",
@@ -183,6 +187,8 @@ class PropertyAdmin(admin.ModelAdmin):
                     "listing_type",
                     "lister_type",  # Add lister_type
                     "location",
+                    "state",
+                    "city",
                     "area_sqft",
                     "bedrooms",
                     "bathrooms",

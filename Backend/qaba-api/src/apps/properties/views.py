@@ -1,14 +1,9 @@
-from apps.users.models import Notification
 from core.utils.permissions import IsAgentOrAdmin, IsOwnerOrReadOnly
 from core.utils.response import APIResponse
-from django.conf import settings
-from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
-from django.template.loader import render_to_string
-from django.utils.html import strip_tags
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema
-from rest_framework import filters, generics, permissions, serializers, viewsets
+from rest_framework import filters, generics, permissions, viewsets
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.views import APIView
 
@@ -45,8 +40,10 @@ class PropertyViewSet(viewsets.ModelViewSet):
         "listing_status",
         "bedrooms",
         "bathrooms",
+        "state",
+        "city",
     ]
-    search_fields = ["property_name", "description", "location"]
+    search_fields = ["property_name", "description", "location", "state", "city"]
     ordering_fields = [
         "sale_price",
         "listed_date",
@@ -140,6 +137,18 @@ class PropertyViewSet(viewsets.ModelViewSet):
                 location=OpenApiParameter.QUERY,
                 description="Maximum rent price filter (for rental listings)",
             ),
+            OpenApiParameter(
+                name="state",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                description="Filter by state",
+            ),
+            OpenApiParameter(
+                name="city",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                description="Filter by city",
+            ),
         ]
     )
     def list(self, request, *args, **kwargs):
@@ -188,49 +197,63 @@ class PropertyViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return APIResponse.success(data=serializer.data)
 
-    def _create_review_notification(self, property_instance):
-        owner = property_instance.listed_by
-        Notification.objects.create(
-            user=owner,
-            message=f"Your property listing '{property_instance.property_name}' is pending review.",
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Retrieve a specific property with related properties based on city and state
+        """
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+
+        related_properties = self._get_related_properties(instance)
+        related_serializer = PropertyListSerializer(
+            related_properties, many=True, context=self.get_serializer_context()
         )
 
-    def _send_owner_review_notification_email(self, property_instance, decision):
-        owner = property_instance.listed_by
+        data = serializer.data
+        data["related_properties"] = related_serializer.data
 
-        if owner.email:
-            subject = f"Property Listing {decision.title()}: {property_instance.property_name}"
+        return APIResponse.success(data=data)
 
-            # Render the HTML template
-            html_message = render_to_string(
-                "email/owner_property_review_notification.html",
-                {
-                    "decision": decision.lower(),
-                    "decision_title": (
-                        "Congratulations"
-                        if decision == "APPROVED"
-                        else "Your property listing has been declined"
-                    ),
-                    "property_name": property_instance.property_name,
-                    "location": property_instance.location,
-                },
+    def _get_related_properties(self, instance):
+        """
+        Get 3 related properties, prioritizing properties in the same city,
+        then properties in the same state
+        """
+        related_properties = Property.objects.none()
+
+        base_queryset = self.get_queryset().exclude(id=instance.id)
+
+        city_properties = base_queryset.filter(city=instance.city)
+
+        if city_properties.count() >= 3:
+            return city_properties.order_by("-listed_date")[:3]
+
+        related_properties = city_properties
+
+        remaining_slots = 3 - related_properties.count()
+
+        if remaining_slots > 0 and instance.state:
+            state_properties = base_queryset.filter(state=instance.state).exclude(
+                id__in=related_properties.values_list("id", flat=True)
             )
-            plain_message = strip_tags(html_message)
-            try:
-                send_mail(
-                    subject=subject,
-                    message=plain_message,
-                    html_message=html_message,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[owner.email],
-                )
-            except Exception:
-                raise serializers.ValidationError(
-                    {"email": "Error sending email to admin users"}
+
+            if state_properties.exists():
+                related_properties = related_properties.union(
+                    state_properties.order_by("-listed_date")[:remaining_slots]
                 )
 
+        remaining_slots = 3 - related_properties.count()
+        if remaining_slots > 0:
+            recent_properties = base_queryset.exclude(
+                id__in=related_properties.values_list("id", flat=True)
+            ).order_by("-listed_date")[:remaining_slots]
 
-# Add this view to your existing views
+            if recent_properties.exists():
+                related_properties = related_properties.union(recent_properties)
+
+        return related_properties.order_by("-listed_date")[:3]
+
+
 @extend_schema(tags=["Amenities"])
 class AmenityView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -407,6 +430,7 @@ class PropertyDocumentDetailView(APIView):
         document.delete()
         return APIResponse.success(message="Document deleted successfully")
 
+
 @extend_schema(tags=["Property Reviews"])
 class CreatePropertyReviewView(generics.CreateAPIView):
     """Create a new property review"""
@@ -423,6 +447,7 @@ class CreatePropertyReviewView(generics.CreateAPIView):
             data=PropertyReviewSerializer(review).data,
             message="Review submitted successfully. It will be visible after admin approval.",
         )
+
 
 @extend_schema(tags=["Property Reviews"])
 class ListPropertyReviewsView(generics.ListAPIView):

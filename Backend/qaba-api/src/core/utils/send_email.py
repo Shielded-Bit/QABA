@@ -293,3 +293,41 @@ def send_contact_confirmation_email(email, name):
         logger = logging.getLogger(__name__)
         logger.error(f"Failed to send contact confirmation email: {str(e)}")
         return {"success": True, "error": str(e)}
+
+
+def send_property_review_notification_email(property_instance, owner, decision):
+    """
+    Send notification email to property owner about approval/rejection
+
+    Args:
+        property_instance: The property object
+        owner: The user who listed the property
+        decision: The decision (APPROVED or REJECTED)
+
+    Returns:
+        dict: {"success": bool, "error": str}
+    """
+    subject = f"Property Listing {decision.title()}: {property_instance.property_name}"
+
+    context = {
+        "decision": decision.lower(),
+        "decision_title": (
+            "Congratulations"
+            if decision == "APPROVED"
+            else "Your property listing has been declined"
+        ),
+        "property_name": property_instance.property_name,
+        "location": property_instance.location,
+        "state": getattr(property_instance, "state", ""),
+        "city": getattr(property_instance, "city", ""),
+        "property_url": f"{settings.FRONTEND_URL}/properties/{property_instance.id}",
+        "user": owner,
+        "listing_date": property_instance.listed_date.strftime("%B %d, %Y"),
+    }
+
+    return send_email(
+        subject=subject,
+        recipients=owner.email,
+        template_name="owner_property_review_notification",
+        context=context,
+    )
