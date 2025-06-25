@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     "apps.users",  # Custom user app
     "apps.properties",  # Properties app
     "apps.transactions",  # Transactions app
+    "apps.blogs",
 ]
 
 MIDDLEWARE = [
