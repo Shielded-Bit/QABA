@@ -601,7 +601,6 @@ class AgentPropertyAnalyticsView(APIView):
                 listed_date__gte=month_start, listed_date__lt=month_end
             )
 
-            # Calculate metrics
             total_properties = month_properties.count()
             sold_properties = month_properties.filter(
                 property_status=Property.PropertyStatus.SOLD
@@ -616,8 +615,6 @@ class AgentPropertyAnalyticsView(APIView):
                 listing_status=Property.ListingStatus.APPROVED
             ).count()
 
-            # Calculate revenue
-            # For sold properties, use sale_price; for rented, use rent_price
             sold_revenue = (
                 month_properties.filter(
                     property_status=Property.PropertyStatus.SOLD
@@ -650,26 +647,21 @@ class AgentPropertyAnalyticsView(APIView):
 
     def _get_yearly_analytics(self, user, start_year=None, num_years=5):
         """Get yearly analytics for the last num_years"""
-        # Get all properties created by the agent
         agent_properties = Property.objects.filter(listed_by=user)
 
-        # Determine the year range
         current_year = datetime.now().year
         if start_year is None:
             start_year = current_year - num_years + 1
 
-        # Prepare result data structure
         years = []
         for year in range(start_year, current_year + 1):
             start_date = datetime(year, 1, 1)
             end_date = datetime(year + 1, 1, 1)
 
-            # Filter properties for this year
             year_properties = agent_properties.filter(
                 listed_date__gte=start_date, listed_date__lt=end_date
             )
 
-            # Calculate metrics
             total_properties = year_properties.count()
             sold_properties = year_properties.filter(
                 property_status=Property.PropertyStatus.SOLD
