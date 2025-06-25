@@ -18,6 +18,7 @@ from .serializers import (
     ClientProfilePatchSerializer,
     ClientProfileSerializer,
     ClientRegistrationSerializer,
+    ContactFormSerializer,
     LandlordRegistrationSerializer,
     LoginSerializer,
     NotificationSerializer,
@@ -499,3 +500,63 @@ class NotificationMarkReadView(generics.UpdateAPIView):
             data=NotificationSerializer(notification).data,
             message="Notification marked as read",
         )
+
+
+@extend_schema(tags=["Contact"])
+class ContactFormView(APIView):
+    """
+    View for handling contact form submissions
+    """
+
+    permission_classes = (permissions.AllowAny,)
+
+    @extend_schema(request=ContactFormSerializer, responses={200: None})
+    def post(self, request):
+        """Handle contact form submissions and send email to admin"""
+        serializer = ContactFormSerializer(
+            data=request.data, context={"request": request}
+        )
+        if serializer.is_valid():
+            # Get user info based on authentication status
+            if request.user.is_authenticated:
+                name = f"{request.user.first_name} {request.user.last_name}"
+                email = request.user.email
+                user_type = request.user.get_user_type_display()
+                phone = request.user.phone_number or "Not provided"
+            else:
+                name = serializer.validated_data.get("name")
+                email = serializer.validated_data.get("email")
+                user_type = "Anonymous"
+                phone = "Not provided"
+
+            subject = serializer.validated_data["subject"]
+            message = serializer.validated_data["message"]
+
+            # Use the existing send_email utility function
+            from core.utils.send_email import send_contact_form_email
+
+            email_result = send_contact_form_email(
+                name=name,
+                email=email,
+                phone=phone,
+                user_type=user_type,
+                subject=subject,
+                message=message,
+            )
+
+            if not email_result.get("success", False):
+                return APIResponse.bad_request(
+                    f"Failed to send your message: {email_result.get('error', 'Unknown error')}"
+                )
+
+            # Send confirmation to user if they're not authenticated
+            if not request.user.is_authenticated:
+                from core.utils.send_email import send_contact_confirmation_email
+
+                send_contact_confirmation_email(email=email, name=name)
+
+            return APIResponse.success(
+                message="Your message has been sent successfully. We'll get back to you soon!"
+            )
+
+        return APIResponse.bad_request(serializer.errors)

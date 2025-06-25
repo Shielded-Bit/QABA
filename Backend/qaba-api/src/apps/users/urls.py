@@ -6,6 +6,7 @@ from .views import (
     AgentRegistrationView,
     ClientProfileView,
     ClientRegistrationView,
+    ContactFormView,
     CurrentUserView,
     EmailVerificationView,
     LandlordRegistrationView,
@@ -69,6 +70,10 @@ urlpatterns = [
         NotificationMarkReadView.as_view(),
         name="notification-mark-read",
     ),
-    path('register/landlord/', LandlordRegistrationView.as_view(), name='register-landlord'),
-
+    path(
+        "register/landlord/",
+        LandlordRegistrationView.as_view(),
+        name="register-landlord",
+    ),
+    path("contact/", ContactFormView.as_view(), name="contact-form"),
 ]

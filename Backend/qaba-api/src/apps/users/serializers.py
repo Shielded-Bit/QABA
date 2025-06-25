@@ -253,3 +253,26 @@ class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Notification
         fields = ["id", "message", "is_read", "created_at"]
+
+
+class ContactFormSerializer(serializers.Serializer):
+    """Serializer for contact form submissions"""
+
+    name = serializers.CharField(max_length=100, required=False)
+    email = serializers.EmailField(required=False)
+    phone = serializers.CharField(max_length=15, required=False)
+    subject = serializers.CharField(max_length=200)
+    message = serializers.CharField(max_length=2000)
+
+    def validate(self, attrs):
+        request = self.context.get("request")
+        if not request or not request.user.is_authenticated:
+            if not attrs.get("name"):
+                raise serializers.ValidationError(
+                    {"name": "Name is required for anonymous users"}
+                )
+            if not attrs.get("email"):
+                raise serializers.ValidationError(
+                    {"email": "Email is required for anonymous users"}
+                )
+        return attrs

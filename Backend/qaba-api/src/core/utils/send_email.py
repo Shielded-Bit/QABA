@@ -182,3 +182,114 @@ def send_property_notification_email(user, property_obj):
         template_name="property_notification",
         context=context,
     )
+
+
+def send_contact_form_email(name, email, phone, user_type, subject, message):
+    """
+    Send contact form submission to admin users
+
+    Args:
+        name: Sender's name
+        email: Sender's email
+        phone: Sender's phone number
+        user_type: Type of user (Client, Agent, etc.)
+        subject: Message subject
+        message: Message content
+
+    Returns:
+        dict: {"success": bool, "error": str}
+    """
+    try:
+        # Get admin emails
+        from apps.users.models import User
+        from django.conf import settings
+        from django.core.mail import send_mail
+        from django.template.loader import render_to_string
+        from django.utils import timezone
+        from django.utils.html import strip_tags
+
+        admin_emails = [settings.DEFAULT_FROM_EMAIL]
+        try:
+            admin_users = User.objects.filter(user_type=User.UserType.ADMIN)
+            if admin_users.exists():
+                admin_emails = [user.email for user in admin_users if user.email]
+        except Exception:
+            # Fall back to DEFAULT_FROM_EMAIL if we can't get admin users
+            pass
+
+        # Create HTML message
+        html_message = render_to_string(
+            "email/contact_form.html",
+            {
+                "name": name,
+                "email": email,
+                "phone": phone,
+                "user_type": user_type,
+                "subject": subject,
+                "message": message,
+                "date": timezone.now().strftime("%B %d, %Y %H:%M"),
+            },
+        )
+
+        plain_message = strip_tags(html_message)
+
+        send_mail(
+            subject=f"Contact Form: {subject}",
+            message=plain_message,
+            html_message=html_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=admin_emails,
+            fail_silently=False,
+        )
+
+        return {"success": True}
+    except Exception as e:
+        import logging
+
+        logger = logging.getLogger(__name__)
+        logger.error(f"Failed to send contact form email: {str(e)}")
+        return {"success": False, "error": str(e)}
+
+
+def send_contact_confirmation_email(email, name):
+    """
+    Send confirmation email to contact form submitter
+
+    Args:
+        email: Recipient email
+        name: Recipient name
+
+    Returns:
+        dict: {"success": bool, "error": str}
+    """
+    try:
+        from django.conf import settings
+        from django.core.mail import send_mail
+        from django.template.loader import render_to_string
+        from django.utils.html import strip_tags
+
+        html_message = render_to_string(
+            "email/contact_confirmation.html",
+            {
+                "name": name,
+            },
+        )
+
+        plain_message = strip_tags(html_message)
+
+        send_mail(
+            subject="We've received your message - QABA Real Estate",
+            message=plain_message,
+            html_message=html_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[email],
+            fail_silently=True,
+        )
+
+        return {"success": True}
+    except Exception as e:
+        import logging
+
+        logger = logging.getLogger(__name__)
+        logger.error(f"Failed to send contact confirmation email: {str(e)}")
+        return {"success": True, "error": str(e)}
