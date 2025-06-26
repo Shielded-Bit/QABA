@@ -49,6 +49,7 @@ class BlogDetailSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True, read_only=True)
     reading_time = serializers.ReadOnlyField()
     related_posts = serializers.SerializerMethodField()
+    cover_image_url = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Blog
@@ -60,7 +61,7 @@ class BlogDetailSerializer(serializers.ModelSerializer):
             "summary",
             "content",
             "writers_social_media",
-            "cover_image",
+            "cover_image_url",
             "tags",
             "is_featured",
             "status",
@@ -70,6 +71,13 @@ class BlogDetailSerializer(serializers.ModelSerializer):
             "reading_time",
             "related_posts",
         ]
+    
+    def get_cover_image_url(self, obj):
+        """Get the full URL for the cover image"""
+        request = self.context.get("request")
+        if obj.cover_image:
+            return request.build_absolute_uri(obj.cover_image.url)
+        return None
 
     def get_related_posts(self, obj):
         """Get 3 related posts based on shared tags"""
