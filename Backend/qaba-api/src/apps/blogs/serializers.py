@@ -16,6 +16,7 @@ class BlogListSerializer(serializers.ModelSerializer):
 
     tags = TagSerializer(many=True, read_only=True)
     reading_time = serializers.ReadOnlyField()
+    cover_image_url = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Blog
@@ -25,7 +26,7 @@ class BlogListSerializer(serializers.ModelSerializer):
             "slug",
             "writers_name",
             "summary",
-            "cover_image",
+            "cover_image_url",
             "tags",
             "is_featured",
             "status",
@@ -33,6 +34,13 @@ class BlogListSerializer(serializers.ModelSerializer):
             "published_at",
             "reading_time",
         ]
+
+    def get_cover_image_url(self, obj):
+        """Get the full URL for the cover image"""
+        request = self.context.get("request")
+        if obj.cover_image:
+            return request.build_absolute_uri(obj.cover_image.url)
+        return None
 
 
 class BlogDetailSerializer(serializers.ModelSerializer):
