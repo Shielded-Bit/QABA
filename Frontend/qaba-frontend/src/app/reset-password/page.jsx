@@ -57,7 +57,7 @@ const NewPasswordForm = () => {
 
     setLoading(true);
     try {
-      const response = await axios.post('https://qaba.onrender.com/api/v1/auth/password-reset/confirm/', {
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/password-reset/confirm/`, {
         token,
         new_password: password,
       });

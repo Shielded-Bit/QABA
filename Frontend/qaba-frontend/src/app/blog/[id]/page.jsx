@@ -1,100 +1,85 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
-// Enhanced blog data with additional fields
-const blogPosts = [
-	{
-		id: 1,
-		title: "Real Estate in Southeastern Nigeria: Challenges, Opportunities, and How QARBA is Changing the Game",
-		content: `The real estate landscape in Southeastern Nigeria is evolving rapidly. With growing urban centers like Abakaliki, Enugu, Owerri, Aba, and Awka, there's a rising demand for quality housing, commercial spaces, and investment opportunities.
-
-The challenges in this region are multifaceted. Traditional property search methods often lead to frustration, with potential buyers and renters spending countless hours visiting unsuitable properties. The lack of centralized, reliable information makes it difficult for both property seekers and owners to connect effectively.
-
-QARBA is at the forefront of this transformation, providing innovative solutions for buyers, sellers, and investors. Our platform ensures transparency, security, and ease of transaction, making real estate accessible to everyone.
-
-Our comprehensive approach includes verified property listings, detailed property information, high-quality images, and direct communication channels between all parties. We understand that buying or renting property is one of life's biggest decisions, and we're committed to making this process as smooth and transparent as possible.
-
-Whether you're looking to invest, buy, or sell, QARBA offers the tools and support you need to succeed in this dynamic market. From first-time homebuyers to seasoned investors, our platform caters to all segments of the market with tailored solutions and expert guidance.`,
-		author: "NELSON MGBADA",
-		date: "20th May 2024",
-		category: "Featured News",
-		image: "https://res.cloudinary.com/dqbbm0guw/image/upload/v1737723125/Rectangle_133_2_sblujb.png",
-		readTime: "5 min read",
-		tags: ["Real Estate", "Nigeria", "PropTech", "Investment"]
-	},
-	{
-		id: 2,
-		title: "SOMETHING BIG IS COMING: WHY SOUTHEASTERN NIGERIA NEEDS A REAL ESTATE REVOLUTION",
-		content: `If you've ever tried renting an apartment in Enugu, buying land in Abakaliki, or even connecting with a trustworthy agent in Awka, then you already know real estate in Southeastern Nigeria isn't easy.
-
-The current system is fragmented, with information scattered across multiple platforms, word-of-mouth recommendations, and outdated advertising methods. This creates inefficiencies that hurt both property seekers and property owners.
-
-QARBA is building a platform to solve these challenges, connecting you with verified agents, listings, and resources. Our mission is to revolutionize how real estate transactions happen in this region.
-
-We're developing cutting-edge technology that will streamline the entire process, from property discovery to final transaction. Our platform will feature advanced search capabilities, virtual property tours, secure payment systems, and comprehensive legal support.
-
-The revolution is coming, and it will transform how people buy, sell, and rent properties across Southeastern Nigeria. Stay tuned for more updates as we prepare to launch this game-changing platform!`,
-		author: "NELSON MGBADA",
-		date: "20th May 2024",
-		category: "Market Trends",
-		image: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=800&h=600&fit=crop",
-		readTime: "3 min read",
-		tags: ["Revolution", "PropTech", "Innovation", "Nigeria"]
-	},
-	{
-		id: 3,
-		title: "INTRODUCING QARBA: A SMARTER WAY TO FIND, LIST, AND CONNECT IN REAL ESTATE",
-		content: `Whether you're a landlord with vacant property, an agent managing multiple listings, a home seeker tired of endless inspections, or a first-time buyer looking for verified options, QARBA was built for you.
-
-Our platform streamlines the process, offering smart search, secure transactions, and real support every step of the way. We understand that the traditional real estate process can be overwhelming and time-consuming.
-
-QARBA's intelligent matching system uses advanced algorithms to connect property seekers with their ideal homes based on their specific requirements, budget, and preferences. No more wasting time on properties that don't match your criteria.
-
-For property owners and agents, our platform provides powerful listing management tools, analytics to track property performance, and direct communication channels with serious buyers and renters.
-
-We're not just another property listing site – we're your complete real estate partner, committed to making property transactions transparent, efficient, and successful for everyone involved.`,
-		author: "NELSON MGBADA",
-		date: "20th May 2024",
-		category: "Product Update",
-		image: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&h=600&fit=crop",
-		readTime: "4 min read",
-		tags: ["QARBA", "Platform", "Innovation", "Technology"]
-	},
-	{
-		id: 4,
-		title: "The Future of Real Estate: How Technology is Shaping the Market",
-		content: `Technology is no longer a nice-to-have in real estate; it's a necessity. From virtual tours to blockchain transactions, tech is streamlining processes and opening new avenues for buyers and sellers alike.
-
-At QARBA, we're leveraging the latest technology to offer you a seamless, secure, and efficient real estate experience. Join us as we explore the future of real estate.`,
-		author: "NELSON MGBADA",
-		date: "21st May 2024",
-		category: "Technology",
-		image: "https://images.unsplash.com/photo-1564869733680-6b8f8f8f8f8f?w=800&h=600&fit=crop",
-		readTime: "6 min read",
-		tags: ["Technology", "Future", "Innovation", "PropTech"]
-	},
-	{
-		id: 5,
-		title: "Investing in Southeastern Nigeria: A Guide for Foreign Investors",
-		content: `Southeastern Nigeria is a land of opportunities, but navigating the real estate market can be challenging for foreign investors.
-
-This guide provides you with the essential information and tips you need to invest wisely and successfully in Southeastern Nigeria's real estate market.`,
-		author: "NELSON MGBADA",
-		date: "22nd May 2024",
-		category: "Investment",
-		image: "https://images.unsplash.com/photo-1564869733680-6b8f8f8f8f8f?w=800&h=600&fit=crop",
-		readTime: "8 min read",
-		tags: ["Investment", "Foreign", "Guide", "Nigeria"]
-	},
-];
-
 export default function BlogDetailPage({ params }) {
-	const id = Number(params?.id);
-	const post = blogPosts.find((p) => p.id === id);
+	const { id: slug } = React.use(params);
+	const [post, setPost] = useState(null);
+	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState(null);
+	const [relatedBlogs, setRelatedBlogs] = useState([]);
 
-	if (!post) {
+	useEffect(() => {
+		const fetchBlogAndRelated = async () => {
+			setLoading(true);
+			setError(null);
+			try {
+				// Fetch the current blog
+				const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/blogs/${slug}`);
+				if (!res.ok) throw new Error("Blog not found");
+				const data = await res.json();
+				const blog = data.data || data;
+				setPost(blog);
+
+				// Fetch all blogs for related
+				const allRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/blogs/`);
+				if (!allRes.ok) throw new Error("Failed to fetch related blogs");
+				const allData = await allRes.json();
+				let blogs = allData.data || allData;
+
+				// Get tags as array of strings
+				const blogTags = (blog.tags || []).map(tag => typeof tag === 'string' ? tag : (tag.name || tag.slug || tag.id || ''));
+
+				// Filter related blogs by shared tags, exclude current blog
+				const related = blogs.filter(b => {
+					if (b.slug === blog.slug) return false;
+					const bTags = (b.tags || []).map(tag => typeof tag === 'string' ? tag : (tag.name || tag.slug || tag.id || ''));
+					return bTags.some(tag => blogTags.includes(tag));
+				}).slice(0, 3);
+				setRelatedBlogs(related);
+			} catch (err) {
+				setError(err.message || "Failed to load blog post");
+			} finally {
+				setLoading(false);
+			}
+		};
+		if (slug) fetchBlogAndRelated();
+	}, [slug]);
+
+	const getCategoryColor = (category) => {
+		const colors = {
+			'Featured News': 'from-[#014d98] to-[#3ab7b1]',
+			'Market Trends': 'from-purple-500 to-pink-500',
+			'Product Update': 'from-green-500 to-teal-500',
+			'Investment': 'from-orange-500 to-red-500',
+			'Technology': 'from-blue-500 to-indigo-500',
+			'Legal': 'from-gray-600 to-gray-800'
+		};
+		return colors[category] || 'from-[#014d98] to-[#3ab7b1]';
+	};
+
+	function ensureHttps(url) {
+		if (typeof url === 'string' && url.startsWith('http://')) {
+			return url.replace('http://', 'https://');
+		}
+		return url;
+	}
+
+	if (loading) {
+		return (
+			<div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+				<div className="animate-pulse w-full max-w-2xl mx-auto p-8">
+					<div className="h-10 w-1/3 bg-gray-200 rounded mb-4" />
+					<div className="h-8 w-2/3 bg-gray-200 rounded mb-4" />
+					<div className="h-6 w-1/4 bg-gray-200 rounded mb-4" />
+					<div className="h-96 w-full bg-gray-200 rounded-xl mb-8" />
+					<div className="h-32 w-full bg-gray-100 rounded mb-8" />
+				</div>
+			</div>
+		);
+	}
+	if (error || !post) {
 		return (
 			<div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
 				<div className="text-center p-8">
@@ -116,31 +101,28 @@ export default function BlogDetailPage({ params }) {
 		);
 	}
 
-	const getCategoryColor = (category) => {
-		const colors = {
-			'Featured News': 'from-[#014d98] to-[#3ab7b1]',
-			'Market Trends': 'from-purple-500 to-pink-500',
-			'Product Update': 'from-green-500 to-teal-500',
-			'Investment': 'from-orange-500 to-red-500',
-			'Technology': 'from-blue-500 to-indigo-500',
-			'Legal': 'from-gray-600 to-gray-800'
-		};
-		return colors[category] || 'from-[#014d98] to-[#3ab7b1]';
-	};
+	// Use API fields
+	const writer = post?.writers_name || 'Unknown';
+	const abbreviation = writer.split(' ').map(n => n[0]).join('').toUpperCase();
+	const imageUrl = ensureHttps(post?.cover_image_url || '');
+	const publishedDate = post?.published_at ? new Date(post.published_at).toLocaleDateString() : '';
 
 	return (
 		<div className="min-h-screen bg-white">
 			{/* Hero Image Section - Full Width */}
 			<div className="relative w-full h-[70vh] overflow-hidden">
-				<Image
-					src={post.image}
-					alt={post.title}
-					fill
-					className="object-cover"
-					priority
-				/>
+				{imageUrl ? (
+					<Image
+						src={imageUrl}
+						alt={post.title}
+						fill
+						className="object-cover"
+						priority
+					/>
+				) : (
+					<div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400">No Image</div>
+				)}
 				<div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-				
 				{/* Back Button */}
 				<div className="absolute top-8 left-8 z-10">
 					<Link href="/blog" className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md text-white px-4 py-2 rounded-full font-medium hover:bg-white/20 transition-all duration-300">
@@ -150,7 +132,6 @@ export default function BlogDetailPage({ params }) {
 						Back to Blog
 					</Link>
 				</div>
-
 				{/* Article Info Overlay */}
 				<div className="absolute bottom-0 left-0 right-0 p-8 text-white">
 					<div className="max-w-4xl mx-auto">
@@ -159,7 +140,7 @@ export default function BlogDetailPage({ params }) {
 								{post.category}
 							</span>
 							<span className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-sm">
-								{post.readTime}
+								{post.reading_time ? `${post.reading_time} min read` : ''}
 							</span>
 						</div>
 						<h1 className="text-2xl md:text-3xl lg:text-4xl font-bold leading-tight mb-4">
@@ -168,40 +149,40 @@ export default function BlogDetailPage({ params }) {
 						<div className="flex items-center gap-4 text-lg">
 							<div className="flex items-center gap-3">
 								<div className="w-12 h-12 bg-gradient-to-r from-[#014d98] to-[#3ab7b1] rounded-full flex items-center justify-center text-white font-bold">
-									{post.author.split(' ').map(n => n[0]).join('')}
+									{abbreviation}
 								</div>
 								<div>
-									<p className="font-semibold">{post.author}</p>
-									<p className="text-white/80 text-base">{post.date}</p>
+									<p className="font-semibold">{writer}</p>
+									<p className="text-white/80 text-base">{publishedDate}</p>
 								</div>
 							</div>
 						</div>
 					</div>
 				</div>
 			</div>
-
 			{/* Article Content */}
 			<div className="max-w-4xl mx-auto px-6 py-16">
 				{/* Tags */}
 				<div className="flex flex-wrap gap-2 mb-8">
-					{post.tags?.map((tag, index) => (
-						<span key={index} className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-sm font-medium hover:bg-gray-200 transition-colors cursor-pointer">
-							#{tag}
-						</span>
-					))}
+					{post.tags?.map((tag, index) => {
+						const tagLabel = typeof tag === 'string' ? tag : (tag.name || tag.slug || tag.id || '');
+						return (
+							<span key={index} className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-sm font-medium hover:bg-gray-200 transition-colors cursor-pointer">
+								#{tagLabel}
+							</span>
+						);
+					})}
 				</div>
-
 				{/* Article Content */}
 				<div className="prose prose-lg max-w-none">
 					<div className="text-gray-700 text-lg leading-relaxed space-y-6">
-						{post.content.split('\n\n').map((paragraph, index) => (
+						{post.content?.split('\n\n').map((paragraph, index) => (
 							<p key={index} className="mb-6 first-letter:text-5xl first-letter:font-bold first-letter:text-[#014d98] first-letter:float-left first-letter:mr-3 first-letter:mt-1">
 								{paragraph}
 							</p>
 						))}
 					</div>
 				</div>
-
 				{/* Share Section */}
 				<div className="mt-12 pt-8 border-t border-gray-200">
 					<div className="flex items-center justify-between">
@@ -233,15 +214,14 @@ export default function BlogDetailPage({ params }) {
 						</div>
 					</div>
 				</div>
-
 				{/* Author Bio */}
 				<div className="mt-12 p-6 bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl">
 					<div className="flex items-start gap-4">
 						<div className="w-16 h-16 bg-gradient-to-r from-[#014d98] to-[#3ab7b1] rounded-full flex items-center justify-center text-white font-bold text-xl flex-shrink-0">
-							{post.author.split(' ').map(n => n[0]).join('')}
+							{abbreviation}
 						</div>
 						<div>
-							<h3 className="text-xl font-bold text-gray-900 mb-2">{post.author}</h3>
+							<h3 className="text-xl font-bold text-gray-900 mb-2">{writer}</h3>
 							<p className="text-gray-600 mb-3">
 								Real Estate Expert & Content Writer at QARBA. Passionate about transforming the Nigerian real estate landscape through technology and innovation.
 							</p>
@@ -261,81 +241,57 @@ export default function BlogDetailPage({ params }) {
 					</div>
 				</div>
 			</div>
-
 			{/* Related Articles Section */}
-			<div className="bg-gradient-to-br from-gray-50 to-gray-100 py-16">
-				<div className="max-w-7xl mx-auto px-6">
-					<div className="text-center mb-12">
-						<h2 className="text-3xl font-bold bg-gradient-to-r from-[#014d98] to-[#3ab7b1] bg-clip-text text-transparent mb-4">
-							Related Articles
-						</h2>
-						<p className="text-gray-600 text-lg">Discover more insights and expert analysis</p>
-						<div className="w-20 h-1 bg-gradient-to-r from-[#014d98] to-[#3ab7b1] rounded-full mx-auto mt-4" />
-					</div>
-					
-					<div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-						{blogPosts.filter(p => p.id !== post.id).slice(0, 3).map(related => (
-							<Link href={`/blog/${related.id}`} key={related.id} className="group block">
-								<div className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2">
-									<div className="relative h-48 overflow-hidden">
-										<Image
-											src={related.image}
-											alt={related.title}
-											fill
-											className="object-cover transition-transform duration-700 group-hover:scale-110"
-										/>
-										<div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-										<div className="absolute top-4 left-4">
-											<span className={`bg-gradient-to-r ${getCategoryColor(related.category)} text-white px-3 py-1 rounded-full text-sm font-semibold`}>
-												{related.category}
-											</span>
-										</div>
-									</div>
-									<div className="p-6">
-										<h3 className="font-bold text-lg mb-3 line-clamp-2 group-hover:text-[#014d98] transition-colors duration-300">
-											{related.title}
-										</h3>
-										<p className="text-gray-600 text-sm line-clamp-3 mb-4 leading-relaxed">
-											{related.content.split('\n')[0]}
-										</p>
-										<div className="flex items-center justify-between">
-											<div className="flex items-center gap-2 text-xs text-gray-500">
-												<span className="font-medium text-gray-700">{related.author}</span>
-												<span>•</span>
-												<span>{related.date}</span>
+			{relatedBlogs.length > 0 && (
+				<div className="max-w-4xl mx-auto px-6 pb-16">
+					<h2 className="text-2xl font-bold text-gray-900 mb-6">Related Articles</h2>
+					<div className="grid md:grid-cols-3 gap-8">
+						{relatedBlogs.map((rel) => {
+							const relImage = ensureHttps(rel.cover_image_url || rel.image || '');
+							const relWriter = rel.writers_name || rel.author || 'Unknown';
+							const relPublished = rel.published_at ? new Date(rel.published_at).toLocaleDateString() : '';
+							const relTags = Array.isArray(rel.tags) ? rel.tags : [];
+							return (
+								<Link href={`/blog/${rel.slug}`} key={rel.slug} className="block bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300">
+									<div className="relative h-48">
+										{relImage ? (
+											<Image src={relImage} alt={rel.title} fill className="object-cover" />
+										) : (
+											<div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400">No Image</div>
+										)}
+										{/* Tags: vertical stack, top-left */}
+										{relTags.length > 0 && (
+											<div className="absolute top-3 left-3 flex flex-col gap-2 z-10">
+												{relTags.map((tag, idx) => {
+													const tagLabel = typeof tag === 'string' ? tag : (tag.name || tag.slug || tag.id || '');
+													return (
+														<span key={idx} className="bg-[#014d98] text-white px-3 py-1 rounded-full text-xs font-semibold shadow hover:bg-[#3ab7b1] transition-colors cursor-pointer">
+															#{tagLabel}
+														</span>
+													);
+												})}
 											</div>
-											<div className="flex items-center gap-1 text-[#014d98] hover:text-[#3ab7b1] font-medium text-sm transition-colors duration-300">
-												<span>Read</span>
-												<svg className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-												</svg>
+										)}
+									</div>
+									<div className="p-4">
+										<div className="flex items-center gap-3 mb-2">
+											<div className="w-8 h-8 bg-gradient-to-r from-[#014d98] to-[#3ab7b1] rounded-full flex items-center justify-center text-white font-semibold text-xs">
+												{relWriter.split(' ').map(n => n[0]).join('').toUpperCase()}
+											</div>
+											<div>
+												<p className="text-sm font-medium text-gray-900">{relWriter}</p>
+												<p className="text-xs text-gray-500">{relPublished}</p>
 											</div>
 										</div>
+										<h3 className="text-base font-bold text-gray-900 mb-2 line-clamp-2 leading-tight">{rel.title}</h3>
+										<p className="text-gray-600 text-xs mb-2 line-clamp-2 leading-relaxed">{rel.summary || rel.excerpt || ''}</p>
 									</div>
-								</div>
-							</Link>
-						))}
-					</div>
-
-					{/* CTA Section */}
-					<div className="mt-16 text-center">
-						<div className="bg-gradient-to-r from-[#014d98] to-[#3ab7b1] rounded-2xl p-8 text-white">
-							<h3 className="text-2xl font-bold mb-4">Stay Updated with QARBA</h3>
-							<p className="text-lg mb-6 opacity-90">Get the latest real estate insights and market trends delivered to your inbox</p>
-							<div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
-								<input 
-									type="email" 
-									placeholder="Enter your email" 
-									className="flex-1 px-4 py-3 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/50"
-								/>
-								<button className="bg-white text-[#014d98] px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors duration-300">
-									Subscribe
-								</button>
-							</div>
-						</div>
+								</Link>
+							);
+						})}
 					</div>
 				</div>
-			</div>
+			)}
 		</div>
 	);
 }

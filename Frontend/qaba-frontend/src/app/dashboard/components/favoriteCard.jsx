@@ -38,7 +38,7 @@ const FavoriteCard = ({ favorite, onRemove }) => {
       
       // Use the toggle endpoint
       const response = await axios.post(
-        'https://qaba.onrender.com/api/v1/favorites/toggle/',
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/favorites/toggle/`,
         { property_id: property.id },
         {
           headers: {

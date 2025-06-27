@@ -1,14 +1,67 @@
 import React, { useState } from 'react';
 import Modal from './Modal';
+import { useRouter } from 'next/navigation';
 
 const EnquiryModal = ({ isOpen, onClose, property }) => {
   const [message, setMessage] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const router = useRouter();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Here you would send the enquiry to your backend
-    setSubmitted(true);
+    // Check authentication
+    let user = null;
+    if (typeof window !== 'undefined') {
+      // Try to get user info from localStorage (user_data)
+      const userData = localStorage.getItem('user_data');
+      if (userData) {
+        try {
+          user = JSON.parse(userData);
+        } catch {}
+      }
+      // Try to get more robust info from localStorage (profile fields)
+      if (!user || !user.email) {
+        // Try to get from profile fields (as in profile page)
+        const email = localStorage.getItem('user_email');
+        const firstName = localStorage.getItem('first_name');
+        const lastName = localStorage.getItem('last_name');
+        const phone = localStorage.getItem('phone_number');
+        if (email) {
+          user = {
+            email,
+            name: (firstName || '') + (lastName ? ' ' + lastName : ''),
+            phone: phone || '',
+          };
+        }
+      }
+    }
+    if (!user || !user.email) {
+      // Not authenticated, route to contact page
+      router.push('/contact');
+      return;
+    }
+    // Authenticated: extract info and submit
+    const payload = {
+      name: user.name || user.fullName || user.first_name || '',
+      email: user.email,
+      phone: user.phone || user.phone_number || '',
+      subject: `Enquiry about ${property?.property_name || 'a property'}`,
+      message,
+    };
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/contact/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (response.ok) {
+        setSubmitted(true);
+      } else {
+        alert('Failed to send enquiry. Please try again.');
+      }
+    } catch (err) {
+      alert('Failed to send enquiry. Please try again.');
+    }
   };
 
   return (

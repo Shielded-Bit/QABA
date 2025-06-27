@@ -41,7 +41,7 @@ const Section3 = () => {
     const fetchProperties = async () => {
       try {
         setLoading(true);
-        const response = await fetch('https://qaba.onrender.com/api/v1/properties/?listing_status=APPROVED', {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/properties/?listing_status=APPROVED`, {
           headers: {
             'accept': 'application/json',
           }

@@ -21,7 +21,7 @@ const ListingCard = ({ id, title, price, description, image, type }) => {
         const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
         if (!token) return;
         
-        const response = await axios.get('https://qaba.onrender.com/api/v1/favorites/', {
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/favorites/`, {
           headers: {
             'accept': 'application/json',
             'Authorization': `Bearer ${token}`,
@@ -59,7 +59,7 @@ const ListingCard = ({ id, title, price, description, image, type }) => {
       
       // Make API request
       const response = await axios.post(
-        'https://qaba.onrender.com/api/v1/favorites/toggle/',
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/favorites/toggle/`,
         { property_id: id },
         {
           headers: {

@@ -11,7 +11,7 @@ export function ProfileProvider({ children }) {
     error: null,
   });
 
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://qaba.onrender.com';
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
   // Safe access to browser storage
   const getToken = useCallback(() => {

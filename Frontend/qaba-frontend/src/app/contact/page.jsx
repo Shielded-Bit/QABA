@@ -29,8 +29,8 @@ const ContactPage = () => {
     setSubmitStatus(null);
 
     try {
-      // Replace with your actual API endpoint
-      const response = await fetch('/api/contact', {
+      // Use backend API endpoint for contact form
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/contact/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
