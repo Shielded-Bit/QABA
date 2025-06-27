@@ -37,7 +37,7 @@ const FavoritesPage = () => {
         const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
         
         const response = await axios.get(
-          'https://qaba.onrender.com/api/v1/favorites/',
+          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/favorites/`,
           {
             headers: {
               'accept': 'application/json',

@@ -22,9 +22,9 @@ const Transactions = () => {
         if (!token) {
           throw new Error("Authentication token not found");
         }
-
+        // Use paginated API to fetch only 3 most recent transactions
         const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_URL || 'https://qaba.onrender.com'}/api/v1/history/`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/history/?page=1&limit=3`,
           {
             headers: {
               'accept': '*/*',
@@ -35,11 +35,8 @@ const Transactions = () => {
         );
 
         if (response.data.success) {
-          // Get only the three most recent transactions
-          const recentTransactions = response.data.data
-            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-            .slice(0, 3);
-          setTransactions(recentTransactions);
+          // Defensive: always show only the 3 most recent transactions
+          setTransactions((response.data.data || []).slice(0, 3));
         } else {
           throw new Error(response.data.message || "Failed to fetch transactions");
         }
@@ -169,7 +166,9 @@ const Transactions = () => {
                         ? "bg-green-100 text-green-800"
                         : transaction.status === "pending"
                         ? "bg-yellow-100 text-yellow-800"
-                        : "bg-red-100 text-red-800"
+                        : transaction.status === "failed"
+                        ? "bg-red-100 text-red-800"
+                        : "bg-gray-100 text-gray-800"
                     }`}>
                       {getDisplayStatus(transaction.status)}
                     </span>

@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
 
 // API Configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://qaba.onrender.com';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // Create the context
 const NotificationContext = createContext();

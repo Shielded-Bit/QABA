@@ -12,6 +12,9 @@ const TransactionTable = () => {
   const [filterStatus, setFilterStatus] = useState("All");
   const [filterType, setFilterType] = useState("All");
   const [filterOpen, setFilterOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10); // Default page size
+  const [totalPages, setTotalPages] = useState(1);
 
   // Fetch transactions when component mounts
   useEffect(() => {
@@ -25,8 +28,9 @@ const TransactionTable = () => {
           throw new Error("Authentication token not found");
         }
 
+        // Add pagination params
         const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_URL || 'https://qaba.onrender.com'}/api/v1/history/`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/history/?page=${page}&limit=${pageSize}`,
           {
             headers: {
               'accept': '*/*',
@@ -38,6 +42,15 @@ const TransactionTable = () => {
 
         if (response.data.success) {
           setTransactions(response.data.data);
+          // Assume API returns total count or total pages
+          if (response.data.totalPages) {
+            setTotalPages(response.data.totalPages);
+          } else if (response.data.total) {
+            setTotalPages(Math.ceil(response.data.total / pageSize));
+          } else {
+            // Fallback: if no total info, just set 1
+            setTotalPages(1);
+          }
         } else {
           throw new Error(response.data.message || "Failed to fetch transactions");
         }
@@ -50,7 +63,7 @@ const TransactionTable = () => {
     };
 
     fetchTransactions();
-  }, []);
+  }, [page, pageSize]);
 
   const handleResetFilters = () => {
     setFilterStatus("All");
@@ -115,6 +128,15 @@ const TransactionTable = () => {
   // Get unique statuses and property types for filter options
   const uniqueStatuses = [...new Set(transactions.map(t => getDisplayStatus(t.status)))];
   const uniqueTypes = [...new Set(transactions.map(t => getPropertyType(t.payment_type)))];
+
+  // Pagination controls
+  const handlePrevPage = () => setPage((prev) => Math.max(prev - 1, 1));
+  const handleNextPage = () => setPage((prev) => Math.min(prev + 1, totalPages));
+  const handlePageClick = (num) => setPage(num);
+  const handlePageSizeChange = (e) => {
+    setPageSize(Number(e.target.value));
+    setPage(1);
+  };
 
   return (
     <div className="p-4 max-w-[1200px] mx-auto shadow-md rounded-lg overflow-x-auto relative bg-white border border-gray-100">
@@ -205,47 +227,85 @@ const TransactionTable = () => {
               <p className="mt-1 text-sm text-gray-500">No transaction history found with the current filters.</p>
             </div>
           ) : (
-            <table className="min-w-[700px] w-full text-left border-collapse">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                  <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                  <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Type</th>
-                  <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Property Name</th>
-                  <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {filteredTransactions.map((transaction) => (
-                  <tr key={transaction.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-4">
-                      <div>
-                        <p className="text-sm font-medium text-gray-800">{transaction.description}</p>
-                        <p className="text-xs text-gray-500 mt-1">{transaction.reference}</p>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4 text-sm text-gray-600">{formatDate(transaction.created_at)}</td>
-                    <td className="px-4 py-4 text-sm text-gray-600">{getPropertyType(transaction.payment_type)}</td>
-                    <td className="px-4 py-4 text-sm text-gray-600">{transaction.property_name}</td>
-                    <td className="px-4 py-4">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        transaction.status === "success" || transaction.status === "completed"
-                          ? "bg-green-100 text-green-800"
-                          : transaction.status === "pending"
-                          ? "bg-yellow-100 text-yellow-800"
-                          : transaction.status === "failed"
-                          ? "bg-red-100 text-red-800"
-                          : "bg-green-100 text-green-800"
-                      }`}>
-                        {getDisplayStatus(transaction.status)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4 text-sm font-medium text-gray-900">{formatCurrency(transaction.amount, transaction.currency)}</td>
+            <>
+              <table className="min-w-[700px] w-full text-left border-collapse">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                    <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Type</th>
+                    <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Property Name</th>
+                    <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {filteredTransactions.map((transaction) => (
+                    <tr key={transaction.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-4">
+                        <div>
+                          <p className="text-sm font-medium text-gray-800">{transaction.description}</p>
+                          <p className="text-xs text-gray-500 mt-1">{transaction.reference}</p>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 text-sm text-gray-600">{formatDate(transaction.created_at)}</td>
+                      <td className="px-4 py-4 text-sm text-gray-600">{getPropertyType(transaction.payment_type)}</td>
+                      <td className="px-4 py-4 text-sm text-gray-600">{transaction.property_name}</td>
+                      <td className="px-4 py-4">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          transaction.status === "success" || transaction.status === "completed"
+                            ? "bg-green-100 text-green-800"
+                            : transaction.status === "pending"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : transaction.status === "failed"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-green-100 text-green-800"
+                        }`}>
+                          {getDisplayStatus(transaction.status)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4 text-sm font-medium text-gray-900">{formatCurrency(transaction.amount, transaction.currency)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {/* Pagination Controls */}
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mt-4">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handlePrevPage}
+                    disabled={page === 1}
+                    className={`px-3 py-1 rounded border ${page === 1 ? 'bg-gray-200 text-gray-400' : 'bg-white text-gray-700 hover:bg-gray-100'}`}
+                  >
+                    Previous
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => (
+                    <button
+                      key={num}
+                      onClick={() => handlePageClick(num)}
+                      className={`px-3 py-1 rounded border ${num === page ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}`}
+                    >
+                      {num}
+                    </button>
+                  ))}
+                  <button
+                    onClick={handleNextPage}
+                    disabled={page === totalPages}
+                    className={`px-3 py-1 rounded border ${page === totalPages ? 'bg-gray-200 text-gray-400' : 'bg-white text-gray-700 hover:bg-gray-100'}`}
+                  >
+                    Next
+                  </button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">Rows per page:</span>
+                  <select value={pageSize} onChange={handlePageSizeChange} className="border rounded px-2 py-1 text-sm">
+                    {[5, 10, 20, 50].map(size => (
+                      <option key={size} value={size}>{size}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </>
           )}
         </div>
       )}

@@ -22,7 +22,7 @@ const TransactionTable = () => {
           throw new Error("Authentication token not found");
         }
         const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_URL || 'https://qaba.onrender.com'}/api/v1/history/`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/history/`,
           {
             headers: {
               'accept': '*/*',
