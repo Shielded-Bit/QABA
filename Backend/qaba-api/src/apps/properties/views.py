@@ -91,8 +91,12 @@ class PropertyViewSet(viewsets.ModelViewSet):
             and self.request.user.user_type == "AGENT"
         ):
             queryset = queryset.filter(
+                property_status__in=[
+                    Property.PropertyStatus.SOLD,
+                    Property.PropertyStatus.RENTED,
+                    Property.PropertyStatus.AVAILABLE,
+                ],
                 listing_status=Property.ListingStatus.APPROVED,
-                property_status=Property.PropertyStatus.AVAILABLE,
             )
 
         return queryset
