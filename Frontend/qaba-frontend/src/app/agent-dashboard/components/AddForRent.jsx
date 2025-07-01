@@ -206,7 +206,9 @@ const AddForRent = () => {
     rent_price: "",
     total_price: "",
     amenities_ids: [], 
-    user_type: "landlord"
+    user_type: "landlord",
+    state: "",
+    city: ""
   });
 
   const [displayPrice, setDisplayPrice] = useState('');
@@ -283,7 +285,9 @@ const AddForRent = () => {
       setFormData({
         property_name: "", description: "", property_type: "HOUSE", listing_type: "RENT",
         submit_for_review: false, location: "", bedrooms: 1, bathrooms: 1, area_sqft: 0,
-        rent_frequency: "MONTHLY", rent_price: "", total_price: "", amenities_ids: [], user_type: "landlord"
+        rent_frequency: "MONTHLY", rent_price: "", total_price: "", amenities_ids: [], user_type: "landlord",
+        state: "",
+        city: ""
       });
       setMediaFiles({ image1: null, image2: null, video: null });
       setDisplayPrice('');
@@ -374,7 +378,6 @@ const AddForRent = () => {
             <option value="agent">Agent</option>
           </select>
         </div>
-        
         {/* Property Type */}
         <div>
           <label className="block text-gray-700">Property Type</label>
@@ -389,7 +392,6 @@ const AddForRent = () => {
             ))}
           </select> 
         </div>
-
         {/* Property Name */}
         <div>
           <label className="block text-gray-700">Property Name</label>
@@ -402,7 +404,6 @@ const AddForRent = () => {
             placeholder="Greenhood House"
           />
         </div>
-
         {/* Basic Property Details */}
         <div>
           <label className="block text-gray-700">Bedrooms</label>
@@ -410,14 +411,12 @@ const AddForRent = () => {
             {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}{n === 5 ? '+' : ''}</option>)}
           </select>
         </div>
-
         <div>
           <label className="block text-gray-700">Bathrooms</label>
           <select name="bathrooms" value={formData.bathrooms} onChange={handleInputChange} className="w-full border border-gray-300 p-2 rounded-md">
             {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}{n === 5 ? '+' : ''}</option>)}
           </select>
         </div>
-
         <div>
           <label className="block text-gray-700">Square Footage (Optional)</label>
           <input
@@ -429,7 +428,6 @@ const AddForRent = () => {
             placeholder="Enter square footage"
           />
         </div>
-
         {/* Rent Details */}
         <div>
           <label className="block text-gray-700">Rent Frequency</label>
@@ -440,7 +438,28 @@ const AddForRent = () => {
             <option value="WEEKLY">Weekly</option>
           </select>
         </div>
-
+        <div>
+          <label className="block text-gray-700">State</label>
+          <input
+            type="text"
+            name="state"
+            value={formData.state}
+            onChange={handleInputChange}
+            className="w-full border border-gray-300 p-2 rounded-md"
+            placeholder="e.g. Lagos"
+          />
+        </div>
+        <div>
+          <label className="block text-gray-700">City</label>
+          <input
+            type="text"
+            name="city"
+            value={formData.city}
+            onChange={handleInputChange}
+            className="w-full border border-gray-300 p-2 rounded-md"
+            placeholder="e.g. Ikeja"
+          />
+        </div>
         <div className="md:col-span-2">
           <label className="block text-gray-700">Base Rent Price (recurring payment)</label>
           <input
