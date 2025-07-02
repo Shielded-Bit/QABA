@@ -177,7 +177,9 @@ const AddForSell = () => {
     sale_price: "",
     property_status: "New",
     amenities_ids: [],
-    user_type: "LandLord"
+    user_type: "LandLord",
+    state: "",
+    city: ""
   });
 
   // Documents state
@@ -291,7 +293,9 @@ const AddForSell = () => {
         sale_price: "",
         property_status: "New",
         amenities_ids: [],
-        user_type: "LandLord"
+        user_type: "LandLord",
+        state: "",
+        city: ""
       });
       
       setMediaFiles({
@@ -477,6 +481,22 @@ const AddForSell = () => {
             value={formData.property_status}
             onChange={handleInputChange}
             options={statusOptions}
+          />
+        </FormField>
+        <FormField label="State">
+          <FormInput
+            name="state"
+            value={formData.state}
+            onChange={handleInputChange}
+            placeholder="e.g. Lagos"
+          />
+        </FormField>
+        <FormField label="City">
+          <FormInput
+            name="city"
+            value={formData.city}
+            onChange={handleInputChange}
+            placeholder="e.g. Ikeja"
           />
         </FormField>
       </div>
