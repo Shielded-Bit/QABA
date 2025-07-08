@@ -2,11 +2,11 @@
 
 import { XCircle, AlertCircle, LogOut } from "lucide-react"; // Import the LogOut icon
 import useModal from "./useModal";
-import useLogout from "./useLogout";
+import useLogout from "../../hooks/useLogout"; // Use the correct logout hook
 
 const LogoutButton = () => {
   const { isOpen, openModal, closeModal } = useModal();
-  const { logout } = useLogout();
+  const { logout } = useLogout(); // This will now call the backend endpoint
 
   const handleLogout = () => {
     logout();
