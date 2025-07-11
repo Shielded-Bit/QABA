@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from core.utils.permissions import IsAgentOrAdmin, IsOwnerOrReadOnly
+from .permissions import IsAgentLandlordOrAdmin, IsOwnerOrReadOnly
 from core.utils.response import APIResponse
 from django.db.models import Sum
 from django.shortcuts import get_object_or_404
@@ -59,7 +59,7 @@ class PropertyViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ["create"]:
-            permission_classes = [IsAgentOrAdmin]
+            permission_classes = [IsAgentLandlordOrAdmin]
         elif self.action in ["update", "partial_update", "destroy"]:
             permission_classes = [IsOwnerOrReadOnly]
         else:
@@ -80,13 +80,13 @@ class PropertyViewSet(viewsets.ModelViewSet):
 
         if (
             self.request.user.is_authenticated
-            and self.request.user.user_type == "AGENT"
+            and (self.request.user.user_type in ["AGENT", "LANDLORD"])
         ):
             return queryset.filter(listed_by=self.request.user)
 
         if not self.request.user.is_staff and not (
             self.request.user.is_authenticated
-            and (self.request.user.user_type == "AGENT" or self.request.user.user_type == "LANDLORD")
+            and (self.request.user.user_type in ["AGENT", "LANDLORD"])
         ):
             queryset = queryset.filter(
                 property_status__in=[

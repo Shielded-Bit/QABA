@@ -169,7 +169,6 @@ class AmenityListField(serializers.ListField):
                 processed_data.append(item)
 
         try:
-            # Convert all values to integers
             values = [int(val) for val in processed_data if val]
         except (ValueError, TypeError):
             raise serializers.ValidationError(
@@ -290,7 +289,6 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
                     }
                 )
 
-        # Validate document metadata if documents are provided
         documents = attrs.get("documents", [])
         document_types = attrs.get("document_types", [])
 
@@ -299,7 +297,6 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
                 {"document_types": "You must provide a type for each document"}
             )
 
-        # Check document file types
         for doc in documents:
             ext = doc.name.split(".")[-1].lower()
             allowed_extensions = ["pdf", "doc", "docx", "jpg", "jpeg", "png"]
@@ -311,7 +308,6 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
                     }
                 )
 
-            # Check file size (limit to 10MB)
             if doc.size > 10 * 1024 * 1024:
                 raise serializers.ValidationError(
                     {"documents": f"File '{doc.name}' exceeds the maximum size of 10MB"}
@@ -334,11 +330,9 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
             listed_by=self.context["request"].user, **validated_data
         )
 
-        # Add amenities
         if amenities_ids:
             property_instance.amenities.set(amenities_ids)
 
-        # Handle images and video as before
         if images_data:
             for image_data in images_data[:5]:
                 PropertyImage.objects.create(
@@ -359,7 +353,6 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
                     uploaded_by=self.context["request"].user,
                 )
 
-        # Handle notifications as before
         if submit_for_review:
             self._send_admin_review_notification_email(property_instance)
             self._create_review_notification(property_instance)

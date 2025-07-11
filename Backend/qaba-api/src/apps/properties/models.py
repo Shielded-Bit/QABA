@@ -107,7 +107,6 @@ class Property(models.Model):
         help_text=_("Amenities available with this property"),
     )
 
-    # Only Agent or Admin can create properties
     listed_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,

@@ -88,7 +88,7 @@ class IsClientOrAgent(permissions.BasePermission):
             request.user
             and request.user.is_authenticated
             and request.user.user_type
-            in ["CLIENT", "AGENT", "LANDLORD"]  # Add LANDLORD
+            in ["CLIENT", "AGENT", "LANDLORD"]
         )
 
 
@@ -106,7 +106,6 @@ class CanReviewProperty(permissions.BasePermission):
         )
 
     def has_object_permission(self, request, view, obj):
-        # Users cannot review their own properties
         if hasattr(obj, "property"):
             return obj.property.listed_by != request.user
         return True
