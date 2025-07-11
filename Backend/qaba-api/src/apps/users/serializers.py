@@ -7,6 +7,7 @@ from rest_framework import serializers
 from .models import (
     AgentProfile,
     ClientProfile,
+    LandlordProfile,
     Notification,
     PropertySurveyMeeting,
     User,
@@ -76,6 +77,26 @@ class AgentProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AgentProfile
+        fields = [
+            "id",
+            "profile_photo_url",
+            "country",
+            "state",
+            "city",
+            "address",
+        ]
+
+    def get_profile_photo_url(self, obj):
+        if obj.profile_photo:
+            return obj.profile_photo.url
+        return None
+
+
+class LandlordProfileSerializer(serializers.ModelSerializer):
+    profile_photo_url = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = LandlordProfile
         fields = [
             "id",
             "profile_photo_url",

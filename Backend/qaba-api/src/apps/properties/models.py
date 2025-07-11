@@ -246,7 +246,6 @@ class Favorite(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="favorites",
-        # Remove the user_type constraint to allow both CLIENT and AGENT users
     )
     property = models.ForeignKey(
         Property, on_delete=models.CASCADE, related_name="favorited_by"

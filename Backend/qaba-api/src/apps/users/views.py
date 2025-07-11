@@ -1,6 +1,11 @@
 from apps.users.models import Notification
+from apps.users.permissions import IsAgentOrLandlord, IsClient
 from core.utils.response import APIResponse
-from core.utils.send_email import send_password_reset_email, send_survey_meeting_notification, send_verification_email
+from core.utils.send_email import (
+    send_password_reset_email,
+    send_survey_meeting_notification,
+    send_verification_email,
+)
 from core.utils.token import email_verification_token_generator
 from django.db import transaction
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
@@ -11,7 +16,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
 
-from .models import AgentProfile, ClientProfile, User
+from .models import AgentProfile, ClientProfile, LandlordProfile, User
 from .serializers import (
     AdminRegistrationSerializer,
     AgentProfilePatchSerializer,
@@ -21,6 +26,7 @@ from .serializers import (
     ClientProfileSerializer,
     ClientRegistrationSerializer,
     ContactFormSerializer,
+    LandlordProfileSerializer,
     LandlordRegistrationSerializer,
     LoginSerializer,
     NotificationSerializer,
@@ -150,18 +156,14 @@ class AdminRegistrationView(generics.CreateAPIView):
 
 @extend_schema(tags=["Profiles"])
 class ClientProfileView(APIView):
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated, IsClient)
     parser_classes = (MultiPartParser, FormParser)
 
     @extend_schema(responses={200: ClientProfileSerializer})
     def get(self, request):
         """Retrieve client profile for current authenticated user"""
-        if not request.user.is_client:
-            return APIResponse.forbidden("Only clients can view client profiles")
 
-        # Check if the user has a client profile
         if not hasattr(request.user, "clientprofile"):
-            # Create a profile if it doesn't exist
             profile = ClientProfile.objects.create(user=request.user)
             Notification.objects.create(
                 user=request.user,
@@ -180,8 +182,6 @@ class ClientProfileView(APIView):
     )
     def patch(self, request):
         """Update client profile for current authenticated user"""
-        if not request.user.is_client:
-            return APIResponse.forbidden("Only clients can update client profiles")
 
         if not hasattr(request.user, "clientprofile"):
             profile = ClientProfile.objects.create(user=request.user)
@@ -208,44 +208,66 @@ class ClientProfileView(APIView):
 
 @extend_schema(tags=["Profiles"])
 class AgentProfileView(APIView):
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated, IsAgentOrLandlord)
     parser_classes = (MultiPartParser, FormParser)
 
     @extend_schema(responses={200: AgentProfileSerializer})
     def get(self, request):
-        """Retrieve agent profile for current authenticated user"""
-        if not request.user.is_agent:
-            return APIResponse.forbidden("Only agents can view agent profiles")
-        try:
-            profile = request.user.agentprofile
-        except AgentProfile.DoesNotExist:
-            profile = AgentProfile.objects.create(user=request.user)
+        """Retrieve agent or landlord profile for current authenticated user"""
+        if request.user.is_agent:
+            try:
+                profile = request.user.agentprofile
+            except AgentProfile.DoesNotExist:
+                profile = AgentProfile.objects.create(user=request.user)
 
-        serializer = AgentProfileSerializer(profile)
-        return APIResponse.success(
-            data=serializer.data, message="Agent profile retrieved"
-        )
+            serializer = AgentProfileSerializer(profile)
+            return APIResponse.success(
+                data=serializer.data, message="Agent profile retrieved"
+            )
+        else:
+            try:
+                profile = request.user.landlordprofile
+            except LandlordProfile.DoesNotExist:
+                profile = LandlordProfile.objects.create(user=request.user)
+            serializer = LandlordProfileSerializer(profile)
+            return APIResponse.success(
+                data=serializer.data, message="Agent profile retrieved"
+            )
 
     @extend_schema(
         request=AgentProfilePatchSerializer, responses={200: AgentProfileSerializer}
     )
     def patch(self, request):
         """Update agent profile for current authenticated user"""
-        if not request.user.is_agent:
-            return APIResponse.forbidden("Only agents can update agent profiles")
 
-        profile = request.user.agentprofile
+        if request.user.is_agent:
+            profile = request.user.agentprofile
 
-        serializer = AgentProfilePatchSerializer(
-            profile, data=request.data, partial=True
-        )
-
-        if serializer.is_valid():
-            serializer.save()
-            updated_profile = AgentProfileSerializer(profile)
-            return APIResponse.success(
-                data=updated_profile.data, message="Agent profile updated successfully"
+            serializer = AgentProfilePatchSerializer(
+                profile, data=request.data, partial=True
             )
+
+            if serializer.is_valid():
+                serializer.save()
+                updated_profile = AgentProfileSerializer(profile)
+                return APIResponse.success(
+                    data=updated_profile.data,
+                    message="Agent profile updated successfully",
+                )
+        else:
+            profile = request.user.landlordprofile
+
+            serializer = LandlordProfileSerializer(
+                profile, data=request.data, partial=True
+            )
+
+            if serializer.is_valid():
+                serializer.save()
+                updated_profile = LandlordProfileSerializer(profile)
+                return APIResponse.success(
+                    data=updated_profile.data,
+                    message="Landlord profile updated successfully",
+                )
 
         return APIResponse.bad_request(serializer.errors)
 
@@ -368,11 +390,12 @@ class EmailVerificationView(APIView):
             if user.is_client and not hasattr(user, "clientprofile"):
                 ClientProfile.objects.create(user=user)
                 profile_created = True
-            elif user.is_agent and not hasattr(user, "agentprofile"):
+            elif user.user_type in ["AGENT", "LANDLORD"] and not hasattr(
+                user, "agentprofile"
+            ):
                 AgentProfile.objects.create(user=user)
                 profile_created = True
 
-            # Create a notification to inform the user
             if profile_created:
                 Notification.objects.create(
                     user=user,
@@ -380,7 +403,6 @@ class EmailVerificationView(APIView):
                 )
 
         except Exception as e:
-            # Log the error but don't interrupt the verification process
             print(f"Error creating profile for user {user.email}: {str(e)}")
 
 
@@ -396,7 +418,6 @@ class SendEmailVerificationView(APIView):
             try:
                 user = User.objects.get(email=email)
 
-                # Only send verification if email is not already verified
                 if not user.is_email_verified:
                     email_result = send_verification_email(user)
 
@@ -412,7 +433,6 @@ class SendEmailVerificationView(APIView):
                     return APIResponse.bad_request("Email is already verified")
 
             except User.DoesNotExist:
-                # Don't reveal user existence for security reasons
                 return APIResponse.success(
                     message="If a user with this email exists, a verification email has been sent"
                 )
@@ -598,7 +618,7 @@ class PropertySurveyMeetingCreateView(generics.CreateAPIView):
                     status_code=status.HTTP_201_CREATED,
                 )
 
-        except Exception as e:
+        except Exception:
             return APIResponse.server_error(
                 message="An error occurred while scheduling the meeting. Please try again."
             )

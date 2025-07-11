@@ -1,6 +1,5 @@
 from datetime import datetime
 
-from .permissions import IsAgentLandlordOrAdmin, IsOwnerOrReadOnly
 from core.utils.response import APIResponse
 from django.db.models import Sum
 from django.shortcuts import get_object_or_404
@@ -10,8 +9,8 @@ from rest_framework import filters, generics, permissions, viewsets
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.views import APIView
 
+from ..users.permissions import IsAgentLandlordOrAdmin, IsOwnerOrReadOnly
 from .models import Amenity, Favorite, Property, PropertyDocument, PropertyReview
-from .permissions import IsClientOrAgent
 from .serializers import (
     AgentPropertyAnalyticsSerializer,
     AmenitySerializer,
@@ -78,9 +77,8 @@ class PropertyViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = super().get_queryset()
 
-        if (
-            self.request.user.is_authenticated
-            and (self.request.user.user_type in ["AGENT", "LANDLORD"])
+        if self.request.user.is_authenticated and (
+            self.request.user.user_type in ["AGENT", "LANDLORD"]
         ):
             return queryset.filter(listed_by=self.request.user)
 
@@ -284,7 +282,7 @@ class FavoriteListView(generics.ListAPIView):
     """
 
     serializer_class = FavoriteSerializer
-    permission_classes = [IsClientOrAgent]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         return Favorite.objects.filter(user=self.request.user)

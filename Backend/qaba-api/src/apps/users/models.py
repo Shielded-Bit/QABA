@@ -42,7 +42,6 @@ class User(AbstractUser):
         AGENT = "AGENT", "Agent"
         LANDLORD = "LANDLORD", "Landlord"
 
-    # Make email required and unique
     email = models.EmailField(_("email address"), unique=True)
     first_name = models.CharField(_("first name"), max_length=150)
     last_name = models.CharField(_("last name"), max_length=150)
@@ -181,7 +180,6 @@ class PropertySurveyMeeting(models.Model):
             models.Index(fields=["user", "property_id"]),
             models.Index(fields=["scheduled_date", "scheduled_time"]),
         ]
-        # Ensure user can't have multiple active meetings for same property
         constraints = [
             models.UniqueConstraint(
                 fields=["user", "property_id"],
@@ -237,11 +235,9 @@ class PropertySurveyMeeting(models.Model):
         from django.core.exceptions import ValidationError
         from django.utils import timezone
 
-        # Validate property exists
         if self.property_id and not self.property_object:
             raise ValidationError("Property with this ID does not exist.")
 
-        # Validate that the scheduled datetime is not in the past
         if self.scheduled_date and self.scheduled_time:
             scheduled_datetime = timezone.make_aware(
                 timezone.datetime.combine(self.scheduled_date, self.scheduled_time)
