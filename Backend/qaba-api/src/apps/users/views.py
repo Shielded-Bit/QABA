@@ -183,9 +183,7 @@ class ClientProfileView(APIView):
         if not request.user.is_client:
             return APIResponse.forbidden("Only clients can update client profiles")
 
-        # Check if the user has a client profile
         if not hasattr(request.user, "clientprofile"):
-            # Create a profile if it doesn't exist
             profile = ClientProfile.objects.create(user=request.user)
             Notification.objects.create(
                 user=request.user,
@@ -333,7 +331,7 @@ class RefreshTokenView(TokenRefreshView):
         )
     ],
     responses={
-        302: None,  # Redirect response
+        302: None,
         400: OpenApiResponse(description="Invalid token"),
     },
 )
@@ -348,19 +346,16 @@ class EmailVerificationView(APIView):
         try:
             user = User.objects.get(email_verification_token=token)
 
-            # Check if token is valid and not expired
             if not email_verification_token_generator.check_token(user, token):
                 return APIResponse.bad_request("Invalid token")
 
-            # Verify and invalidate token
             user.is_email_verified = True
-            user.email_verification_token = ""  # Invalidate token
+            user.email_verification_token = ""
             user.is_active = True
             user.save()
 
             self._create_profile_for_user(user)
 
-            # Redirect to frontend success page
             return APIResponse.success(data="Email verified")
         except User.DoesNotExist:
             return APIResponse.not_found("User not found")
