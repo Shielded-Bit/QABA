@@ -78,17 +78,15 @@ class PropertyViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = super().get_queryset()
 
-        # Filter by user type
         if (
             self.request.user.is_authenticated
             and self.request.user.user_type == "AGENT"
         ):
             return queryset.filter(listed_by=self.request.user)
 
-        # Filter by property status for non-agents
         if not self.request.user.is_staff and not (
             self.request.user.is_authenticated
-            and self.request.user.user_type == "AGENT"
+            and (self.request.user.user_type == "AGENT" or self.request.user.user_type == "LANDLORD")
         ):
             queryset = queryset.filter(
                 property_status__in=[
@@ -313,13 +311,11 @@ class FavoriteToggleView(APIView):
             property_id = serializer.validated_data["property_id"]
             property_obj = get_object_or_404(Property, id=property_id)
 
-            # Check if the property is already favorited
             favorite, created = Favorite.objects.get_or_create(
                 user=request.user, property=property_obj
             )
 
             if not created:
-                # If favorite already exists, delete it
                 favorite.delete()
                 return APIResponse.success(message="Property removed from favorites")
 
@@ -341,12 +337,9 @@ class PropertyDocumentView(APIView):
         """List all documents for a property"""
         property_obj = get_object_or_404(Property, id=property_id)
 
-        # Determine which documents to show based on user permissions
         if request.user.is_staff or property_obj.listed_by == request.user:
-            # Admins and property owners see all documents
             documents = PropertyDocument.objects.filter(property=property_obj)
         else:
-            # Others only see verified documents
             documents = PropertyDocument.objects.filter(
                 property=property_obj, is_verified=True
             )
@@ -365,7 +358,6 @@ class PropertyDocumentView(APIView):
         """Add a new document to a property"""
         property_obj = get_object_or_404(Property, id=property_id)
 
-        # Only property owner or admin can add documents
         if not (request.user.is_staff or property_obj.listed_by == request.user):
             return APIResponse.forbidden(
                 message="You don't have permission to add documents to this property"
@@ -404,7 +396,6 @@ class PropertyDocumentDetailView(APIView):
             PropertyDocument, id=document_id, property=property_obj
         )
 
-        # Only the owner or admin can update documents
         if not (request.user.is_staff or property_obj.listed_by == request.user):
             return APIResponse.forbidden(
                 message="You don't have permission to update this document"
@@ -429,7 +420,6 @@ class PropertyDocumentDetailView(APIView):
             PropertyDocument, id=document_id, property=property_obj
         )
 
-        # Only the owner or admin can delete documents
         if not (request.user.is_staff or property_obj.listed_by == request.user):
             return APIResponse.forbidden(
                 message="You don't have permission to delete this document"
@@ -530,11 +520,9 @@ class AgentPropertyAnalyticsView(APIView):
     )
     def get(self, request):
         """Get property analytics for the authenticated agent user"""
-        # Check if user is an agent
-        if request.user.user_type != "AGENT":
+        if request.user.user_type == "CLIENT":
             return APIResponse.forbidden("Only agent users can access this endpoint")
 
-        # Get query parameters
         period_type = request.query_params.get("period_type", "monthly")
         year = request.query_params.get("year", datetime.now().year)
 
@@ -543,13 +531,11 @@ class AgentPropertyAnalyticsView(APIView):
         except ValueError:
             return APIResponse.bad_request("Invalid year format")
 
-        # Get analytics data based on period type
         if period_type == "yearly":
             analytics_data = self._get_yearly_analytics(request.user, year)
         else:
             analytics_data = self._get_monthly_analytics(request.user, year)
 
-        # Calculate totals for the summary
         summary = {
             "period": "Total",
             "total_properties": sum(
@@ -578,29 +564,24 @@ class AgentPropertyAnalyticsView(APIView):
 
     def _get_monthly_analytics(self, user, year):
         """Get monthly analytics for the specified year"""
-        # Get all properties created by the agent
         agent_properties = Property.objects.filter(listed_by=user)
 
-        # Filter properties for the specified year
         start_date = datetime(year, 1, 1)
         end_date = datetime(year + 1, 1, 1)
         year_properties = agent_properties.filter(
             listed_date__gte=start_date, listed_date__lt=end_date
         )
 
-        # Prepare result data structure
         months = []
         for month in range(1, 13):
             month_start = datetime(year, month, 1)
             month_name = month_start.strftime("%B")
 
-            # Calculate next month for range filtering
             if month == 12:
                 month_end = datetime(year + 1, 1, 1)
             else:
                 month_end = datetime(year, month + 1, 1)
 
-            # Filter properties for this month
             month_properties = year_properties.filter(
                 listed_date__gte=month_start, listed_date__lt=month_end
             )
