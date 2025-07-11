@@ -1,7 +1,16 @@
+from datetime import datetime, time, timedelta
+
 from django.contrib.auth import authenticate
+from django.utils import timezone
 from rest_framework import serializers
 
-from .models import AgentProfile, ClientProfile, Notification, User
+from .models import (
+    AgentProfile,
+    ClientProfile,
+    Notification,
+    PropertySurveyMeeting,
+    User,
+)
 
 
 class ClientProfilePatchSerializer(serializers.ModelSerializer):
@@ -276,3 +285,176 @@ class ContactFormSerializer(serializers.Serializer):
                     {"email": "Email is required for anonymous users"}
                 )
         return attrs
+
+
+class PropertySurveyMeetingSerializer(serializers.ModelSerializer):
+    user_name = serializers.CharField(source="user.get_full_name", read_only=True)
+    user_email = serializers.CharField(source="user.email", read_only=True)
+    user_phone = serializers.CharField(source="user.phone_number", read_only=True)
+    property_address = serializers.CharField(read_only=True)
+    property_name = serializers.CharField(
+        source="property_object.property_name", read_only=True
+    )
+    property_location = serializers.CharField(
+        source="property_object.location", read_only=True
+    )
+    agent_name = serializers.CharField(
+        source="agent_assigned.get_full_name", read_only=True
+    )
+    agent_email = serializers.CharField(source="agent_assigned.email", read_only=True)
+    agent_phone = serializers.CharField(
+        source="agent_assigned.phone_number", read_only=True
+    )
+    status_display = serializers.CharField(source="get_status_display", read_only=True)
+    is_upcoming = serializers.BooleanField(read_only=True)
+    is_past = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = PropertySurveyMeeting
+        fields = [
+            "id",
+            "property_id",
+            "property_address",
+            "property_name",
+            "property_location",
+            "scheduled_date",
+            "scheduled_time",
+            "message",
+            "status",
+            "status_display",
+            "user_name",
+            "user_email",
+            "user_phone",
+            "agent_name",
+            "agent_email",
+            "agent_phone",
+            "admin_notes",
+            "is_upcoming",
+            "is_past",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "id",
+            "user",
+            "admin_notes",
+            "created_at",
+            "updated_at",
+        ]
+
+
+class PropertySurveyMeetingCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PropertySurveyMeeting
+        fields = [
+            "property_id",
+            "scheduled_date",
+            "scheduled_time",
+            "message",
+        ]
+
+    def validate_property_id(self, value):
+        """Validate that property exists and is available for survey"""
+        try:
+            from apps.properties.models import Property
+
+            property_obj = Property.objects.get(id=value)
+
+            # Check if property is approved and active
+            if property_obj.listing_status != Property.ListingStatus.APPROVED:
+                raise serializers.ValidationError(
+                    "Property is not available for survey meetings."
+                )
+
+            return value
+        except Property.DoesNotExist:
+            raise serializers.ValidationError("Property does not exist.")
+
+    def validate_scheduled_date(self, value):
+        """Ensure the scheduled date is not in the past and within reasonable future"""
+        today = timezone.now().date()
+        if value < today:
+            raise serializers.ValidationError("Scheduled date cannot be in the past.")
+
+        max_future_date = today + timedelta(days=180)
+        if value > max_future_date:
+            raise serializers.ValidationError(
+                "Cannot schedule more than 6 months in advance."
+            )
+
+        return value
+
+    def validate_scheduled_time(self, value):
+        """Ensure the scheduled time is within business hours (9 AM - 6 PM)"""
+        business_start = time(9, 0)  # 9:00 AM
+        business_end = time(18, 0)  # 6:00 PM
+
+        if not (business_start <= value <= business_end):
+            raise serializers.ValidationError(
+                "Scheduled time must be between 9:00 AM and 6:00 PM."
+            )
+        return value
+
+    def validate(self, data):
+        """Custom validation for the entire object"""
+        scheduled_date = data.get("scheduled_date")
+        scheduled_time = data.get("scheduled_time")
+        property_id = data.get("property_id")
+
+        # Validate scheduled datetime is not in the past
+        if scheduled_date and scheduled_time:
+            scheduled_datetime = datetime.combine(scheduled_date, scheduled_time)
+            if timezone.make_aware(scheduled_datetime) <= timezone.now():
+                raise serializers.ValidationError(
+                    "Scheduled date and time cannot be in the past."
+                )
+
+        # Check if user already has an active meeting for this property
+        if self.context.get("request") and property_id:
+            user = self.context["request"].user
+            existing_meetings = PropertySurveyMeeting.objects.filter(
+                user=user,
+                property_id=property_id,
+                status__in=[
+                    PropertySurveyMeeting.Status.PENDING,
+                    PropertySurveyMeeting.Status.CONFIRMED,
+                ],
+            )
+
+            # For updates, exclude the current instance
+            if self.instance:
+                existing_meetings = existing_meetings.exclude(id=self.instance.id)
+
+            if existing_meetings.exists():
+                # Check if any existing meeting is still upcoming
+                for meeting in existing_meetings:
+                    if meeting.is_upcoming:
+                        raise serializers.ValidationError(
+                            f"You already have an active meeting scheduled for this property on "
+                            f"{meeting.scheduled_date.strftime('%B %d, %Y')} at "
+                            f"{meeting.scheduled_time.strftime('%I:%M %p')}. "
+                            f"Please wait until after that date or cancel the existing meeting."
+                        )
+
+        # Check for scheduling conflicts (same user, same date/time)
+        if self.context.get("request") and scheduled_date and scheduled_time:
+            user = self.context["request"].user
+            conflict_check = PropertySurveyMeeting.objects.filter(
+                user=user,
+                scheduled_date=scheduled_date,
+                scheduled_time=scheduled_time,
+                status__in=[
+                    PropertySurveyMeeting.Status.PENDING,
+                    PropertySurveyMeeting.Status.CONFIRMED,
+                ],
+            )
+
+            if self.instance:
+                conflict_check = conflict_check.exclude(id=self.instance.id)
+
+            if conflict_check.exists():
+                raise serializers.ValidationError(
+                    "You already have a meeting scheduled at this date and time."
+                )
+
+        return data

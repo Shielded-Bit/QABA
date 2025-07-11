@@ -7,7 +7,14 @@ from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
-from .models import AgentProfile, ClientProfile, LandlordProfile, Notification, User
+from .models import (
+    AgentProfile,
+    ClientProfile,
+    LandlordProfile,
+    Notification,
+    PropertySurveyMeeting,
+    User,
+)
 
 
 class ClientProfileInline(admin.StackedInline):
@@ -675,3 +682,266 @@ class NotificationAdmin(admin.ModelAdmin):
         return "-"
 
     review_details.short_description = "Review Information"
+
+
+@admin.register(PropertySurveyMeeting)
+class PropertySurveyMeetingAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "user_info",
+        "property_display",
+        "scheduled_datetime",
+        "status",
+        "agent_display",
+        "created_at",
+        "is_upcoming_display",
+    )
+    list_filter = (
+        "status",
+        "scheduled_date",
+        "created_at",
+        "user__user_type",
+    )
+    search_fields = (
+        "user__email",
+        "user__first_name",
+        "user__last_name",
+        "property_id",
+        "message",
+    )
+    readonly_fields = (
+        "user",
+        "created_at",
+        "updated_at",
+        "is_upcoming_display",
+        "contact_info",
+        "property_details",
+    )
+    date_hierarchy = "scheduled_date"
+
+    # Pagination
+    list_per_page = 25
+    list_max_show_all = 100
+
+    fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    "user",
+                    "property_id",
+                    "scheduled_date",
+                    "scheduled_time",
+                    "message",
+                )
+            },
+        ),
+        (
+            _("Meeting Management"),
+            {
+                "fields": (
+                    "status",
+                    "admin_notes",
+                ),
+                "classes": ("wide",),
+            },
+        ),
+        (
+            _("Property Information"),
+            {
+                "fields": ("property_details",),
+                "classes": ("wide",),
+            },
+        ),
+        (
+            _("Contact Information"),
+            {
+                "fields": ("contact_info",),
+                "classes": ("wide",),
+            },
+        ),
+        (
+            _("Timestamps"),
+            {
+                "fields": ("created_at", "updated_at", "is_upcoming_display"),
+                "classes": ("collapse",),
+            },
+        ),
+    )
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("user")
+
+    def user_info(self, obj):
+        """Display user information with contact details"""
+        return format_html(
+            "<strong>{}</strong><br/>"
+            '<small style="color: #666;">{}</small><br/>'
+            '<small style="color: #666;">{}</small>',
+            obj.user.get_full_name(),
+            obj.user.email,
+            obj.user.phone_number or "No phone",
+        )
+
+    user_info.short_description = "Client"
+
+    def property_display(self, obj):
+        """Display property information"""
+        if obj.property_object:
+            return format_html(
+                "<strong>{}</strong><br/>"
+                '<small style="color: #666;">{}</small><br/>'
+                '<small style="color: #888;">ID: {}</small>',
+                obj.property_object.property_name,
+                obj.property_object.location,
+                obj.property_id,
+            )
+        return format_html(
+            '<span style="color: red;">Property not found</span><br/>'
+            "<small>ID: {}</small>",
+            obj.property_id,
+        )
+
+    property_display.short_description = "Property"
+
+    def agent_display(self, obj):
+        """Display assigned agent information"""
+        if obj.agent_assigned:
+            return format_html(
+                '<strong>{}</strong><br/><small style="color: #666;">{}</small>',
+                obj.agent_assigned.get_full_name(),
+                obj.agent_assigned.email,
+            )
+        return format_html('<span style="color: #999;">No agent assigned</span>')
+
+    agent_display.short_description = "Agent"
+
+    def scheduled_datetime(self, obj):
+        """Display formatted date and time"""
+        return format_html(
+            "<strong>{}</strong><br/><small>{}</small>",
+            obj.scheduled_date.strftime("%B %d, %Y"),
+            obj.scheduled_time.strftime("%I:%M %p"),
+        )
+
+    scheduled_datetime.short_description = "Scheduled"
+
+    def is_upcoming_display(self, obj):
+        """Display if meeting is upcoming or past"""
+        if obj.is_upcoming:
+            return format_html(
+                '<span style="color: green; font-weight: bold;">Upcoming</span>'
+            )
+        else:
+            return format_html('<span style="color: #999;">Past</span>')
+
+    is_upcoming_display.short_description = "Status"
+
+    def property_details(self, obj):
+        """Display detailed property information"""
+        if obj.property_object:
+            return format_html(
+                '<div class="form-row">'
+                '<div style="background: var(--body-bg, #f8f9fa); padding: 12px; border: 1px solid var(--border-color, #ddd); border-radius: 4px;">'
+                '<p style="margin: 0 0 8px 0; color: var(--body-fg, #333);"><strong>Property:</strong> {}</p>'
+                '<p style="margin: 0 0 8px 0; color: var(--body-fg, #333);"><strong>Location:</strong> {}</p>'
+                '<p style="margin: 0 0 8px 0; color: var(--body-fg, #333);"><strong>Type:</strong> {}</p>'
+                '<p style="margin: 0 0 8px 0; color: var(--body-fg, #333);"><strong>Status:</strong> {}</p>'
+                '<p style="margin: 0; color: var(--body-fg, #333);"><strong>Listed by:</strong> {} ({})</p>'
+                "</div>"
+                "</div>",
+                obj.property_object.property_name,
+                obj.property_object.location,
+                obj.property_object.get_property_type_display(),
+                obj.property_object.get_listing_status_display(),
+                obj.property_object.listed_by.get_full_name(),
+                obj.property_object.listed_by.email,
+            )
+        return format_html(
+            '<div class="form-row">'
+            '<div style="background: var(--delete-button-bg, #ba2121); color: var(--delete-button-fg, white); padding: 12px; border-radius: 4px; border: 1px solid var(--delete-button-bg, #ba2121);">'
+            '<p style="margin: 0; font-weight: bold;"><strong>⚠ Error:</strong> Property with ID {} not found</p>'
+            "</div>"
+            "</div>",
+            obj.property_id,
+        )
+
+    property_details.short_description = "Property Details"
+
+    def contact_info(self, obj):
+        """Display detailed contact information"""
+        return format_html(
+            '<div class="form-row">'
+            '<div style="background: var(--body-bg, #f8f9fa); padding: 12px; border: 1px solid var(--border-color, #ddd); border-radius: 4px;">'
+            '<p style="margin: 0 0 8px 0; color: var(--body-fg, #333);"><strong>Client:</strong> {}</p>'
+            '<p style="margin: 0 0 8px 0; color: var(--body-fg, #333);"><strong>Email:</strong> <a href="mailto:{}" style="color: var(--link-fg, #447e9b); text-decoration: none;">{}</a></p>'
+            '<p style="margin: 0 0 8px 0; color: var(--body-fg, #333);"><strong>Phone:</strong> {}</p>'
+            '<p style="margin: 0; color: var(--body-fg, #333);"><strong>User Type:</strong> {}</p>'
+            "</div>"
+            "</div>",
+            obj.user.get_full_name(),
+            obj.user.email,
+            obj.user.email,
+            obj.user.phone_number or "Not provided",
+            obj.user.get_user_type_display(),
+        )
+
+    contact_info.short_description = "Contact Details"
+
+    def save_model(self, request, obj, form, change):
+        """Send email notifications when status changes"""
+        old_status = None
+        if change:
+            try:
+                old_obj = PropertySurveyMeeting.objects.get(pk=obj.pk)
+                old_status = old_obj.status
+            except PropertySurveyMeeting.DoesNotExist:
+                pass
+
+        super().save_model(request, obj, form, change)
+
+        if (
+            change
+            and old_status != obj.status
+            and obj.status
+            in [
+                PropertySurveyMeeting.Status.CONFIRMED,
+                PropertySurveyMeeting.Status.CANCELLED,
+            ]
+        ):
+            try:
+                from core.utils.send_email import send_survey_meeting_status_update
+
+                send_survey_meeting_status_update(obj, old_status, obj.status)
+            except Exception as e:
+                import logging
+
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to send meeting status update email: {str(e)}")
+
+    actions = ["mark_completed"]
+
+    @admin.action(description="Mark selected meetings as completed")
+    def mark_completed(self, request, queryset):
+        from django.utils import timezone
+
+        now = timezone.now()
+
+        completed_count = 0
+        for meeting in queryset:
+            scheduled_datetime = timezone.make_aware(
+                timezone.datetime.combine(
+                    meeting.scheduled_date, meeting.scheduled_time
+                )
+            )
+            if (
+                meeting.status == PropertySurveyMeeting.Status.CONFIRMED
+                and scheduled_datetime <= now
+            ):
+                meeting.status = PropertySurveyMeeting.Status.COMPLETED
+                meeting.save()
+                completed_count += 1
+
+        self.message_user(
+            request, f"{completed_count} meetings were marked as completed."
+        )

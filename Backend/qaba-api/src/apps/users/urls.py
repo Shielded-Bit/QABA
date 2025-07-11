@@ -17,6 +17,7 @@ from .views import (
     PasswordChangeView,
     PasswordResetConfirmView,
     PasswordResetRequestView,
+    PropertySurveyMeetingCreateView,
     RefreshTokenView,
     SendEmailVerificationView,
     UpdateUserView,
@@ -76,4 +77,6 @@ urlpatterns = [
         name="register-landlord",
     ),
     path("contact/", ContactFormView.as_view(), name="contact-form"),
+    path('survey-meetings/create/', PropertySurveyMeetingCreateView.as_view(), name='survey_meetings_create'),
+
 ]

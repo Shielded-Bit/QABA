@@ -22,20 +22,6 @@ def send_email(
 ) -> Dict:
     """
     Send an email using a template.
-
-    Args:
-        subject: Email subject
-        recipients: List of recipient email addresses or single email address
-        template_name: Name of the template to use (without .html extension)
-        context: Dictionary of context variables for the template
-        from_email: Sender email address (defaults to settings.DEFAULT_FROM_EMAIL)
-        fail_silently: Whether to suppress exceptions
-        attachments: List of (filename, content, mimetype) tuples
-        cc: List of CC email addresses
-        bcc: List of BCC email addresses
-
-    Returns:
-        Dict with success status and error message if any
     """
     if context is None:
         context = {}
@@ -187,17 +173,6 @@ def send_property_notification_email(user, property_obj):
 def send_contact_form_email(name, email, phone, user_type, subject, message):
     """
     Send contact form submission to admin users
-
-    Args:
-        name: Sender's name
-        email: Sender's email
-        phone: Sender's phone number
-        user_type: Type of user (Client, Agent, etc.)
-        subject: Message subject
-        message: Message content
-
-    Returns:
-        dict: {"success": bool, "error": str}
     """
     try:
         # Get admin emails
@@ -254,13 +229,6 @@ def send_contact_form_email(name, email, phone, user_type, subject, message):
 def send_contact_confirmation_email(email, name):
     """
     Send confirmation email to contact form submitter
-
-    Args:
-        email: Recipient email
-        name: Recipient name
-
-    Returns:
-        dict: {"success": bool, "error": str}
     """
     try:
         from django.conf import settings
@@ -298,14 +266,6 @@ def send_contact_confirmation_email(email, name):
 def send_property_review_notification_email(property_instance, owner, decision):
     """
     Send notification email to property owner about approval/rejection
-
-    Args:
-        property_instance: The property object
-        owner: The user who listed the property
-        decision: The decision (APPROVED or REJECTED)
-
-    Returns:
-        dict: {"success": bool, "error": str}
     """
     subject = f"Property Listing {decision.title()}: {property_instance.property_name}"
 
@@ -329,5 +289,114 @@ def send_property_review_notification_email(property_instance, owner, decision):
         subject=subject,
         recipients=owner.email,
         template_name="owner_property_review_notification",
+        context=context,
+    )
+
+
+def send_survey_meeting_notification(meeting, recipient_type="client"):
+    """
+    Send survey meeting notification emails
+
+    Args:
+        meeting: PropertySurveyMeeting instance
+        recipient_type: "client" or "admin" to determine email content
+
+    Returns:
+        dict: {"success": bool, "error": str}
+    """
+    from django.utils import timezone
+
+    if recipient_type == "client":
+        subject = "Property Survey Meeting Scheduled - QABA Real Estate"
+        recipients = [meeting.user.email]
+        template_name = "survey_meeting_client"
+    else:
+        subject = f"New Property Survey Meeting Request - {meeting.property_address}"
+        from apps.users.models import User
+
+        admin_users = User.objects.filter(
+            user_type__in=[User.UserType.ADMIN, User.UserType.AGENT]
+        )
+        recipients = [user.email for user in admin_users if user.email]
+
+        # Add the property agent/owner to recipients
+        if meeting.agent_assigned and meeting.agent_assigned.email:
+            recipients.append(meeting.agent_assigned.email)
+
+        if not recipients:
+            recipients = [settings.DEFAULT_FROM_EMAIL]
+        template_name = "survey_meeting_admin"
+
+    scheduled_datetime = timezone.datetime.combine(
+        meeting.scheduled_date, meeting.scheduled_time
+    )
+
+    context = {
+        "meeting": meeting,
+        "user": meeting.user,
+        "property": meeting.property_object,  # Changed from meeting.property
+        "agent": meeting.agent_assigned,
+        "scheduled_datetime": scheduled_datetime,
+        "formatted_date": meeting.scheduled_date.strftime("%B %d, %Y"),
+        "formatted_time": meeting.scheduled_time.strftime("%I:%M %p"),
+        "property_address": meeting.property_address,
+        "message": meeting.message,
+        "meeting_url": f"{settings.FRONTEND_URL}/dashboard/survey-meetings/{meeting.id}",
+        "dashboard_url": f"{settings.FRONTEND_URL}/dashboard",
+    }
+
+    return send_email(
+        subject=subject,
+        recipients=recipients,
+        template_name=template_name,
+        context=context,
+    )
+
+
+def send_survey_meeting_status_update(meeting, old_status, new_status):
+    """
+    Send email notification when survey meeting status changes
+
+    Args:
+        meeting: PropertySurveyMeeting instance
+        old_status: Previous status
+        new_status: New status
+
+    Returns:
+        dict: {"success": bool, "error": str}
+    """
+    from django.utils import timezone
+
+    status_messages = {
+        "CONFIRMED": "has been confirmed",
+        "CANCELLED": "has been cancelled",
+        "RESCHEDULED": "has been rescheduled",
+        "COMPLETED": "has been completed",
+    }
+
+    subject = f"Property Survey Meeting {status_messages.get(new_status, 'Updated')} - QABA Real Estate"
+
+    scheduled_datetime = timezone.datetime.combine(
+        meeting.scheduled_date, meeting.scheduled_time
+    )
+
+    context = {
+        "meeting": meeting,
+        "user": meeting.user,
+        "old_status": old_status,
+        "new_status": new_status,
+        "status_message": status_messages.get(new_status, "updated"),
+        "scheduled_datetime": scheduled_datetime,
+        "formatted_date": meeting.scheduled_date.strftime("%B %d, %Y"),
+        "formatted_time": meeting.scheduled_time.strftime("%I:%M %p"),
+        "property_address": meeting.property_address,
+        "agent_assigned": meeting.agent_assigned,
+        "meeting_url": f"{settings.FRONTEND_URL}/dashboard/survey-meetings/{meeting.id}",
+    }
+
+    return send_email(
+        subject=subject,
+        recipients=[meeting.user.email],
+        template_name="survey_meeting_status_update",
         context=context,
     )

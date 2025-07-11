@@ -1,10 +1,12 @@
 from apps.users.models import Notification
 from core.utils.response import APIResponse
-from core.utils.send_email import send_password_reset_email, send_verification_email
+from core.utils.send_email import send_password_reset_email, send_survey_meeting_notification, send_verification_email
 from core.utils.token import email_verification_token_generator
+from django.db import transaction
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import generics, permissions, status
 from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
@@ -25,6 +27,8 @@ from .serializers import (
     PasswordChangeSerializer,
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
+    PropertySurveyMeetingCreateSerializer,
+    PropertySurveyMeetingSerializer,
     SendEmailVerificationSerializer,
     UserSerializer,
     UserUpdateSerializer,
@@ -560,3 +564,46 @@ class ContactFormView(APIView):
             )
 
         return APIResponse.bad_request(serializer.errors)
+
+
+@extend_schema(tags=["Property Survey Meetings"])
+class PropertySurveyMeetingCreateView(generics.CreateAPIView):
+    """Create a new property survey meeting for authenticated users."""
+
+    serializer_class = PropertySurveyMeetingCreateSerializer
+    permission_classes = [IsAuthenticated]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            with transaction.atomic():
+                meeting = serializer.save(user=request.user)
+
+                email_results = {}
+                try:
+                    client_email_result = send_survey_meeting_notification(
+                        meeting, "client"
+                    )
+                    email_results["client_notification"] = client_email_result
+
+                    admin_email_result = send_survey_meeting_notification(
+                        meeting, "admin"
+                    )
+                    email_results["admin_notification"] = admin_email_result
+
+                except Exception as e:
+                    email_results["error"] = str(e)
+
+                response_serializer = PropertySurveyMeetingSerializer(meeting)
+                return APIResponse.success(
+                    data=response_serializer.data,
+                    message="Property survey meeting scheduled successfully.",
+                    status_code=status.HTTP_201_CREATED,
+                )
+
+        except Exception as e:
+            return APIResponse.server_error(
+                message="An error occurred while scheduling the meeting. Please try again."
+            )

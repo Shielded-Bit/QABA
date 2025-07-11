@@ -147,3 +147,108 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"Notification for {self.user.email}: {self.message[:30]}..."
+
+
+class PropertySurveyMeeting(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "Pending"
+        CONFIRMED = "CONFIRMED", "Confirmed"
+        CANCELLED = "CANCELLED", "Cancelled"
+        COMPLETED = "COMPLETED", "Completed"
+        RESCHEDULED = "RESCHEDULED", "Rescheduled"
+
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="survey_meetings"
+    )
+    property_id = models.CharField(
+        max_length=100, help_text="Reference to property listing"
+    )
+    scheduled_date = models.DateField()
+    scheduled_time = models.TimeField()
+    message = models.TextField(blank=True, null=True)
+    status = models.CharField(
+        max_length=12, choices=Status.choices, default=Status.PENDING
+    )
+    admin_notes = models.TextField(
+        blank=True, null=True, help_text="Internal notes for admin/agent"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "property_id"]),
+            models.Index(fields=["scheduled_date", "scheduled_time"]),
+        ]
+        # Ensure user can't have multiple active meetings for same property
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "property_id"],
+                condition=models.Q(status__in=["PENDING", "CONFIRMED"]),
+                name="unique_active_meeting_per_property",
+            )
+        ]
+
+    def __str__(self):
+        return f"Survey Meeting - {self.user.email} for Property {self.property_id} on {self.scheduled_date}"
+
+    @property
+    def property_object(self):
+        """Get the property object from property_id"""
+        try:
+            from apps.properties.models import Property
+
+            return Property.objects.get(id=self.property_id)
+        except:
+            return None
+
+    @property
+    def property_address(self):
+        """Get property address from the property object"""
+        if self.property_object:
+            return (
+                f"{self.property_object.property_name}, {self.property_object.location}"
+            )
+        return f"Property ID: {self.property_id}"
+
+    @property
+    def agent_assigned(self):
+        """Get the agent from the property"""
+        if self.property_object:
+            return self.property_object.listed_by
+        return None
+
+    @property
+    def is_upcoming(self):
+        from django.utils import timezone
+
+        now = timezone.now()
+        scheduled_datetime = timezone.make_aware(
+            timezone.datetime.combine(self.scheduled_date, self.scheduled_time)
+        )
+        return scheduled_datetime > now
+
+    @property
+    def is_past(self):
+        return not self.is_upcoming
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        from django.utils import timezone
+
+        # Validate property exists
+        if self.property_id and not self.property_object:
+            raise ValidationError("Property with this ID does not exist.")
+
+        # Validate that the scheduled datetime is not in the past
+        if self.scheduled_date and self.scheduled_time:
+            scheduled_datetime = timezone.make_aware(
+                timezone.datetime.combine(self.scheduled_date, self.scheduled_time)
+            )
+            if scheduled_datetime <= timezone.now():
+                raise ValidationError("Scheduled date and time cannot be in the past.")
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
