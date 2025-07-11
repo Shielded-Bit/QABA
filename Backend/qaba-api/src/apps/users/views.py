@@ -536,7 +536,6 @@ class ContactFormView(APIView):
             data=request.data, context={"request": request}
         )
         if serializer.is_valid():
-            # Get user info based on authentication status
             if request.user.is_authenticated:
                 name = f"{request.user.first_name} {request.user.last_name}"
                 email = request.user.email
@@ -551,7 +550,6 @@ class ContactFormView(APIView):
             subject = serializer.validated_data["subject"]
             message = serializer.validated_data["message"]
 
-            # Use the existing send_email utility function
             from core.utils.send_email import send_contact_form_email
 
             email_result = send_contact_form_email(
@@ -568,7 +566,6 @@ class ContactFormView(APIView):
                     f"Failed to send your message: {email_result.get('error', 'Unknown error')}"
                 )
 
-            # Send confirmation to user if they're not authenticated
             if not request.user.is_authenticated:
                 from core.utils.send_email import send_contact_confirmation_email
 

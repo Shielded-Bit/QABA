@@ -26,7 +26,6 @@ def send_email(
     if context is None:
         context = {}
 
-    # Add common context variables
     context.update(
         {
             "site_name": settings.SITE_NAME
@@ -39,21 +38,17 @@ def send_email(
         }
     )
 
-    # Normalize recipients to a list
     if isinstance(recipients, str):
         recipients = [recipients]
 
-    # Set default from_email
     if from_email is None:
         from_email = settings.DEFAULT_FROM_EMAIL
 
     try:
         # Render HTML content
         html_content = render_to_string(f"email/{template_name}.html", context)
-        # Create plain text version
         text_content = strip_tags(html_content)
 
-        # For simple emails without CC/BCC/attachments
         if not (cc or bcc or attachments):
             send_mail(
                 subject=subject,
@@ -64,7 +59,6 @@ def send_email(
                 fail_silently=fail_silently,
             )
         else:
-            # For more complex emails with CC/BCC/attachments
             email = EmailMultiAlternatives(
                 subject=subject,
                 body=text_content,
@@ -75,7 +69,6 @@ def send_email(
             )
             email.attach_alternative(html_content, "text/html")
 
-            # Add attachments
             if attachments:
                 for attachment in attachments:
                     filename, content, mimetype = attachment
@@ -94,7 +87,6 @@ def send_email(
         return {"success": False, "error": error_message}
 
 
-# Predefined email functions for common use cases
 def send_verification_email(user):
     """Send verification email to user"""
     from core.utils.token import email_verification_token_generator
@@ -189,7 +181,6 @@ def send_contact_form_email(name, email, phone, user_type, subject, message):
             if admin_users.exists():
                 admin_emails = [user.email for user in admin_users if user.email]
         except Exception:
-            # Fall back to DEFAULT_FROM_EMAIL if we can't get admin users
             pass
 
         # Create HTML message
@@ -319,7 +310,6 @@ def send_survey_meeting_notification(meeting, recipient_type="client"):
         )
         recipients = [user.email for user in admin_users if user.email]
 
-        # Add the property agent/owner to recipients
         if meeting.agent_assigned and meeting.agent_assigned.email:
             recipients.append(meeting.agent_assigned.email)
 
@@ -334,7 +324,7 @@ def send_survey_meeting_notification(meeting, recipient_type="client"):
     context = {
         "meeting": meeting,
         "user": meeting.user,
-        "property": meeting.property_object,  # Changed from meeting.property
+        "property": meeting.property_object,
         "agent": meeting.agent_assigned,
         "scheduled_datetime": scheduled_datetime,
         "formatted_date": meeting.scheduled_date.strftime("%B %d, %Y"),
@@ -356,14 +346,6 @@ def send_survey_meeting_notification(meeting, recipient_type="client"):
 def send_survey_meeting_status_update(meeting, old_status, new_status):
     """
     Send email notification when survey meeting status changes
-
-    Args:
-        meeting: PropertySurveyMeeting instance
-        old_status: Previous status
-        new_status: New status
-
-    Returns:
-        dict: {"success": bool, "error": str}
     """
     from django.utils import timezone
 
