@@ -211,11 +211,9 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
 
     amenities_ids = AmenityListField()
 
-    # Add documents field
     documents = serializers.ListField(
         child=serializers.FileField(), write_only=True, required=False
     )
-    # Add document metadata
     document_types = serializers.ListField(
         child=serializers.CharField(),
         required=False,

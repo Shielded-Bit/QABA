@@ -39,12 +39,11 @@ class TransactionAdmin(admin.ModelAdmin):
         "user_info",
         "property_info",
         "amount_display",
-        "payment_type",
         "status_badge",
         "created_at",
     ]
 
-    list_filter = ["status", "payment_type", AmountFilter, "created_at"]
+    list_filter = ["status", AmountFilter, "created_at"]
     search_fields = [
         "reference",
         "tx_ref",
@@ -76,8 +75,8 @@ class TransactionAdmin(admin.ModelAdmin):
                 )
             },
         ),
-        ("Financial Details", {"fields": ("amount", "currency", "payment_type")}),
-        ("Relations", {"fields": ("user", "property")}),
+        ("Financial Details", {"fields": ("amount", "currency")}),
+        ("Relations", {"fields": ("user", "property_obj")}),
         (
             "Timestamps",
             {"fields": ("created_at", "updated_at"), "classes": ("collapse",)},
@@ -94,8 +93,8 @@ class TransactionAdmin(admin.ModelAdmin):
     user_info.short_description = "User"
 
     def property_info(self, obj):
-        if obj.property:
-            return f"{obj.property.property_name} ({obj.property.get_property_type_display()})"
+        if obj.property_obj:
+            return f"{obj.property_obj.property_name} ({obj.property_obj.get_property_type_display()})"
         return "-"
 
     property_info.short_description = "Property"

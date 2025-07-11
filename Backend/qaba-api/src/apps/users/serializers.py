@@ -360,7 +360,6 @@ class PropertySurveyMeetingCreateSerializer(serializers.ModelSerializer):
 
             property_obj = Property.objects.get(id=value)
 
-            # Check if property is approved and active
             if property_obj.listing_status != Property.ListingStatus.APPROVED:
                 raise serializers.ValidationError(
                     "Property is not available for survey meetings."
@@ -401,7 +400,6 @@ class PropertySurveyMeetingCreateSerializer(serializers.ModelSerializer):
         scheduled_time = data.get("scheduled_time")
         property_id = data.get("property_id")
 
-        # Validate scheduled datetime is not in the past
         if scheduled_date and scheduled_time:
             scheduled_datetime = datetime.combine(scheduled_date, scheduled_time)
             if timezone.make_aware(scheduled_datetime) <= timezone.now():
@@ -409,7 +407,6 @@ class PropertySurveyMeetingCreateSerializer(serializers.ModelSerializer):
                     "Scheduled date and time cannot be in the past."
                 )
 
-        # Check if user already has an active meeting for this property
         if self.context.get("request") and property_id:
             user = self.context["request"].user
             existing_meetings = PropertySurveyMeeting.objects.filter(
@@ -421,12 +418,10 @@ class PropertySurveyMeetingCreateSerializer(serializers.ModelSerializer):
                 ],
             )
 
-            # For updates, exclude the current instance
             if self.instance:
                 existing_meetings = existing_meetings.exclude(id=self.instance.id)
 
             if existing_meetings.exists():
-                # Check if any existing meeting is still upcoming
                 for meeting in existing_meetings:
                     if meeting.is_upcoming:
                         raise serializers.ValidationError(
@@ -436,7 +431,6 @@ class PropertySurveyMeetingCreateSerializer(serializers.ModelSerializer):
                             f"Please wait until after that date or cancel the existing meeting."
                         )
 
-        # Check for scheduling conflicts (same user, same date/time)
         if self.context.get("request") and scheduled_date and scheduled_time:
             user = self.context["request"].user
             conflict_check = PropertySurveyMeeting.objects.filter(

@@ -6,6 +6,19 @@ from .models import Transaction
 
 class TransactionSerializer(serializers.ModelSerializer):
     property_name = serializers.SerializerMethodField(read_only=True)
+    property_address = serializers.SerializerMethodField(read_only=True)
+    property_type_display = serializers.CharField(
+        source="property_obj.get_property_type_display", read_only=True
+    )
+    payment_method_display = serializers.CharField(
+        source="get_payment_method_display", read_only=True
+    )
+    status_display = serializers.CharField(source="get_status_display", read_only=True)
+    verified_by_name = serializers.CharField(
+        source="verified_by.get_full_name", read_only=True
+    )
+    needs_verification = serializers.BooleanField(read_only=True)
+    is_offline_payment = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Transaction
@@ -15,86 +28,138 @@ class TransactionSerializer(serializers.ModelSerializer):
             "currency",
             "reference",
             "status",
+            "status_display",
             "description",
             "created_at",
-            "property",
+            "updated_at",
+            "property_obj",
             "property_name",
-            "payment_type",
+            "property_address",
+            "property_type_display",
+            "payment_method",
+            "payment_method_display",
+            "payment_receipt",
+            "verified_by_name",
+            "verified_at",
+            "needs_verification",
+            "is_offline_payment",
         ]
         read_only_fields = [
             "id",
             "reference",
             "status",
             "created_at",
-            "amount",
-            "property_name",
+            "updated_at",
+            "verified_by",
+            "verified_at",
         ]
 
     def get_property_name(self, obj):
-        if obj.property:
-            return obj.property.property_name
+        if obj.property_obj:
+            return obj.property_obj.property_name
+        return None
+
+    def get_property_address(self, obj):
+        if obj.property_obj:
+            return f"{obj.property_obj.property_name}, {obj.property_obj.location}"
         return None
 
 
 class PropertyPaymentSerializer(serializers.Serializer):
     property_id = serializers.IntegerField(required=True)
-    payment_type = serializers.ChoiceField(
-        choices=Transaction.PaymentType.choices,
-        default=Transaction.PaymentType.PROPERTY_PURCHASE,
-    )
 
-    def validate_property_id(self, value):
+    def validate(self, data):
+        property_id = data.get("property_id")
         try:
-            property_obj = Property.objects.get(id=value)
-
-            # Check if property is available
+            property_obj = Property.objects.get(id=property_id)
             if property_obj.property_status != Property.PropertyStatus.AVAILABLE:
                 raise serializers.ValidationError(
                     f"Property is not available. Current status: {property_obj.get_property_status_display()}"
                 )
-
-            return value
         except Property.DoesNotExist:
             raise serializers.ValidationError("Property not found")
 
+        return data
+
+
+class OfflinePaymentSerializer(serializers.ModelSerializer):
+    property_id = serializers.IntegerField(write_only=True)
+    payment_receipt = serializers.FileField(
+        write_only=True,
+        required=True,
+        help_text="Upload payment receipt for offline payments",
+    )
+
+    class Meta:
+        model = Transaction
+        fields = [
+            "property_id",
+            "payment_receipt",
+        ]
+
+    def validate_payment_receipt(self, value):
+        if not value.name.lower().endswith((".jpg", ".jpeg", ".png", ".pdf")):
+            raise serializers.ValidationError(
+                "Payment receipt must be an image (JPG/PNG) or PDF file"
+            )
+        return value
+
     def validate(self, data):
         property_id = data.get("property_id")
-        payment_type = data.get("payment_type")
 
-        property_obj = Property.objects.get(id=property_id)
+        try:
+            property_obj = Property.objects.get(id=property_id)
+            if property_obj.property_status != Property.PropertyStatus.AVAILABLE:
+                raise serializers.ValidationError(
+                    f"Property is not available. Current status: {property_obj.get_property_status_display()}"
+                )
+        except Property.DoesNotExist:
+            raise serializers.ValidationError("Property not found")
 
-        # Validate payment type matches property listing type
-        if (
-            payment_type == Transaction.PaymentType.PROPERTY_PURCHASE
-            and property_obj.listing_type != Property.ListingType.SALE
-        ):
+        user = self.context["request"].user
+        existing_payment = Transaction.objects.filter(
+            user=user,
+            property_id=property_id,
+            payment_method=Transaction.PaymentMethod.OFFLINE,
+            status=Transaction.Status.PENDING,
+        ).exists()
+
+        if existing_payment:
             raise serializers.ValidationError(
-                "Cannot purchase a property that is not for sale"
-            )
-
-        if (
-            payment_type == Transaction.PaymentType.PROPERTY_RENT
-            and property_obj.listing_type != Property.ListingType.RENT
-        ):
-            raise serializers.ValidationError(
-                "Cannot rent a property that is not for rent"
-            )
-
-        # Check if payment amount is available
-        if (
-            payment_type == Transaction.PaymentType.PROPERTY_PURCHASE
-            and not property_obj.sale_price
-        ):
-            raise serializers.ValidationError(
-                "Property does not have a valid sale price"
-            )
-
-        if (
-            payment_type == Transaction.PaymentType.PROPERTY_RENT
-            and not property_obj.rent_price
-        ):
-            raise serializers.ValidationError(
-                "Property does not have a valid rent price"
+                "You already have a pending offline payment for this property. "
+                "Please wait for verification or contact support."
             )
 
         return data
+
+    def create(self, validated_data):
+        property_id = validated_data.pop("property_id")
+        property_obj = Property.objects.get(id=property_id)
+        user = self.context["request"].user
+
+        property_type = property_obj.get_property_type_display()
+        if property_type == Transaction.PaymentType.PROPERTY_PURCHASE:
+            amount = property_obj.sale_price
+            description = f"Offline purchase of {property_obj.property_name}"
+        else:
+            amount = property_obj.rent_price
+            description = f"Offline rent payment for {property_obj.property_name}"
+
+        import uuid
+
+        reference = f"qaba-offline-{uuid.uuid4().hex[:10]}"
+        tx_ref = f"offline-{uuid.uuid4().hex[:12]}"
+
+        transaction = Transaction.objects.create(
+            user=user,
+            property_obj=property_obj,
+            payment_method=Transaction.PaymentMethod.OFFLINE,
+            amount=amount,
+            reference=reference,
+            tx_ref=tx_ref,
+            status=Transaction.Status.PENDING,
+            description=description,
+            **validated_data,
+        )
+
+        return transaction

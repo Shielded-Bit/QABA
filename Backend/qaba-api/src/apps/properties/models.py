@@ -67,7 +67,6 @@ class Property(models.Model):
         LANDLOARD = "LANDLOARD", "Landlord"
         AGENT = "AGENT", "Agent"
 
-    # Basic property fields
     property_name = models.CharField(max_length=255)
     description = models.TextField()
     property_type = models.CharField(max_length=20, choices=PropertyType.choices)
@@ -327,7 +326,6 @@ class PropertyReview(models.Model):
         APPROVED = "APPROVED", "Approved"
         REJECTED = "REJECTED", "Rejected"
 
-    # Change 'property' to 'reviewed_property'
     reviewed_property = models.ForeignKey(
         Property, on_delete=models.CASCADE, related_name="reviews"
     )

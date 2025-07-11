@@ -47,7 +47,6 @@ class AgentProfileInline(admin.StackedInline):
         return super().get_queryset(request).select_related("user")
 
     def has_add_permission(self, request, obj=None):
-        # Only allow adding profile if user is an AGENT and doesn't have a profile yet
         if (
             obj
             and obj.user_type == User.UserType.AGENT
@@ -67,7 +66,6 @@ class LandlordProfileInline(admin.StackedInline):
         return super().get_queryset(request).select_related("user")
 
     def has_add_permission(self, request, obj=None):
-        # Only allow adding profile if user is a LANDLORD and doesn't have a profile yet
         if (
             obj
             and obj.user_type == User.UserType.LANDLORD
