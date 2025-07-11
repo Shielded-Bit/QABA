@@ -257,7 +257,7 @@ class AgentProfileView(APIView):
         else:
             profile = request.user.landlordprofile
 
-            serializer = LandlordProfileSerializer(
+            serializer = AgentProfilePatchSerializer(
                 profile, data=request.data, partial=True
             )
 

@@ -136,7 +136,6 @@ class BaseUserRegistrationSerializer(serializers.ModelSerializer):
         }
 
     def validate(self, attrs):
-        # Validate password match
         if attrs.get("password") != attrs.get("password_confirm"):
             raise serializers.ValidationError(
                 {"password_confirm": "Passwords do not match."}
