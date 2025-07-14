@@ -46,6 +46,17 @@ class FlutterwaveWebhookView(APIView):
                     transaction = Transaction.objects.get(tx_ref=tx_ref)
                     if status == "successful":
                         transaction.status = Transaction.Status.SUCCESSFUL
+
+                        property_obj = transaction.property
+
+                        if property_obj.listing_type == Property.ListingType.SALE:
+                            property_obj.property_status = Property.PropertyStatus.SOLD
+                            property_obj.save()
+
+                        elif property_obj.listing_type == Property.ListingType.RENT:
+                            property_obj.property_status = Property.PropertyStatus.RENTED
+                            property_obj.save()
+
                         transaction.save()
 
                     elif status == "failed":
@@ -201,22 +212,15 @@ class VerifyPaymentView(APIView):
             if flw_status == "successful":
                 transaction.status = Transaction.Status.SUCCESSFUL
 
-                if transaction.property and transaction.payment_type:
-                    property_obj = transaction.property
+                property_obj = transaction.property
 
-                    if (
-                        transaction.payment_type
-                        is Transaction.PaymentType.PROPERTY_PURCHASE
-                    ):
-                        property_obj.property_status = Property.PropertyStatus.SOLD
-                        property_obj.save()
+                if property_obj.listing_type == Property.ListingType.SALE:
+                    property_obj.property_status = Property.PropertyStatus.SOLD
+                    property_obj.save()
 
-                    elif (
-                        transaction.payment_type
-                        is Transaction.PaymentType.PROPERTY_RENT
-                    ):
-                        property_obj.property_status = Property.PropertyStatus.RENTED
-                        property_obj.save()
+                elif property_obj.listing_type == Property.ListingType.RENT:
+                    property_obj.property_status = Property.PropertyStatus.RENTED
+                    property_obj.save()
 
                 transaction.save()
 
