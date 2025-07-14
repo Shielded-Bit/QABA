@@ -12,7 +12,7 @@ class Transaction(models.Model):
     class Status(models.TextChoices):
         SUCCESSFUL = "successful", "Successful"
         FAILED = "failed", "Failed"
-        PENDING = "pending", "Pending"  # For offline payments awaiting verification
+        PENDING = "pending", "Pending"
 
     class PaymentMethod(models.TextChoices):
         ONLINE = "online", "Online Payment"

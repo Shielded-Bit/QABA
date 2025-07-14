@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import (
+    FlutterwaveWebhookView,
     InitiatePropertyPaymentView,
     OfflinePaymentView,
     TransactionListView,
@@ -20,4 +21,9 @@ urlpatterns = [
         name="verify-payment",
     ),
     path("history/", TransactionListView.as_view(), name="transaction-history"),
+    path(
+        "webhooks/flutterwave/",
+        FlutterwaveWebhookView.as_view(),
+        name="flutterwave-webhook",
+    ),
 ]

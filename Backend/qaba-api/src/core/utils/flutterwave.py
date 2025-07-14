@@ -1,19 +1,17 @@
-import os
 import uuid
 
 import requests
+from core.settings.base import FLW_SECRET_KEY, PAYMENT_REDIRECT_URL
 
 
 def initialize_payment(user, amount, currency="NGN", description="", tx_ref=None):
     """Initialize a payment with Flutterwave"""
 
-    # Use environment variables for Flutterwave keys
-    flw_secret_key = os.environ.get("FLW_SECRET_KEY")
+    flw_secret_key = FLW_SECRET_KEY
 
     if not flw_secret_key:
         return {"success": False, "error": "Flutterwave secret key not configured"}
 
-    # Generate reference if not provided
     if not tx_ref:
         tx_ref = f"QABA-{uuid.uuid4().hex[:10]}"
 
@@ -24,10 +22,7 @@ def initialize_payment(user, amount, currency="NGN", description="", tx_ref=None
         "Content-Type": "application/json",
     }
 
-    # Prepare callback URL
-    redirect_url = os.environ.get(
-        "PAYMENT_REDIRECT_URL", "https://yourfrontend.com/payment-callback"
-    )
+    redirect_url = PAYMENT_REDIRECT_URL
 
     payload = {
         "tx_ref": tx_ref,
@@ -71,7 +66,7 @@ def initialize_payment(user, amount, currency="NGN", description="", tx_ref=None
 def verify_payment(tx_ref):
     """Verify a payment with Flutterwave"""
 
-    flw_secret_key = os.environ.get("FLW_SECRET_KEY")
+    flw_secret_key = FLW_SECRET_KEY
 
     if not flw_secret_key:
         return {"success": False, "error": "Flutterwave secret key not configured"}

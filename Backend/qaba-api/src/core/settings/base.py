@@ -216,3 +216,7 @@ CLOUDINARY_FOLDERS = {
     "property_images": "qaba/properties/images",
     "property_videos": "qaba/properties/videos",
 }
+
+FLW_SECRET_KEY = getenv("FLW_SECRET_KEY", "your-default-secret-key")
+PAYMENT_REDIRECT_URL = getenv("PAYMENT_REDIRECT_URL", "http://localhost:3000")
+FLUTTERWAVE_SECRET_HASH = getenv("FLUTTERWAVE_SECRET_HASH", "your-default-secret-hash")

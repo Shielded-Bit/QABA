@@ -3,6 +3,7 @@ import uuid
 from apps.properties.models import Property
 from core.utils.flutterwave import initialize_payment, verify_payment
 from core.utils.response import APIResponse
+from django.conf import settings
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema
 from rest_framework import permissions, status
@@ -15,6 +16,49 @@ from .serializers import (
     PropertyPaymentSerializer,
     TransactionSerializer,
 )
+
+
+@extend_schema(tags=["Transactions"])
+class FlutterwaveWebhookView(APIView):
+    """View to handle Flutterwave webhooks"""
+
+    permission_classes = (permissions.AllowAny,)
+
+    def post(self, request):
+        signature = request.headers.get("verif-hash")
+        if not signature:
+            return APIResponse.bad_request(message="Missing signature")
+
+        secret_hash = getattr(settings, "FLUTTERWAVE_SECRET_HASH", None)
+        if not secret_hash or signature != secret_hash:
+            return APIResponse.unauthorized(message="Invalid signature")
+
+        try:
+            payload = request.data
+            event = payload.get("event")
+            data = payload.get("data")
+
+            if event == "charge.completed":
+                tx_ref = data.get("tx_ref")
+                status = data.get("status")
+
+                try:
+                    transaction = Transaction.objects.get(tx_ref=tx_ref)
+                    if status == "successful":
+                        transaction.status = Transaction.Status.SUCCESSFUL
+                        transaction.save()
+
+                    elif status == "failed":
+                        transaction.status = Transaction.Status.FAILED
+                        transaction.save()
+
+                except Transaction.DoesNotExist:
+                    return APIResponse.not_found(message="Transaction not found")
+
+            return APIResponse.success(message="Webhook received successfully")
+
+        except Exception as e:
+            return APIResponse.bad_request(message=str(e))
 
 
 @extend_schema(tags=["Transactions"])
@@ -52,7 +96,6 @@ class InitiatePropertyPaymentView(APIView):
             )
 
             if payment_data["success"]:
-                # Create transaction record
                 transaction = Transaction.objects.create(
                     user=request.user,
                     property_obj=property_obj,
@@ -62,6 +105,7 @@ class InitiatePropertyPaymentView(APIView):
                     tx_ref=payment_data["tx_ref"],
                     flw_ref=payment_data.get("flw_ref"),
                     description=description,
+                    status=Transaction.Status.PENDING,
                 )
 
                 return APIResponse.success(
