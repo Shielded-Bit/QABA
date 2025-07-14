@@ -31,31 +31,31 @@ class InitiatePropertyPaymentView(APIView):
 
         if serializer.is_valid():
             property_id = serializer.validated_data["property_id"]
-            payment_type = serializer.validated_data["payment_type"]
 
             property_obj = Property.objects.get(id=property_id)
 
-            if payment_type == Transaction.PaymentType.PROPERTY_PURCHASE:
+            reference = f"qaba-{uuid.uuid4().hex[:10]}"
+
+            if property_obj.listing_type == Property.ListingType.SALE:
                 amount = property_obj.sale_price
                 description = f"Purchase of {property_obj.property_name}"
-            elif payment_type == Transaction.PaymentType.PROPERTY_RENT:
+            elif property_obj.listing_type == Property.ListingType.RENT:
                 amount = property_obj.rent_price
                 description = f"Rent for {property_obj.property_name} ({property_obj.get_rent_frequency_display()})"
             else:
-                return APIResponse.bad_request(message="Invalid payment type")
-
-            reference = f"qaba-{uuid.uuid4().hex[:10]}"
+                return APIResponse.bad_request(message="Invalid listing type")
 
             payment_data = initialize_payment(
-                user=request.user, amount=amount, description=description
+                user=request.user,
+                amount=amount,
+                description=description,
             )
 
             if payment_data["success"]:
                 # Create transaction record
                 transaction = Transaction.objects.create(
                     user=request.user,
-                    property=property_obj,
-                    payment_type=payment_type,
+                    property_obj=property_obj,
                     payment_method=Transaction.PaymentMethod.ONLINE,
                     amount=amount,
                     reference=reference,
