@@ -47,7 +47,7 @@ class FlutterwaveWebhookView(APIView):
                     if status == "successful":
                         transaction.status = Transaction.Status.SUCCESSFUL
 
-                        property_obj = transaction.property
+                        property_obj = transaction.property_obj
 
                         if property_obj.listing_type == Property.ListingType.SALE:
                             property_obj.property_status = Property.PropertyStatus.SOLD
@@ -212,7 +212,7 @@ class VerifyPaymentView(APIView):
             if flw_status == "successful":
                 transaction.status = Transaction.Status.SUCCESSFUL
 
-                property_obj = transaction.property
+                property_obj = transaction.property_obj
 
                 if property_obj.listing_type == Property.ListingType.SALE:
                     property_obj.property_status = Property.PropertyStatus.SOLD
