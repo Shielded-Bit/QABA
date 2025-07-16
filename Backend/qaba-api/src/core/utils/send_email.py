@@ -28,13 +28,13 @@ def send_email(
 
     context.update(
         {
-            "site_name": settings.SITE_NAME
-            if hasattr(settings, "SITE_NAME")
-            else "QABA",
+            "site_name": (
+                settings.SITE_NAME if hasattr(settings, "SITE_NAME") else "QABA"
+            ),
             "frontend_url": settings.FRONTEND_URL,
-            "backend_url": settings.BACKEND_URL
-            if hasattr(settings, "BACKEND_URL")
-            else "",
+            "backend_url": (
+                settings.BACKEND_URL if hasattr(settings, "BACKEND_URL") else ""
+            ),
         }
     )
 
@@ -183,7 +183,6 @@ def send_contact_form_email(name, email, phone, user_type, subject, message):
         except Exception:
             pass
 
-        # Create HTML message
         html_message = render_to_string(
             "email/contact_form.html",
             {
@@ -306,15 +305,14 @@ def send_survey_meeting_notification(meeting, recipient_type="client"):
         from apps.users.models import User
 
         admin_users = User.objects.filter(
-            user_type__in=[User.UserType.ADMIN, User.UserType.AGENT]
+            user_type__in=[User.UserType.ADMIN]
         )
         recipients = [user.email for user in admin_users if user.email]
 
         if meeting.agent_assigned and meeting.agent_assigned.email:
             recipients.append(meeting.agent_assigned.email)
 
-        if not recipients:
-            recipients = [settings.DEFAULT_FROM_EMAIL]
+        recipients = recipients.append(settings.DEFAULT_FROM_EMAIL)
         template_name = "survey_meeting_admin"
 
     scheduled_datetime = timezone.datetime.combine(
@@ -331,7 +329,6 @@ def send_survey_meeting_notification(meeting, recipient_type="client"):
         "formatted_time": meeting.scheduled_time.strftime("%I:%M %p"),
         "property_address": meeting.property_address,
         "message": meeting.message,
-        "meeting_url": f"{settings.FRONTEND_URL}/dashboard/survey-meetings/{meeting.id}",
         "dashboard_url": f"{settings.FRONTEND_URL}/dashboard",
     }
 
@@ -373,7 +370,6 @@ def send_survey_meeting_status_update(meeting, old_status, new_status):
         "formatted_time": meeting.scheduled_time.strftime("%I:%M %p"),
         "property_address": meeting.property_address,
         "agent_assigned": meeting.agent_assigned,
-        "meeting_url": f"{settings.FRONTEND_URL}/dashboard/survey-meetings/{meeting.id}",
     }
 
     return send_email(
@@ -382,3 +378,52 @@ def send_survey_meeting_status_update(meeting, old_status, new_status):
         template_name="survey_meeting_status_update",
         context=context,
     )
+
+
+def send_offline_payment_notification(transaction):
+    """
+    Send email notification to user and all admins when an offline payment is made.
+    """
+    from apps.users.models import User
+
+    property_obj = transaction.property_obj
+    user = transaction.user
+
+    # Email to user
+    user_context = {
+        "user": user,
+        "transaction": transaction,
+        "property": property_obj,
+        "amount": transaction.amount,
+        "reference": transaction.reference,
+        "tx_ref": transaction.tx_ref,
+        "payment_method": transaction.get_payment_method_display(),
+        "status": transaction.get_status_display(),
+    }
+    send_email(
+        subject=f"Offline Payment Received for {property_obj.property_name}",
+        recipients=user.email,
+        template_name="offline_payment_notification",
+        context=user_context,
+    )
+
+    # Email to admins
+    admin_users = User.objects.filter(user_type=User.UserType.ADMIN)
+    admin_emails = [admin.email for admin in admin_users if admin.email]
+    if admin_emails:
+        admin_context = {
+            "user": user,
+            "transaction": transaction,
+            "property": property_obj,
+            "amount": transaction.amount,
+            "reference": transaction.reference,
+            "tx_ref": transaction.tx_ref,
+            "payment_method": transaction.get_payment_method_display(),
+            "status": transaction.get_status_display(),
+        }
+        send_email(
+            subject=f"New Offline Payment Submitted for {property_obj.property_name}",
+            recipients=admin_emails,
+            template_name="offline_payment_notification",
+            context=admin_context,
+        )

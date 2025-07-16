@@ -1,0 +1,50 @@
+<!-- offline_payment_notification.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Offline Payment Notification</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f9f9f9; color: #222; }
+        .container { background: #fff; padding: 24px; border-radius: 8px; max-width: 600px; margin: 32px auto; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .header { font-size: 1.3em; margin-bottom: 16px; color: #2a7ae2; }
+        .details { margin: 16px 0; }
+        .details th { text-align: left; padding-right: 12px; }
+        .footer { margin-top: 32px; font-size: 0.95em; color: #888; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        {% if user.is_staff or user.user_type == 'ADMIN' %}
+            <div class="header">New Offline Payment Submitted</div>
+            <p>Hello Admin,</p>
+            <p>A new offline payment has been submitted and requires your attention:</p>
+        {% else %}
+            <div class="header">Offline Payment Received</div>
+            <p>Hello {{ user.get_full_name|default:user.email }},</p>
+            <p>We have received your offline payment for the property below. Our team will verify your payment and notify you once it is approved.</p>
+        {% endif %}
+
+        <table class="details">
+            <tr><th>Property:</th><td>{{ property.property_name }}</td></tr>
+            <tr><th>Location:</th><td>{{ property.location }}, {{ property.city }}, {{ property.state }}</td></tr>
+            <tr><th>Amount:</th><td>{{ amount }}</td></tr>
+            <tr><th>Reference:</th><td>{{ reference }}</td></tr>
+            <tr><th>Transaction Ref:</th><td>{{ tx_ref }}</td></tr>
+            <tr><th>Payment Method:</th><td>{{ payment_method }}</td></tr>
+            <tr><th>Status:</th><td>{{ status }}</td></tr>
+        </table>
+
+        {% if not (user.is_staff or user.user_type == 'ADMIN') %}
+            <p>If you have any questions, please contact our support team.</p>
+        {% else %}
+            <p>View this transaction in the admin dashboard for further action.</p>
+        {% endif %}
+
+        <div class="footer">
+            Thank you,<br>
+            The QABA Team
+        </div>
+    </div>
+</body>
+</html> 
