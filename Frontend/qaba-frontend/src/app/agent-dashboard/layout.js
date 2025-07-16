@@ -7,7 +7,7 @@ import { NotificationProvider } from "../../contexts/NotificationContext";
 
 export default function DashboardLayout({ children }) {
   return (
-    <ProtectedRoute allowedRoles={["AGENT"]}>
+    <ProtectedRoute allowedRoles={["AGENT", "LANDLORD"]}>
       <NotificationProvider>
         <div className="flex h-screen">
           {/* Sidebar - Static and Persistent */}

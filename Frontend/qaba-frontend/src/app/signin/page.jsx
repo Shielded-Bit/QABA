@@ -207,10 +207,9 @@ const SignIn = () => {
 
       // Redirect based on role after a short delay
       setTimeout(() => {
-        if (userType === "AGENT") {
-          // Show choose property type page after login
-          localStorage.setItem("hasSeenChoosePropertyType", "true");
-          router.push("/agent-dashboard/choose-property-type");
+        if (userType === "AGENT" || userType === "LANDLORD") {
+          // Landlord and Agent use the same dashboard
+          router.push("/agent-dashboard");
         } else if (userType === "CLIENT") {
           router.push("/dashboard/all-listed-properties");
         } else {

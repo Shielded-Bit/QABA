@@ -51,6 +51,25 @@ export const registerAgent = async (data) => {
   }
 };
 
+// Register a new landlord
+export const registerLandlord = async (data) => {
+  try {
+    const requestData = {
+      ...data,
+      password_confirm: data.confirmPassword
+    };
+    // Use the correct endpoint (no /auth/)
+    const response = await axios.post(`${API_BASE_URL}/register/landlord/`, requestData, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
+
 // Send a verification email
 export const sendVerificationEmail = async (email) => {
   try {

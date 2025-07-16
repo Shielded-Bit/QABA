@@ -18,7 +18,7 @@ export default function Page() {
 
         {/* Sub Heading */}
         <p className="text-base md:text-lg mb-5 text-black mt-1 text-left md:text-center">
-          Find homes to buy and rent with us at your convenience
+          Find verifiable homes to buy or rent at your convenience.
         </p>
 
         {/* Search Input */}

@@ -52,23 +52,16 @@ const Dashboard = () => {
   }, []);
 
   return (
-    <div className="px-2 py-1">
+    <div className="px-0 sm:px-2">
+      {/* Desktop view with grid */}
       <div className="hidden md:grid md:grid-cols-2 gap-4">
         <PropertiesSection properties={properties} isLoading={isLoading} />
         <NotificationsSection />
       </div>
 
-      <div className="flex flex-col space-y-4 md:hidden">
-        <MobileSwiper items={[
-          { 
-            id: 'properties', 
-            content: <PropertiesList properties={properties} isLoading={isLoading} /> 
-          },
-          { 
-            id: 'notifications', 
-            content: <NotificationsList /> 
-          }
-        ]} />
+      {/* Mobile view - only show properties */}
+      <div className="block md:hidden">
+        <PropertiesList properties={properties} isLoading={isLoading} />
       </div>
     </div>
   );
@@ -188,8 +181,8 @@ const NotificationsList = () => {
 };
 
 const PropertiesList = ({ properties, isLoading }) => (
-  <div className="bg-white shadow-md rounded-lg p-4 w-full">
-    <h2 className="text-lg font-semibold mb-4 text-gray-600">Recent Added Properties</h2>
+  <div className="bg-white shadow-md rounded-lg p-3 sm:p-4 w-full">
+    <h2 className="text-lg font-semibold mb-3 sm:mb-4 text-gray-600">Recent Added Properties</h2>
     <div className="space-y-3">
       {isLoading
         ? [...Array(3)].map((_, idx) => <PropertyCardSkeleton key={idx} />)
@@ -197,12 +190,12 @@ const PropertiesList = ({ properties, isLoading }) => (
             <PropertyCard key={property.id} {...property} />
           ))}
     </div>
-    <a 
+    <Link 
       href="/dashboard/all-listed-properties"
-      className="mt-4 text-center block w-full text-blue-600 hover:underline"
+      className="mt-3 sm:mt-4 text-center block w-full text-blue-600 hover:underline"
     >
       View All
-    </a>
+    </Link>
   </div>
 );
 

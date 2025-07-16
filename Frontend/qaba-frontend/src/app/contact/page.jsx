@@ -79,7 +79,7 @@ const ContactPage = () => {
     {
       icon: <FaMapMarkerAlt className="text-[#3ab7b1] text-xl" />,
       title: "Office Address",
-      content: "123 Abakaliki Road, Ebonyi State, Nigeria",
+      content: "10 Brackenbury Street, Ebonyi state, Nigeria",
       action: "https://maps.google.com/?q=123+Abakaliki+Road+Ebonyi+State+Nigeria"
     },
     {

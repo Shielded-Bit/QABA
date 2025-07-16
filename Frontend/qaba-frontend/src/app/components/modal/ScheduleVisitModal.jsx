@@ -22,16 +22,47 @@ const ScheduleVisitModal = ({ isOpen, onClose, property }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // You can replace this with your actual submit logic (API call, etc)
-    alert(`Request submitted!\nProperty: ${propertyName}\nName: ${userName}\nEmail: ${email}\nDate: ${date}\nMessage: ${message}`);
-    
-    // Optionally reset form or close modal
-    // setPropertyName(property?.property_name || "");
-    // setUserName("");
-    // setEmail("");
-    // setDate("");
-    // setMessage("");
-    // onClose();
+    // Prepare API call to schedule meeting
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://qaba.onrender.com';
+    const endpoint = `${API_URL}/api/v1/survey-meetings/create/`;
+
+    // Get access token from localStorage or cookies
+    let token = '';
+    if (typeof window !== 'undefined') {
+      token = localStorage.getItem('access_token') || '';
+    }
+
+    // Prepare payload
+    const payload = {
+      property_id: property?.id || property?.property_id || '',
+      scheduled_date: date,
+      scheduled_time: new Date().toISOString().split('T')[1], // Use current time for now
+      message,
+    };
+
+    fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(errorText || 'Failed to schedule visit');
+        }
+        return res.json();
+      })
+      .then((data) => {
+        alert('Visit scheduled successfully!');
+        onClose();
+      })
+      .catch((err) => {
+        alert('Error scheduling visit: ' + err.message);
+      });
   };
 
   return (

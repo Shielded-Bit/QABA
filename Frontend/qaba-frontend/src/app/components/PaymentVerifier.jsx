@@ -21,11 +21,6 @@ const PaymentVerifier = ({ onSuccess, onError }) => {
     setVerifying(false);
     setVerified(false);
     clearPaymentInfo();
-    
-    // If we're on the payment callback page, redirect to dashboard
-    if (window.location.pathname.includes('payment-callback')) {
-      router.push('/dashboard');
-    }
   };
 
   const handleSuccess = () => {
@@ -168,8 +163,8 @@ const PaymentVerifier = ({ onSuccess, onError }) => {
   return (
     <div className={`fixed top-0 left-0 w-full ${verifying || verified || error ? 'bg-black bg-opacity-50' : ''} h-full flex items-center justify-center z-50`}>
       <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full relative">
-        {/* Close button - show for both error and verified states */}
-        {(error || verified) && (
+        {/* Close button - only show for error state */}
+        {error && (
           <button
             onClick={handleClose}
             className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100 transition-colors"
@@ -185,6 +180,7 @@ const PaymentVerifier = ({ onSuccess, onError }) => {
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
             <p className="mt-4 text-lg font-medium">Verifying your payment...</p>
+            <p className="mt-2 text-sm text-gray-500">Please wait while we confirm your transaction.</p>
           </div>
         )}
         
@@ -197,9 +193,10 @@ const PaymentVerifier = ({ onSuccess, onError }) => {
             </div>
             <h3 className="text-xl font-bold text-gray-900 mt-4">Payment Successful!</h3>
             <p className="text-gray-600 mt-2">Thank you for your purchase. Your transaction has been completed successfully.</p>
+            <p className="text-gray-500 mt-1 text-sm">You can now proceed to your dashboard to view your transaction details.</p>
             <button 
               onClick={handleSuccess}
-              className="mt-6 w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
+              className="mt-6 w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors"
             >
               Continue to Dashboard
             </button>
