@@ -111,40 +111,30 @@ class Property(models.Model):
         blank=True,
         help_text="Frequency of rent payment (applicable for rental listings)",
     )
-    rent_price = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
+    rent_price = models.FloatField(
         null=True,
         blank=True,
         help_text="Rent price (applicable for rental listings)",
     )
-    agent_commission = models.DecimalField(
-        max_digits=5,
-        decimal_places=2,
+    agent_commission = models.FloatField(
         null=True,
         blank=True,
         help_text="Agent commission percentage",
     )
-    qaba_fee = models.DecimalField(
-        max_digits=5,
-        decimal_places=2,
+    qaba_fee = models.FloatField(
         null=True,
         blank=True,
         help_text="Qaba fee percentage",
     )
-    total_price = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
+    total_price = models.FloatField(
         null=True,
         blank=True,
         help_text="Total price",
     )
-    sale_price = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
+    sale_price = models.FloatField(
         null=True,
         blank=True,
-        help_text="Sale price (applicable for sale listings)",
+        help_text="Sale price",
     )
     is_verified = models.BooleanField(
         default=False, help_text="Indicates if the property has been verified by admin"

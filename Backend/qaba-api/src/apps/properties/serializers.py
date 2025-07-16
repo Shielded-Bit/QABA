@@ -277,6 +277,10 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
             if lister_type == User.UserType.AGENT:
                 agent_commission = round(float(rent_price) * 0.10, 2)
             total_price = round(float(rent_price) + qaba_fee + agent_commission, 2)
+            if total_price != attrs.get("total_price"):
+                raise serializers.ValidationError(
+                    {"total_price": "Total price is not correct"}
+                )
             attrs["qaba_fee"] = qaba_fee
             attrs["agent_commission"] = agent_commission
             attrs["total_price"] = total_price
@@ -470,6 +474,10 @@ class PropertyUpdateSerializer(serializers.ModelSerializer):
             if lister_type == User.UserType.AGENT:
                 agent_commission = round(float(rent_price) * 0.10, 2)
             total_price = round(float(rent_price) + qaba_fee + agent_commission, 2)
+            if total_price != attrs.get("total_price"):
+                raise serializers.ValidationError(
+                    {"total_price": "Total price is not correct"}
+                )
             attrs["qaba_fee"] = qaba_fee
             attrs["agent_commission"] = agent_commission
             attrs["total_price"] = total_price
