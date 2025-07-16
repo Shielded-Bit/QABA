@@ -18,7 +18,11 @@ class APIResponse:
     # Common HTTP Status responses
     @staticmethod
     def bad_request(message="Bad Request", errors=None):
-        raise APIError(message=message, status_code=status.HTTP_400_BAD_REQUEST)
+        raise APIError(
+            message=message,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            errors=errors,
+        )
 
     @staticmethod
     def unauthorized(message="Unauthorized"):
@@ -31,3 +35,11 @@ class APIResponse:
     @staticmethod
     def not_found(message="Not Found"):
         raise APIError(message=message, status_code=status.HTTP_404_NOT_FOUND)
+
+    @staticmethod
+    def server_error(message="Server Error", errors=None):
+        raise APIError(
+            message=message,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            errors=errors,
+        )

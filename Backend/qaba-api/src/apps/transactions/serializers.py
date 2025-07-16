@@ -119,7 +119,7 @@ class OfflinePaymentSerializer(serializers.ModelSerializer):
         user = self.context["request"].user
         existing_payment = Transaction.objects.filter(
             user=user,
-            property_id=property_id,
+            property_obj=property_obj,
             payment_method=Transaction.PaymentMethod.OFFLINE,
             status=Transaction.Status.PENDING,
         ).exists()
@@ -137,8 +137,7 @@ class OfflinePaymentSerializer(serializers.ModelSerializer):
         property_obj = Property.objects.get(id=property_id)
         user = self.context["request"].user
 
-        property_type = property_obj.get_property_type_display()
-        if property_type == Transaction.PaymentType.PROPERTY_PURCHASE:
+        if property_obj.listing_type == Property.ListingType.SALE:
             amount = property_obj.sale_price
             description = f"Offline purchase of {property_obj.property_name}"
         else:
@@ -152,7 +151,7 @@ class OfflinePaymentSerializer(serializers.ModelSerializer):
 
         transaction = Transaction.objects.create(
             user=user,
-            property_obj=property_obj,
+            property_obj_id=property_obj.id,
             payment_method=Transaction.PaymentMethod.OFFLINE,
             amount=amount,
             reference=reference,

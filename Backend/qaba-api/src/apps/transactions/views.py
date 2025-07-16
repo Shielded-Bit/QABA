@@ -54,7 +54,9 @@ class FlutterwaveWebhookView(APIView):
                             property_obj.save()
 
                         elif property_obj.listing_type == Property.ListingType.RENT:
-                            property_obj.property_status = Property.PropertyStatus.RENTED
+                            property_obj.property_status = (
+                                Property.PropertyStatus.RENTED
+                            )
                             property_obj.save()
 
                         transaction.save()
@@ -170,12 +172,12 @@ class OfflinePaymentView(APIView):
                 return APIResponse.success(
                     data=TransactionSerializer(transaction).data,
                     message="Offline payment submitted successfully. It will be verified by our team.",
-                    status_code=status.HTTP_201_CREATED,
                 )
 
-            except Exception:
+            except Exception as e:
                 return APIResponse.server_error(
-                    message="Failed to process offline payment. Please try again."
+                    message="Failed to process offline payment. Please try again.",
+                    errors=str(e),
                 )
 
         return APIResponse.bad_request(
