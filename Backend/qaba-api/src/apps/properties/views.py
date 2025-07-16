@@ -55,6 +55,7 @@ class PropertyViewSet(viewsets.ModelViewSet):
         "rent_price",
     ]
     ordering = ["-listed_date"]
+    http_method_names = ["get", "post", "patch", "delete"]
 
     def get_permissions(self):
         if self.action in ["create"]:
@@ -168,7 +169,7 @@ class PropertyViewSet(viewsets.ModelViewSet):
         max_rent = request.query_params.get("max_rent")
 
         if lister_type:
-            queryset = queryset.filter(lister_type=lister_type)
+            queryset = queryset.filter(listed_by__user_type=lister_type)
 
         if min_total:
             try:

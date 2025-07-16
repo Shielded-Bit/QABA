@@ -507,6 +507,7 @@ class NotificationListView(generics.ListAPIView):
 class NotificationMarkReadView(generics.UpdateAPIView):
     serializer_class = NotificationSerializer
     permission_classes = [permissions.IsAuthenticated]
+    http_method_names = ["put"]
 
     def get_queryset(self):
         return Notification.objects.filter(user=self.request.user)

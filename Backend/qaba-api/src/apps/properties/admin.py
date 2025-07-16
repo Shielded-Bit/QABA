@@ -137,7 +137,6 @@ class PropertyAdmin(admin.ModelAdmin):
         "listing_type",
         "location",
         "price_display",
-        "lister_type",
         "bedrooms",
         "bathrooms",
         "property_status",
@@ -151,7 +150,6 @@ class PropertyAdmin(admin.ModelAdmin):
         "listing_type",
         "property_status",
         "listing_status",
-        "lister_type",
         "state",
         "city",
         "listed_date",
@@ -185,7 +183,6 @@ class PropertyAdmin(admin.ModelAdmin):
                 "fields": (
                     "property_type",
                     "listing_type",
-                    "lister_type",  # Add lister_type
                     "location",
                     "state",
                     "city",

@@ -85,9 +85,6 @@ class PropertyListSerializer(serializers.ModelSerializer):
     listing_status_display = serializers.CharField(
         source="get_listing_status_display", read_only=True
     )
-    lister_type_display = serializers.CharField(
-        source="get_lister_type_display", read_only=True
-    )
 
     listed_by = UserSerializer(read_only=True)
     thumbnail = serializers.SerializerMethodField()
@@ -112,8 +109,6 @@ class PropertyListSerializer(serializers.ModelSerializer):
             "listing_status",
             "listing_status_display",
             "listing_status_display",
-            "lister_type",
-            "lister_type_display",
             "bedrooms",
             "bathrooms",
             "area_sqft",
@@ -227,7 +222,6 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
             "sale_price",
             "property_type",
             "listing_type",
-            "lister_type",
             "submit_for_review",
             "location",
             "state",
@@ -240,8 +234,6 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
             "video",
             "rent_frequency",
             "rent_price",
-            "agent_commission",
-            "qaba_fee",
             "total_price",
             "documents",
             "document_types",
@@ -266,7 +258,8 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
         sale_price = attrs.get("sale_price")
         rent_price = attrs.get("rent_price")
         rent_frequency = attrs.get("rent_frequency")
-        lister_type = attrs.get("lister_type")
+        request = self.context.get("request")
+        lister_type = request.user.user_type
 
         if listing_type == Property.ListingType.RENT:
             if not all([rent_price, rent_frequency]):
@@ -275,14 +268,29 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
                         "rent_price": "Rent price and frequency are required for rental listings"
                     }
                 )
+            if rent_price <= 0:
+                raise serializers.ValidationError(
+                    {"rent_price": "Rent price must be positive"}
+                )
+            qaba_fee = round(float(rent_price) * 0.05, 2)
+            agent_commission = 0
+            if lister_type == User.UserType.AGENT:
+                agent_commission = round(float(rent_price) * 0.10, 2)
+            total_price = round(float(rent_price) + qaba_fee + agent_commission, 2)
+            attrs["qaba_fee"] = qaba_fee
+            attrs["agent_commission"] = agent_commission
+            attrs["total_price"] = total_price
 
         if listing_type == Property.ListingType.SALE:
             if not sale_price:
                 raise serializers.ValidationError(
                     {"sale_price": "Sale price is required for sale listings"}
                 )
-        if lister_type == Property.ListerType.AGENT:
-            if not attrs.get("agent_commission"):
+        if lister_type == User.UserType.AGENT:
+            if (
+                not attrs.get("agent_commission")
+                and listing_type != Property.ListingType.RENT
+            ):
                 raise serializers.ValidationError(
                     {
                         "agent_commission": "Agent commission is required for agent listings"
@@ -346,9 +354,11 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
             if i < len(document_types):
                 PropertyDocument.objects.create(
                     property=property_instance,
-                    document_type=document_types[i]
-                    if i < len(document_types)
-                    else PropertyDocument.DocumentType.OTHER,
+                    document_type=(
+                        document_types[i]
+                        if i < len(document_types)
+                        else PropertyDocument.DocumentType.OTHER
+                    ),
                     file=document,
                     uploaded_by=self.context["request"].user,
                 )
@@ -431,7 +441,6 @@ class PropertyUpdateSerializer(serializers.ModelSerializer):
             "sale_price",
             "property_type",
             "listing_type",
-            "lister_type",
             "location",
             "state",
             "city",
@@ -443,22 +452,36 @@ class PropertyUpdateSerializer(serializers.ModelSerializer):
             "video",
             "rent_frequency",
             "rent_price",
-            "agent_commission",
-            "qaba_fee",
             "total_price",
         ]
+
+    def validate(self, attrs):
+        request = self.context.get("request")
+        listing_type = attrs.get("listing_type")
+        rent_price = attrs.get("rent_price")
+        lister_type = request.user.user_type
+        if listing_type == Property.ListingType.RENT and rent_price:
+            if rent_price <= 0:
+                raise serializers.ValidationError(
+                    {"rent_price": "Rent price must be positive"}
+                )
+            qaba_fee = round(float(rent_price) * 0.05, 2)
+            agent_commission = 0
+            if lister_type == User.UserType.AGENT:
+                agent_commission = round(float(rent_price) * 0.10, 2)
+            total_price = round(float(rent_price) + qaba_fee + agent_commission, 2)
+            attrs["qaba_fee"] = qaba_fee
+            attrs["agent_commission"] = agent_commission
+            attrs["total_price"] = total_price
+        return attrs
 
     def update(self, instance, validated_data):
         video_data = validated_data.pop("video", None)
 
-        # Update the property instance
         instance = super().update(instance, validated_data)
 
-        # Update video if provided
         if video_data:
-            # Delete existing video if any
             PropertyVideo.objects.filter(property=instance).delete()
-            # Create new video
             PropertyVideo.objects.create(property=instance, video=video_data)
 
         return instance
@@ -564,11 +587,9 @@ class PropertyReviewCreateSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         property_obj = attrs.get("reviewed_property")
 
-        # Check if user is trying to review their own property
         if property_obj.listed_by == request.user:
             raise serializers.ValidationError("You cannot review your own property")
 
-        # Check if user has already reviewed this property
         if PropertyReview.objects.filter(
             reviewed_property=property_obj, reviewer=request.user
         ).exists():
@@ -580,7 +601,6 @@ class PropertyReviewCreateSerializer(serializers.ModelSerializer):
         validated_data["reviewer"] = self.context["request"].user
         review = PropertyReview.objects.create(**validated_data)
 
-        # Create notification for admin users
         self._create_review_notification(review)
 
         return review

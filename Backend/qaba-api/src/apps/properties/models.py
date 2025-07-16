@@ -63,10 +63,6 @@ class Property(models.Model):
         MONTHLY = "MONTHLY", "Monthly"
         YEARLY = "YEARLY", "Yearly"
 
-    class ListerType(models.TextChoices):
-        LANDLOARD = "LANDLOARD", "Landlord"
-        AGENT = "AGENT", "Agent"
-
     property_name = models.CharField(max_length=255)
     description = models.TextField()
     property_type = models.CharField(max_length=20, choices=PropertyType.choices)
@@ -77,12 +73,6 @@ class Property(models.Model):
     )
     listing_status = models.CharField(
         max_length=10, choices=ListingStatus.choices, default=ListingStatus.DRAFT
-    )
-    lister_type = models.CharField(
-        max_length=10,
-        choices=ListerType.choices,
-        default=ListerType.AGENT,
-        help_text="Type of lister (landlord or agent)",
     )
     state = models.CharField(
         max_length=100,
@@ -199,6 +189,11 @@ class Property(models.Model):
         for i in range(1, 6):
             breakdown[f"{i}_star"] = approved_reviews.filter(rating=i).count()
         return breakdown
+
+    @property
+    def lister_type(self):
+        """Get the type of lister"""
+        return self.listed_by.user_type
 
 
 class PropertyImage(models.Model):

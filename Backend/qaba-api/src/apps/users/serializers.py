@@ -282,6 +282,7 @@ class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Notification
         fields = ["id", "message", "is_read", "created_at"]
+        read_only_fields = ["message", "is_read", "created_at"]
 
 
 class ContactFormSerializer(serializers.Serializer):
