@@ -235,9 +235,12 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
             "rent_frequency",
             "rent_price",
             "total_price",
+            "agent_commission",
+            "qaba_fee",
             "documents",
             "document_types",
         ]
+        read_only_fields = ["agent_commission", "qaba_fee"]
 
     def validate_images(self, value):
         if len(value) > 5:
@@ -279,7 +282,9 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
             total_price = round(float(rent_price) + qaba_fee + agent_commission, 2)
             if total_price != attrs.get("total_price"):
                 raise serializers.ValidationError(
-                    {"total_price": "Total price is not correct"}
+                    {
+                        "total_price": f"Total price is not correct. Expected {total_price}, got {attrs.get('total_price')}"
+                    }
                 )
             attrs["qaba_fee"] = qaba_fee
             attrs["agent_commission"] = agent_commission
@@ -457,7 +462,10 @@ class PropertyUpdateSerializer(serializers.ModelSerializer):
             "rent_frequency",
             "rent_price",
             "total_price",
+            "agent_commission",
+            "qaba_fee",
         ]
+        read_only_fields = ["agent_commission", "qaba_fee"]
 
     def validate(self, attrs):
         request = self.context.get("request")
@@ -476,7 +484,9 @@ class PropertyUpdateSerializer(serializers.ModelSerializer):
             total_price = round(float(rent_price) + qaba_fee + agent_commission, 2)
             if total_price != attrs.get("total_price"):
                 raise serializers.ValidationError(
-                    {"total_price": "Total price is not correct"}
+                    {
+                        "total_price": f"Total price is not correct. Expected {total_price}, got {attrs.get('total_price')}"
+                    }
                 )
             attrs["qaba_fee"] = qaba_fee
             attrs["agent_commission"] = agent_commission
