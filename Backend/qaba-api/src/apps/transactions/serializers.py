@@ -138,10 +138,10 @@ class OfflinePaymentSerializer(serializers.ModelSerializer):
         user = self.context["request"].user
 
         if property_obj.listing_type == Property.ListingType.SALE:
-            amount = property_obj.sale_price
+            amount = property_obj.total_price
             description = f"Offline purchase of {property_obj.property_name}"
         else:
-            amount = property_obj.rent_price
+            amount = property_obj.total_price
             description = f"Offline rent payment for {property_obj.property_name}"
 
         import uuid
