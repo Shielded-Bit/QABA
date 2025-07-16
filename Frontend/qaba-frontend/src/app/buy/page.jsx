@@ -65,6 +65,8 @@ export default function Buy() {
           type: 'buy',
           location: property.location || '',
           city: property.city || '',
+          propertyStatus: property.property_status_display || 'Available',
+          amenities: property.amenities || []
         }));
         
         setProperties(formattedProperties);
@@ -192,6 +194,8 @@ export default function Buy() {
                   description={property.description}
                   image={property.image}
                   type={property.type}
+                  propertyStatus={property.propertyStatus}
+                  amenities={property.amenities}
                 />
               ))}
             </div>

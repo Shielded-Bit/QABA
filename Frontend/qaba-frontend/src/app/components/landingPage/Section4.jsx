@@ -66,11 +66,13 @@ const Section4 = () => {
 					<p className="text-gray-600 mb-6">
 						We&apos;re here to assist you with anything you need.
 					</p>
-					<Button
-						label="Contact"
-						bgColor="white" // White background
-						className="w-28 h-12 "
-					/>
+		  <a href="/contact">
+			<Button
+			  label="Contact"
+			  bgColor="white" // White background
+			  className="w-28 h-12 "
+			/>
+		  </a>
 				</div>
 			</div>
 		</section>

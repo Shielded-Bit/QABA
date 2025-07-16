@@ -67,9 +67,20 @@ export default function TopNav() {
     
     if (savedUserType) {
       setCachedUserType(savedUserType);
-      const role = savedUserType === "AGENT" ? "Agent" : "Client";
+      let role = "User";
+      let settingsUrl = "/dashboard/settings";
+      if (savedUserType === "AGENT") {
+        role = "Agent";
+        settingsUrl = "/agent-dashboard/settings/profile";
+      } else if (savedUserType === "LANDLORD") {
+        role = "Landlord";
+        settingsUrl = "/agent-dashboard/settings/profile";
+      } else if (savedUserType === "CLIENT") {
+        role = "Client";
+        settingsUrl = "/dashboard/settings";
+      }
       setCachedRole(role);
-      setCachedSettingsUrl(savedUserType === "AGENT" ? "/agent-dashboard/settings/profile" : "/dashboard/settings");
+      setCachedSettingsUrl(settingsUrl);
     }
     
     if (savedProfileImage) {
@@ -113,10 +124,20 @@ export default function TopNav() {
     if (userType && userType !== cachedUserType) {
       setCachedUserType(userType);
       localStorage.setItem('user_type', userType);
-      
-      const role = userType === "AGENT" ? "Agent" : "Client";
+      let role = "User";
+      let settingsUrl = "/dashboard/settings";
+      if (userType === "AGENT") {
+        role = "Agent";
+        settingsUrl = "/agent-dashboard/settings/profile";
+      } else if (userType === "LANDLORD") {
+        role = "Landlord";
+        settingsUrl = "/agent-dashboard/settings/profile";
+      } else if (userType === "CLIENT") {
+        role = "Client";
+        settingsUrl = "/dashboard/settings";
+      }
       setCachedRole(role);
-      setCachedSettingsUrl(userType === "AGENT" ? "/agent-dashboard/settings/profile" : "/dashboard/settings");
+      setCachedSettingsUrl(settingsUrl);
     }
   }, [userType, cachedUserType, isInitialized]);
   
@@ -167,6 +188,7 @@ export default function TopNav() {
     if (userDataToUse) {
       const photoUrl = userDataToUse?.profile_photo_url || 
                       userDataToUse?.agent_profile?.profile_photo_url || 
+                      userDataToUse?.landlord_profile?.profile_photo_url || 
                       userDataToUse?.client_profile?.profile_photo_url;
       if (photoUrl) {
         return photoUrl;

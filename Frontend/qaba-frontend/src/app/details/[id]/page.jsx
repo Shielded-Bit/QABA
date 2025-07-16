@@ -20,11 +20,7 @@ import 'swiper/css';
 import 'swiper/css/pagination';
 import PropertyDetailsSkeleton from "./PropertyDetailsSkeleton";
 
-const similarListings = [
-  { id: 11, title: 'Elegant Villa in Abakaliki', price: '₦120,000,000', type: 'buy', location: 'Ebonyi', city: 'Abakaliki' },
-  { id: 12, title: 'Contemporary Apartment in Afikpo', price: '₦90,000,000', type: 'buy', location: 'Ebonyi', city: 'Afikpo' },
-  { id: 13, title: 'Luxury Bungalow in Onueke', price: '₦80,000,000', type: 'buy', location: 'Ebonyi', city: 'Onueke' },
-];
+// Removed hardcoded similarListings as we'll use related_properties from API
 
 const PropertyDetails = ({ params }) => {
   const router = useRouter();
@@ -33,7 +29,7 @@ const PropertyDetails = ({ params }) => {
   const [error, setError] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [unwrappedParams, setUnwrappedParams] = useState(null);
-  const [similarProperties, setSimilarProperties] = useState(similarListings);
+  const [similarProperties, setSimilarProperties] = useState([]);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [showEnquiryModal, setShowEnquiryModal] = useState(false);
@@ -483,47 +479,71 @@ const PropertyDetails = ({ params }) => {
         <section className="mt-12">
           <div className="bg-white rounded-lg shadow-sm p-6">
             <h2 className="text-xl font-light mb-6 sm:text-3xl">
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-900 to-green-600">Similar homes</span>{' '}
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-900 to-green-600">Similar properties</span>{' '}
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-900 to-green-600">you may like</span>
             </h2>
-            <p className="text-gray-600 mb-6">Explore available properties in these vibrant cities across Ebonyi State.</p>
+            <p className="text-gray-600 mb-6">Explore more properties in {property.city}, {property.state}.</p>
 
-            <div className="block md:hidden">
-              <Swiper
-                modules={[Pagination, Autoplay]}
-                spaceBetween={16}
-                slidesPerView={1}
-                pagination={{ clickable: true }}
-                autoplay={{ delay: 5000 }}
-                className="pb-10"
-              >
-                {similarProperties.map((listing) => (
-                  <SwiperSlide key={listing.id}>
-                    <ListingCard
-                      id={listing.id}
-                      title={listing.title}
-                      price={listing.price}
-                      description={listing.description || 'Beautiful home description'}
-                      image="https://res.cloudinary.com/dqbbm0guw/image/upload/v1734105941/Cliff_house_design_by_THE_LINE_visualization_1_1_ghvctf.png"
-                      type={listing.type}
-                    />
-                  </SwiperSlide>
-                ))}
-              </Swiper>
-            </div>
+            <div className="space-y-6">
+              {property.related_properties && property.related_properties.length > 0 ? (
+                <>
+                  <div className="block md:hidden">
+                    <Swiper
+                      modules={[Pagination, Autoplay]}
+                      spaceBetween={16}
+                      slidesPerView={1}
+                      pagination={{ clickable: true }}
+                      autoplay={{ delay: 5000 }}
+                      className="pb-10"
+                    >
+                      {property.related_properties.map((listing) => (
+                        <SwiperSlide key={listing.id}>
+                          <ListingCard
+                            id={listing.id}
+                            title={listing.property_name}
+                            price={listing.listing_type === 'SALE' 
+                              ? `₦${parseFloat(listing.sale_price).toLocaleString()}` 
+                              : `₦${parseFloat(listing.rent_price).toLocaleString()}${listing.rent_frequency ? ` / ${listing.rent_frequency_display}` : ''}`
+                            }
+                            description={listing.description || `${listing.bedrooms} bedroom ${listing.property_type_display.toLowerCase()} in ${listing.city}, ${listing.state}`}
+                            image={listing.thumbnail}
+                            type={listing.listing_type.toLowerCase()}
+                            location={`${listing.city}, ${listing.state}`}
+                            propertyType={listing.property_type_display}
+                            bedrooms={listing.bedrooms}
+                            bathrooms={listing.bathrooms}
+                            status={listing.property_status_display}
+                          />
+                        </SwiperSlide>
+                      ))}
+                    </Swiper>
+                  </div>
 
-            <div className="hidden md:grid grid-cols-1 md:grid-cols-3 gap-6">
-              {similarProperties.map((listing) => (
-                <ListingCard
-                  key={listing.id}
-                  id={listing.id}
-                  title={listing.title}
-                  price={listing.price}
-                  description={listing.description || 'Beautiful home description'}
-                  image="https://res.cloudinary.com/dqbbm0guw/image/upload/v1734105941/Cliff_house_design_by_THE_LINE_visualization_1_1_ghvctf.png"
-                  type={listing.type}
-                />
-              ))}
+                  <div className="hidden md:grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {property.related_properties.map((listing) => (
+                      <ListingCard
+                        key={listing.id}
+                        id={listing.id}
+                        title={listing.property_name}
+                        price={listing.listing_type === 'SALE' 
+                          ? `₦${parseFloat(listing.sale_price).toLocaleString()}` 
+                          : `₦${parseFloat(listing.rent_price).toLocaleString()}${listing.rent_frequency ? ` / ${listing.rent_frequency_display}` : ''}`
+                        }
+                        description={listing.description || `${listing.bedrooms} bedroom ${listing.property_type_display.toLowerCase()} in ${listing.city}, ${listing.state}`}
+                        image={listing.thumbnail}
+                        type={listing.listing_type.toLowerCase()}
+                        location={`${listing.city}, ${listing.state}`}
+                        propertyType={listing.property_type_display}
+                        bedrooms={listing.bedrooms}
+                        bathrooms={listing.bathrooms}
+                        status={listing.property_status_display}
+                      />
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <p className="text-gray-500 text-center">No similar properties found in this area.</p>
+              )}
             </div>
           </div>
         </section>

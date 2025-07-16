@@ -96,8 +96,8 @@ const Transactions = () => {
   };
 
   return (
-    <div className="p-4 w-full bg-white shadow-sm rounded-lg overflow-x-auto relative">
-      <div className="flex justify-between items-center pb-3">
+    <div className="p-3 sm:p-4 w-full bg-white shadow-sm rounded-lg overflow-x-auto relative">
+      <div className="flex justify-between items-center pb-2 sm:pb-3">
         <h2 className="text-md font-semibold text-gray-400">Recent Transactions</h2>
         <Link 
           href="dashboard/transactions" 

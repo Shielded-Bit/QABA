@@ -8,6 +8,7 @@ import {
   storeRedirectUrl 
 } from '../utils/paymentUtils';
 import { X } from 'lucide-react';
+import PaymentOptionsModal from '../components/modal/PaymentOptionsModal';
 
 const ErrorModal = ({ isOpen, onClose, errorMessage }) => {
   if (!isOpen) return null;
@@ -53,6 +54,7 @@ const PaymentButton = ({ propertyId, propertyType, price, buttonText = 'Proceed 
   const [paymentError, setPaymentError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalErrorMessage, setModalErrorMessage] = useState('');
+  const [showPaymentOptions, setShowPaymentOptions] = useState(false);
   const [authStatus, setAuthStatus] = useState({ 
     checked: false, 
     authenticated: false 
@@ -176,6 +178,13 @@ const PaymentButton = ({ propertyId, propertyType, price, buttonText = 'Proceed 
     }
   };
 
+  const handlePaymentMethodSelect = async (method) => {
+    if (method === 'online') {
+      handlePaymentInitiation();
+    }
+    // Bank transfer is handled within the BankTransferPayment component
+  };
+
   const closeModal = () => {
     setIsModalOpen(false);
     setModalErrorMessage('');
@@ -185,7 +194,7 @@ const PaymentButton = ({ propertyId, propertyType, price, buttonText = 'Proceed 
     <div>
       <button 
         className={`w-full bg-gradient-to-r from-blue-700 to-teal-500 text-white py-2 px-4 rounded-lg font-medium shadow-md hover:opacity-90 transition-all ${paymentLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
-        onClick={handlePaymentInitiation}
+        onClick={() => setShowPaymentOptions(true)}
         disabled={paymentLoading || !authStatus.checked}
       >
         {paymentLoading ? (
@@ -200,6 +209,16 @@ const PaymentButton = ({ propertyId, propertyType, price, buttonText = 'Proceed 
           buttonText
         )}
       </button>
+      
+      {/* Payment Options Modal */}
+      <PaymentOptionsModal
+        isOpen={showPaymentOptions}
+        onClose={() => setShowPaymentOptions(false)}
+        propertyId={propertyId}
+        propertyType={propertyType}
+        price={price}
+        onPaymentMethodSelect={handlePaymentMethodSelect}
+      />
       
       {/* Small inline error for non-critical errors */}
       {paymentError && !isModalOpen && (

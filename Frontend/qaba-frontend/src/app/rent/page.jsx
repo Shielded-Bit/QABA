@@ -70,6 +70,8 @@ function RentContent() {
           type: 'rent',
           location: property.location || '',
           city: property.city || '',
+          propertyStatus: property.property_status_display || 'Available',
+          amenities: property.amenities || []
         }));
         
         setProperties(formattedProperties);
@@ -243,6 +245,8 @@ function RentContent() {
                   description={property.description}
                   image={property.image}
                   type={property.type}
+                  propertyStatus={property.propertyStatus}
+                  amenities={property.amenities}
                 />
               ))}
             </div>
@@ -262,6 +266,7 @@ function RentContent() {
                         description={property.description}
                         image={property.image}
                         type={property.type}
+                        propertyStatus={property.propertyStatus}
                       />
                     ))}
                   </div>

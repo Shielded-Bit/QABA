@@ -8,7 +8,7 @@ import RoleSelection from '../components/shared/RoleSelection';
 import SignInWithGoogle from '../components/shared/SignInWithGoogle';
 import PasswordInput from '../components/shared/PasswordInput';
 import TextInput from '../components/shared/TextInput';
-import { registerClient, registerAgent, sendVerificationEmail } from '../../app/utils/auth/api.js'; // Import functions
+import { registerClient, registerAgent, registerLandlord, sendVerificationEmail } from '../../app/utils/auth/api.js'; // Import functions
 import EmailVerificationModal from '../components/modal/ EmailVerificationModal.jsx';
 
 // Image assets used in the UI
@@ -207,6 +207,8 @@ const Register = () => {
       let response;
       if (formData.role === "client") {
         response = await registerClient(requestData);
+      } else if (formData.role === "landlord") {
+        response = await registerLandlord(requestData);
       } else {
         response = await registerAgent(requestData);
       }

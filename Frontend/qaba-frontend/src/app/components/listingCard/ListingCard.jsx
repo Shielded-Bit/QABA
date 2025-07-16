@@ -6,12 +6,31 @@ import Image from 'next/image';
 import { Bookmark } from 'lucide-react';
 import axios from 'axios';
 
-const ListingCard = ({ id, title, price, description, image, type }) => {
+const mockAmenities = [
+  { id: 1, name: 'Spacious Living Area', icon: '🏠' },
+  { id: 2, name: 'Modern Kitchen', icon: '🍳' },
+  { id: 3, name: 'Private Backyard', icon: '🏡' },
+  { id: 4, name: 'Master Suite', icon: '📌' }
+];
+
+const ListingCard = ({ 
+  id, 
+  title, 
+  price, 
+  description, 
+  image, 
+  type,
+  propertyStatus = 'Available',
+  amenities = []
+}) => {
   const router = useRouter();
   const [isFavorited, setIsFavorited] = useState(false);
   const [isButtonHovered, setIsButtonHovered] = useState(false);
   const [isTooltipVisible, setIsTooltipVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Use provided amenities if available, otherwise use mock data
+  const displayAmenities = amenities.length > 0 ? amenities : mockAmenities;
   
   // Check initial favorite status when component mounts
   useEffect(() => {
@@ -110,6 +129,20 @@ const ListingCard = ({ id, title, price, description, image, type }) => {
   // Define tooltip text based on favorite status
   const tooltipText = isFavorited ? 'Remove from favorites' : 'Add to favorites';
 
+  // Get status color based on property status
+  const getStatusColor = (status) => {
+    switch (status?.toUpperCase()) {
+      case 'AVAILABLE':
+        return 'bg-green-500';
+      case 'SOLD':
+        return 'bg-red-500';
+      case 'RENTED':
+        return 'bg-orange-500';
+      default:
+        return 'bg-gray-500';
+    }
+  };
+
   return (
     <div className="max-w-md bg-white rounded-lg overflow-hidden shadow-md relative h-full" onClick={handleCardClick}>
       {/* Image */}
@@ -124,15 +157,18 @@ const ListingCard = ({ id, title, price, description, image, type }) => {
           />
         </div>
         
-        {/* Type Badge */}
-        <span
-          className={`absolute top-6 left-6 px-3 py-1 rounded-full text-xs font-semibold text-white ${
+        {/* Type and Status Badges */}
+        <div className="absolute top-6 left-6 flex gap-2">
+          <span className={`px-3 py-1 rounded-full text-xs font-semibold text-white ${
             type === 'rent' ? 'bg-green-500' : 'bg-blue-500'
-          }`}
-        >
-          {type === 'rent' ? 'Rent' : 'Buy'}
-        </span>
-        
+          }`}>
+            {type === 'rent' ? 'Rent' : 'Buy'}
+          </span>
+          <span className={`px-3 py-1 rounded-full text-xs font-semibold text-white ${getStatusColor(propertyStatus)}`}>
+            {propertyStatus}
+          </span>
+        </div>
+
         {/* Favorite Icon with Tooltip */}
         <div className="absolute top-6 right-6">
           <button
@@ -183,13 +219,12 @@ const ListingCard = ({ id, title, price, description, image, type }) => {
         <p className="text-gray-900 font-bold mt-3">{price}</p>
         
         {/* Features */}
-        <div className="flex justify-between text-gray-500 text-sm mt-4">
-          <span className="flex items-center">🏠 Spacious Living Area</span>
-          <span className="flex items-center">🍳 Modern Kitchen</span>
-        </div>
-        <div className="flex justify-between text-gray-500 text-sm mt-2">
-          <span className="flex items-center">🏡 Private Backyard</span>
-          <span className="flex items-center">📌 Master Suite</span>
+        <div className="grid grid-cols-2 gap-4 text-gray-500 text-sm mt-4">
+          {displayAmenities.slice(0, 4).map((amenity, index) => (
+            <span key={amenity.id || index} className="flex items-center">
+              {amenity.icon} {amenity.name}
+            </span>
+          ))}
         </div>
       </div>
       

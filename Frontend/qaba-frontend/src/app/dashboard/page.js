@@ -8,19 +8,19 @@ import Transactions from './components/transactions';
 export default function DashboardPage() {
   return (
     <div className="bg-gray-100 ml-12 lg:ml-4 mt-5 mb-10">
-      <div className=''>
+      <div>
         {/* Header Wrapper */}
-        <div className="dashboard-header lg:ml-4 ml-3">
+        <div className="dashboard-header lg:ml-4 ml-2">
           <Header2 />
         </div>
 
         {/* Main Content */}
-        <div className='mt-6 px-4'>
+        <div className='mt-6 px-2 lg:px-4'>
           {/* <PropertiesNumber /> */}
-          <div className='mt-8'>
+          <div>
             <Cards />
           </div>
-          <div className='mt-8'>
+          <div className='mt-2'>
             <Transactions />
           </div>
         </div>

@@ -95,13 +95,15 @@ const Navbar = () => {
   // Get user role based on user_type (same as in TopNav)
   const getUserRole = () => {
     const type = userType || userData?.user_type || userData?.data?.user_type;
-    return type === "AGENT" ? "Agent" : "Client";
+    if (type === "AGENT" || type === "LANDLORD") return "Agent";
+    return "Client";
   };
   
   // Determine dashboard URL based on user type
   const getDashboardUrl = () => {
     const type = userType || userData?.user_type || userData?.data?.user_type;
-    return type === "AGENT" ? "/agent-dashboard" : "/dashboard";
+    if (type === "AGENT" || type === "LANDLORD") return "/agent-dashboard";
+    return "/dashboard";
   };
 
   // Handle sign out confirmation

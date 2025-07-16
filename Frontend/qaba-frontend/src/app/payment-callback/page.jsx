@@ -33,10 +33,7 @@ export default function PaymentCallbackPage() {
 
   const handlePaymentSuccess = (data) => {
     console.log('Payment successfully verified:', data);
-    // Redirect to success page or dashboard after a short delay
-    setTimeout(() => {
-      router.push('/dashboard');
-    }, 3000);
+    // Remove automatic redirection - let user control when to proceed via the modal
   };
 
   const handlePaymentError = (errorMessage) => {

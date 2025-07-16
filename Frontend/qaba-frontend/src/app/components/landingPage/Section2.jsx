@@ -3,11 +3,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination, Autoplay } from 'swiper/modules';
+import { useRouter } from 'next/navigation';
 import 'swiper/css';
 import 'swiper/css/pagination';
 import Card from '../shared/Card';
 
 const Section2 = () => {
+  const router = useRouter();
+  
   const cardData = useMemo(
     () => [
       {
@@ -40,6 +43,30 @@ const Section2 = () => {
 
   const [visibleSlides, setVisibleSlides] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
+
+  // Navigation handler
+  const handleCardClick = (cardTitle) => {
+    // You can customize the navigation based on the card type
+    // For now, all cards navigate to add-listing page
+    router.push('/add-listing');
+  };
+
+  // Alternative: Navigate to different pages based on card type
+  const handleSpecificCardClick = (cardTitle) => {
+    switch (cardTitle) {
+      case 'Buying and Renting of Homes':
+        router.push('/properties'); // Or wherever you want to redirect
+        break;
+      case 'Property Verification':
+        router.push('/verification'); // Or wherever you want to redirect
+        break;
+      case 'Listing Properties':
+        router.push('/add-listing');
+        break;
+      default:
+        router.push('/add-listing');
+    }
+  };
 
   // Intersection Observer for scroll-triggered animations
   useEffect(() => {
@@ -93,9 +120,8 @@ const Section2 = () => {
           </h4>
           <div className="w-24 h-1 bg-gradient-to-r from-blue-500 to-indigo-600 mx-auto mb-6 rounded-full"></div>
           <p className="text-lg lg:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            We&apos;re here to simplify your home-buying journey, offering expert guidance, personalized 
-            <span className="hidden lg:inline"> <br /> </span> 
-            support, and seamless service every step of the way.
+            We simplify your home buying and rental journey by providing expert guidance, trusted property verification, and easy listing options.
+        
           </p>
         </div>
       </div>
@@ -144,13 +170,27 @@ const Section2 = () => {
               }`}
               style={{ transitionDelay: `${index * 150}ms` }}
             >
-              <div className="group cursor-pointer h-full">
+              <div 
+                className="group cursor-pointer h-full transform transition-all duration-300 hover:scale-105 hover:shadow-xl"
+                onClick={() => handleCardClick(card.title)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleCardClick(card.title);
+                  }
+                }}
+                aria-label={`Navigate to add listing page for ${card.title}`}
+              >
                 <Card
                   logo={card.logo}
                   title={card.title}
                   description={card.description}
                   logoWidth={card.logoWidth}
                   logoHeight={card.logoHeight}
+                  isClickable={true}
+                  onClick={() => handleCardClick(card.title)}
                 />
               </div>
             </SwiperSlide>
@@ -205,7 +245,13 @@ const Section2 = () => {
         }
         
         .swiper-slide:hover > div {
-          transform: translateY(-2px);
+          transform: translateY(-4px) scale(1.02);
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Click effect */
+        .swiper-slide > div:active {
+          transform: translateY(-2px) scale(1.01);
         }
         
         /* Custom scrollbar for horizontal scroll on mobile */
@@ -225,6 +271,12 @@ const Section2 = () => {
         
         .swiper::-webkit-scrollbar-thumb:hover {
           background: linear-gradient(45deg, #2563eb, #4f46e5);
+        }
+        
+        /* Focus styles for accessibility */
+        .swiper-slide > div:focus {
+          outline: 2px solid #3b82f6;
+          outline-offset: 2px;
         }
       `}</style>
     </section>

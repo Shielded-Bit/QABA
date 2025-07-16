@@ -230,13 +230,11 @@ export default function ProfilePage() {
   // Fetch profile data including image and location from the profile endpoint
   const fetchProfileData = async () => {
     setImgLoading(true);
-    
     try {
       // Determine the correct endpoint based on user type
-      const endpoint = userType === "AGENT" 
-        ? '/api/v1/profile/agent/' 
+      const endpoint = (userType === "AGENT" || userType === "LANDLORD")
+        ? '/api/v1/profile/agent/'
         : '/api/v1/profile/client/';
-      
       const response = await apiRequest(endpoint);
       const profileData = await response.json();
       
@@ -358,7 +356,7 @@ export default function ProfilePage() {
       // Use the new endpoint for contact information updates, otherwise use the standard endpoint
       const endpoint = formType === 'contact' 
         ? '/api/v1/users/update'  // New endpoint for contact info
-        : userType === "AGENT" 
+        : (userType === "AGENT" || userType === "LANDLORD")
           ? '/api/v1/profile/agent/' 
           : '/api/v1/profile/client/';  // Standard endpoints for other profile updates (like location)
 
@@ -432,45 +430,24 @@ export default function ProfilePage() {
   // Updated method to upload profile image
   const uploadProfileImage = async () => {
     if (!selectedImage) return;
-    
     try {
-      // Show upload in progress notification
       toast.info("Uploading profile photo...");
-      
-      // Create FormData object for multipart/form-data
       const formData = new FormData();
-      
-      // Append file with the correct field name
       formData.append('profile_photo', selectedImage);
-      
-      // Determine the correct endpoint based on user type
-      const endpoint = userType === "AGENT" 
-        ? '/api/v1/profile/agent/' 
+      const endpoint = (userType === "AGENT" || userType === "LANDLORD")
+        ? '/api/v1/profile/agent/'
         : '/api/v1/profile/client/';
-      
-      // Send PATCH request to update profile photo
       const response = await apiRequest(endpoint, {
         method: 'PATCH',
         isFormData: true,
         body: formData
       });
-      
       const result = await response.json();
       console.log("Image upload response:", result);
-      
-      // Reset selected image state
       setSelectedImage(null);
-      
-      // Fetch updated profile data after successful upload
       await fetchProfileData();
-      
-      // Update global context
       await fetchProfile();
-      
-      // Create notification
       await createNotification(`Profile photo updated successfully on ${new Date().toLocaleDateString()}`);
-      
-      // Show success notification
       toast.success("Profile photo updated successfully");
     } catch (err) {
       toast.error(`Failed to upload profile photo: ${err.message}`);

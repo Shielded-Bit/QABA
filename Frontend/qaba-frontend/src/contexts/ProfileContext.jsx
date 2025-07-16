@@ -23,7 +23,7 @@ export function ProfileProvider({ children }) {
   
   const getUserType = useCallback(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('user_type');
+      return localStorage.getItem('user_type');``
     }
     return null;
   }, []);
@@ -69,9 +69,12 @@ export function ProfileProvider({ children }) {
       const currentUserType = getUserType();
       if (!headers) return null;
 
-      const endpoint = currentUserType === "AGENT" 
-        ? `${API_BASE_URL}/api/v1/profile/agent/`
-        : `${API_BASE_URL}/api/v1/profile/client/`;
+      let endpoint;
+      if (currentUserType === "AGENT" || currentUserType === "LANDLORD") {
+        endpoint = `${API_BASE_URL}/api/v1/profile/agent/`;
+      } else {
+        endpoint = `${API_BASE_URL}/api/v1/profile/client/`;
+      }
 
       const response = await fetch(endpoint, { headers });
       return await handleApiError(response).json();
@@ -124,6 +127,7 @@ export function ProfileProvider({ children }) {
       // Get profile photo URL
       const profilePhotoUrl = profileInfo?.profile_photo_url || 
                              profileInfo?.agent_profile?.profile_photo_url || 
+                             profileInfo?.landlord_profile?.profile_photo_url || 
                              profileInfo?.client_profile?.profile_photo_url;
 
       if (profilePhotoUrl) {
