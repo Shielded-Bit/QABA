@@ -70,6 +70,12 @@ class PropertyDocumentSerializer(serializers.ModelSerializer):
         return None
 
 
+class AmenitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Amenity
+        fields = ["id", "name", "icon"]
+
+
 class PropertyListSerializer(serializers.ModelSerializer):
     is_favorited = serializers.SerializerMethodField()
 
@@ -88,6 +94,7 @@ class PropertyListSerializer(serializers.ModelSerializer):
 
     listed_by = UserSerializer(read_only=True)
     thumbnail = serializers.SerializerMethodField()
+    amenities = AmenitySerializer(many=True, read_only=True)
 
     class Meta:
         model = Property
@@ -116,6 +123,7 @@ class PropertyListSerializer(serializers.ModelSerializer):
             "listed_by",
             "thumbnail",
             "is_favorited",
+            "amenities",
         ]
 
     @extend_schema_field(serializers.URLField(allow_null=True))
@@ -131,12 +139,6 @@ class PropertyListSerializer(serializers.ModelSerializer):
         if request and request.user.is_authenticated and request.user.is_client:
             return obj.favorited_by.filter(user=request.user).exists()
         return False
-
-
-class AmenitySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Amenity
-        fields = ["id", "name", "icon"]
 
 
 class AmenityListField(serializers.ListField):
