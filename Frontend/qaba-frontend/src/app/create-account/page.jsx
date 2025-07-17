@@ -415,6 +415,16 @@ const Register = () => {
               >
                 {loading ? "Registering..." : "Sign Up"}
               </button>
+              <p className="mt-4 text-center text-sm text-gray-600">
+                By signing up, you agree to our{' '}
+                <a href="/terms-conditions" className="text-blue-600 hover:text-blue-800 hover:underline">
+                  Terms and Conditions
+                </a>{' '}
+                and{' '}
+                <a href="/privacy-policy" className="text-blue-600 hover:text-blue-800 hover:underline">
+                  Privacy Policy
+                </a>
+              </p>
             </form>
             <SignInWithGoogle bgpict={bgpict} />
           </div>
@@ -487,6 +497,16 @@ const Register = () => {
               >
                 {loading ? "Registering..." : "Sign Up"}
               </button>
+              <p className="mt-4 text-center text-sm text-gray-600">
+                By signing up, you agree to our{' '}
+                <a href="/terms-and-conditions" className="text-blue-600 hover:text-blue-800 hover:underline">
+                  Terms and Conditions
+                </a>{' '}
+                and{' '}
+                <a href="/privacy-policy" className="text-blue-600 hover:text-blue-800 hover:underline">
+                  Privacy Policy
+                </a>
+              </p>
             </form>
             <SignInWithGoogle bgpict={bgpict} />
           </div>
@@ -498,4 +518,5 @@ const Register = () => {
     </div>
   );
 };
+
 export default Register;

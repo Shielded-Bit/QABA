@@ -94,9 +94,9 @@ const Footer = () => {
           </div>
           <p className="text-xs text-gray-500">
             We respect your privacy.{" "}
-            <a href="#" className="underline text-[#014d98] hover:text-[#3ab7b1]">
+            <Link href="/privacy-policy" className="underline text-[#014d98] hover:text-[#3ab7b1]">
               Read our Privacy Policy.
-            </a>
+            </Link>
           </p>
         </div>
       </div>

@@ -387,13 +387,13 @@ const SignIn = () => {
                 Sign in with Google
               </button>
 
-              <p className="mt-6 text-left text-xs text-gray-900">
+              <p className="mt-6 text-left text-xs text-gray-600">
                 By signing in you accept our{' '}
-                <a href="#" className="font-extrabold">
-                  Terms of Use
+                <a href="/terms-conditions" className="text-blue-600 hover:text-blue-800 hover:underline">
+                  Terms and Conditions
                 </a>{' '}
                 and{' '}
-                <a href="#" className="font-extrabold">
+                <a href="/privacy-policy" className="text-blue-600 hover:text-blue-800 hover:underline">
                   Privacy Policy
                 </a>
               </p>
@@ -504,13 +504,13 @@ const SignIn = () => {
                 Sign in with Google
               </button>
 
-              <p className="mt-6 text-left text-xs text-gray-900">
+              <p className="mt-6 text-left text-xs text-gray-600">
                 By signing in you accept our{' '}
-                <a href="#" className="font-extrabold">
-                  Terms of Use
+                <a href="/terms-conditions" className="text-blue-600 hover:text-blue-800 hover:underline">
+                  Terms and Conditions
                 </a>{' '}
                 and{' '}
-                <a href="#" className="font-extrabold">
+                <a href="/privacy-policy" className="text-blue-600 hover:text-blue-800 hover:underline">
                   Privacy Policy
                 </a>
               </p>
