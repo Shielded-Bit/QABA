@@ -106,7 +106,7 @@ const RenterReviews = ({ property }) => {
 
   return (
     <section className="w-full">
-      <h2 className="text-2xl font-bold mb-6">Renter Reviews</h2>
+      <h2 className="text-2xl font-bold mb-6">Reviews</h2>
 
       {loading && (
         <>

@@ -342,7 +342,7 @@ const PropertyDetails = ({ params }) => {
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {property.amenities.map((amenity, index) => (
                     <div key={index} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50">
-                      <span className="text-2xl">{amenity.icon || ''}</span>
+                      {/* <span className="text-2xl">{amenity.icon || ''}</span> */}
                       <span className="text-gray-800 font-medium">
                         {typeof amenity === 'string' ? amenity : amenity.name}
                       </span>
@@ -357,23 +357,26 @@ const PropertyDetails = ({ params }) => {
               <h4 className="font-semibold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-900 to-green-600">
                 Listed By:
               </h4>
-              {property.agent ? (
-                <ListedByCard agent={property.agent} />
-              ) : property.listed_by ? (
+              {property.listed_by && (
                 <ListedByCard 
                   agent={{
                     name: `${property.listed_by.first_name} ${property.listed_by.last_name}`,
-                    company: property.listed_by.user_type === "AGENT" ? "Real Estate Agent" : "Property Owner",
-                    image: property.listed_by.agentprofile?.profile_photo_url || "/assets/images/default-user.png",
-                    rating: 4,
-                    email: property.listed_by.email,
-                    phone: property.listed_by.phone_number,
-                    location: property.listed_by.agentprofile ? 
-                      `${property.listed_by.agentprofile.city || ''}, ${property.listed_by.agentprofile.state || ''}`.trim() : 
-                      "Nigeria"
+                    company: property.listed_by.user_type === "AGENT" ? "Real Estate Agent" : 
+                            property.listed_by.user_type === "LANDLORD" ? "Property Owner" : "Private Seller",
+                    image: property.listed_by.profile?.profile_photo_url || "/assets/images/default-user.png",
+                    rating: property.average_rating || 0,
+                    // totalReviews: property.total_reviews || 0,
+                    // email and phone removed for privacy
+                    // email: property.listed_by.email,
+                    // phone: property.listed_by.phone_number,
+                    userType: property.listed_by.user_type,
+                    location: property.listed_by.profile ? 
+                      `${property.listed_by.profile.city || ''}, ${property.listed_by.profile.state || ''}`.trim() : 
+                      property.city ? `${property.city}, ${property.state}` : "Nigeria",
+                    verified: property.listed_by.is_email_verified
                   }} 
                 />
-              ) : null}
+              )}
             </div>
 
             {/* Property Verification */}
