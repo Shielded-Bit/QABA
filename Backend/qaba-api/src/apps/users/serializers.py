@@ -174,8 +174,7 @@ class SendEmailVerificationSerializer(serializers.Serializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    clientprofile = ClientProfileSerializer(read_only=True)
-    agentprofile = AgentProfileSerializer(read_only=True)
+    profile = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = User
@@ -186,11 +185,18 @@ class UserSerializer(serializers.ModelSerializer):
             "last_name",
             "phone_number",
             "user_type",
-            "clientprofile",
-            "agentprofile",
             "is_email_verified",
+            "profile",
         ]
         read_only_fields = ["is_email_verified"]
+
+    def get_profile(self, obj):
+        if obj.user_type == User.UserType.CLIENT:
+            return ClientProfileSerializer(obj.clientprofile).data
+        elif obj.user_type == User.UserType.AGENT:
+            return AgentProfileSerializer(obj.agentprofile).data
+        elif obj.user_type == User.UserType.LANDLORD:
+            return LandlordProfileSerializer(obj.landlordprofile).data
 
 
 class UserUpdateSerializer(serializers.ModelSerializer):

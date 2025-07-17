@@ -115,7 +115,6 @@ class PropertyListSerializer(serializers.ModelSerializer):
             "property_status_display",
             "listing_status",
             "listing_status_display",
-            "listing_status_display",
             "bedrooms",
             "bathrooms",
             "area_sqft",
