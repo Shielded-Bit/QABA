@@ -6,13 +6,6 @@ import Image from 'next/image';
 import { Bookmark } from 'lucide-react';
 import axios from 'axios';
 
-const mockAmenities = [
-  { id: 1, name: 'Spacious Living Area', icon: '🏠' },
-  { id: 2, name: 'Modern Kitchen', icon: '🍳' },
-  { id: 3, name: 'Private Backyard', icon: '🏡' },
-  { id: 4, name: 'Master Suite', icon: '📌' }
-];
-
 const ListingCard = ({ 
   id, 
   title, 
@@ -28,9 +21,6 @@ const ListingCard = ({
   const [isButtonHovered, setIsButtonHovered] = useState(false);
   const [isTooltipVisible, setIsTooltipVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
-  // Use provided amenities if available, otherwise use mock data
-  const displayAmenities = amenities.length > 0 ? amenities : mockAmenities;
   
   // Check initial favorite status when component mounts
   useEffect(() => {
@@ -62,7 +52,7 @@ const ListingCard = ({
     
     checkFavoriteStatus();
   }, [id]);
-  
+
   const handleCardClick = () => {
     router.push(`/details/${id}`);
   };
@@ -220,9 +210,10 @@ const ListingCard = ({
         
         {/* Features */}
         <div className="grid grid-cols-2 gap-4 text-gray-500 text-sm mt-4">
-          {displayAmenities.slice(0, 4).map((amenity, index) => (
-            <span key={amenity.id || index} className="flex items-center">
-              {amenity.icon} {amenity.name}
+          {amenities.slice(0, 4).map((amenity) => (
+            <span key={amenity.id} className="flex items-center gap-2">
+              <span>{amenity.icon}</span>
+              <span className="truncate">{amenity.name}</span>
             </span>
           ))}
         </div>

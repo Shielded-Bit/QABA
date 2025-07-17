@@ -45,21 +45,28 @@ export default function TopNav() {
         setCachedUserData(parsedUserData);
         
         // Set user display properties from cached data
-        const firstName = parsedUserData.first_name || parsedUserData.data?.first_name || "";
-        const lastName = parsedUserData.last_name || parsedUserData.data?.last_name || "";
+        const firstName = parsedUserData.first_name || "";
+        const lastName = parsedUserData.last_name || "";
         
-        if (firstName && lastName) {
-          setCachedDisplayName(`${firstName} ${lastName}`);
-        } else if (firstName) {
-          setCachedDisplayName(firstName);
-        } else if (lastName) {
-          setCachedDisplayName(lastName);
-        } else if (parsedUserData.email) {
-          setCachedDisplayName(parsedUserData.email.split('@')[0]);
+        // Set display name immediately
+        const displayName = firstName && lastName ? 
+          `${firstName} ${lastName}` : 
+          firstName || 
+          lastName || 
+          parsedUserData.email?.split('@')[0] || 
+          "User";
+        
+        setCachedDisplayName(displayName);
+        setCachedShortName(firstName || displayName.split(' ')[0] || "User");
+        setCachedInitial((firstName || displayName)[0].toUpperCase());
+
+        // Get profile photo URL directly from the correct profile
+        const profileUrl = parsedUserData.agentprofile?.profile_photo_url ||
+                         parsedUserData.clientprofile?.profile_photo_url;
+        if (profileUrl) {
+          setCachedProfileImage(profileUrl);
+          localStorage.setItem('profile_photo_url', profileUrl);
         }
-        
-        setCachedShortName(firstName || "User");
-        setCachedInitial(firstName ? firstName.charAt(0).toUpperCase() : "U");
       } catch (error) {
         console.error('Error parsing cached user data:', error);
       }
@@ -67,18 +74,14 @@ export default function TopNav() {
     
     if (savedUserType) {
       setCachedUserType(savedUserType);
-      let role = "User";
-      let settingsUrl = "/dashboard/settings";
-      if (savedUserType === "AGENT") {
-        role = "Agent";
-        settingsUrl = "/agent-dashboard/settings/profile";
-      } else if (savedUserType === "LANDLORD") {
-        role = "Landlord";
-        settingsUrl = "/agent-dashboard/settings/profile";
-      } else if (savedUserType === "CLIENT") {
-        role = "Client";
-        settingsUrl = "/dashboard/settings";
-      }
+      const role = savedUserType === "AGENT" ? "Agent" :
+                  savedUserType === "LANDLORD" ? "Landlord" :
+                  savedUserType === "CLIENT" ? "Client" : "User";
+      
+      const settingsUrl = savedUserType === "CLIENT" ? 
+        "/dashboard/settings" : 
+        "/agent-dashboard/settings/profile";
+      
       setCachedRole(role);
       setCachedSettingsUrl(settingsUrl);
     }
@@ -173,29 +176,34 @@ export default function TopNav() {
 
   // Get the profile image URL - returns null if no real image is available
   const getProfileImageUrl = () => {
-    // Always prioritize cached version first
+    // First check localStorage directly
+    const savedProfileImage = localStorage.getItem('profile_photo_url');
+    if (savedProfileImage) {
+      return savedProfileImage;
+    }
+    
+    // Then check cached data
     if (cachedProfileImage) {
       return cachedProfileImage;
     }
     
-    // Then check the context value (only if we don't have cached)
+    // Then check context value
     if (profileImage) {
       return profileImage;
     } 
     
-    // Then try to get from userData as backup
+    // Finally check user data
     const userDataToUse = cachedUserData || userData;
     if (userDataToUse) {
-      const photoUrl = userDataToUse?.profile_photo_url || 
-                      userDataToUse?.agent_profile?.profile_photo_url || 
-                      userDataToUse?.landlord_profile?.profile_photo_url || 
-                      userDataToUse?.client_profile?.profile_photo_url;
+      const photoUrl = userDataToUse.agentprofile?.profile_photo_url || 
+                      userDataToUse.clientprofile?.profile_photo_url;
       if (photoUrl) {
+        // Cache it for future use
+        localStorage.setItem('profile_photo_url', photoUrl);
         return photoUrl;
       }
     }
     
-    // Return null instead of placeholder - no mockup image
     return null;
   };
 

@@ -56,13 +56,22 @@ const useLogout = () => {
     // Clear user profile data
     localStorage.removeItem('profile_photo_url');
     localStorage.removeItem('user_data');
+    localStorage.removeItem('user_info');
     
-    // Clear any additional user-related data
+    // Clear user type and roles
     localStorage.removeItem('user_type');
     localStorage.removeItem('user_id');
+    localStorage.removeItem('role');
     
-    // If using cookies, you might want to clear them as well
-    // This would typically be handled by the backend, but as a fallback:
+    // Clear any additional session data
+    localStorage.removeItem('session_data');
+    localStorage.removeItem('last_login');
+    
+    // For thorough cleanup, you can also use localStorage.clear()
+    // But be careful if other apps on the same domain need their storage
+    // localStorage.clear();
+    
+    // Clear cookies
     document.cookie.split(";").forEach(cookie => {
       const eqPos = cookie.indexOf("=");
       const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
