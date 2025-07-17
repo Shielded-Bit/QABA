@@ -198,9 +198,34 @@ const SignIn = () => {
         throw new Error("Invalid login response: Missing token or user type.");
       }
 
-      // Store token and user type in localStorage
+      // Store token and user type
       localStorage.setItem("access_token", accessToken);
       localStorage.setItem("user_type", userType);
+
+      // Fetch user data from /me endpoint immediately after login
+      try {
+        const meResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/users/me/`, {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (meResponse.ok) {
+          const userData = await meResponse.json();
+          // Store the complete user data
+          localStorage.setItem('user_data', JSON.stringify(userData.data));
+          
+          // Store profile photo URL directly for immediate access
+          const profilePhotoUrl = userData.data.agentprofile?.profile_photo_url || 
+                                userData.data.clientprofile?.profile_photo_url;
+          if (profilePhotoUrl) {
+            localStorage.setItem('profile_photo_url', profilePhotoUrl);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      }
 
       // Show success toast
       showToast("Sign in successful! Redirecting to dashboard...", 'success');

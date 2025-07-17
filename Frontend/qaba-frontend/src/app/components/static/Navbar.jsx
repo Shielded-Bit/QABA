@@ -9,14 +9,14 @@ import { TbMenu4 } from "react-icons/tb";
 import { XCircle, AlertCircle, LogOut } from "lucide-react";
 import Button from "../shared/Button";
 import { useProfile } from "../../../contexts/ProfileContext";
-import useLogout from "../../hooks/useLogout"; // Import the logout hook
+import useLogout from "../../hooks/useLogout";
 import { 
   Search, 
   Home, 
   PlusCircle, 
-  InfoIcon, // Changed from Info to InfoIcon
+  InfoIcon,
   Newspaper,
-  Settings, // Changed from Cog to Settings
+  Settings,
 } from "lucide-react";
 
 const Navbar = () => {
@@ -24,95 +24,139 @@ const Navbar = () => {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [showSignOutModal, setShowSignOutModal] = useState(false);
   const pathname = usePathname();
-  const [profileImageUrl, setProfileImageUrl] = useState("");
+  
+  // State for cached user data
+  const [cachedProfileImage, setCachedProfileImage] = useState("");
+  const [cachedUserData, setCachedUserData] = useState(null);
+  const [cachedUserType, setCachedUserType] = useState(null);
+  const [cachedDisplayName, setCachedDisplayName] = useState("Guest");
+  const [cachedShortName, setCachedShortName] = useState("User");
+  const [cachedRole, setCachedRole] = useState("User");
+  const [cachedInitial, setCachedInitial] = useState("U");
+  const [isInitialized, setIsInitialized] = useState(false);
   
   // Get user data from context
   const { userData, profileImage, isLoading, userType } = useProfile() || {};
-  
-  // Import the logout hook
   const { logout } = useLogout();
   
-  // Determine if user is signed in
-  const isSignedIn = userData && Object.keys(userData).length > 0;
-  
-  // Get profile image when component mounts or when profile context changes
+  // Initialize from localStorage on component mount
   useEffect(() => {
-    if (profileImage) {
-      setProfileImageUrl(profileImage);
-    } else if (userData) {
-      // Try to get from userData as backup
-      const photoUrl = userData?.profile_photo_url || 
-                      userData?.agent_profile?.profile_photo_url || 
-                      userData?.client_profile?.profile_photo_url ||
-                      userData?.data?.profile_photo_url;
-      if (photoUrl) {
-        setProfileImageUrl(photoUrl);
-      } else {
-        // Try to get from localStorage as final backup
-        const savedImage = localStorage.getItem('profile_photo_url');
-        if (savedImage) {
-          setProfileImageUrl(savedImage);
+    const savedUserData = localStorage.getItem('user_data');
+    const savedUserType = localStorage.getItem('user_type');
+    const savedProfileImage = localStorage.getItem('profile_photo_url');
+    
+    if (savedUserData) {
+      try {
+        const parsedUserData = JSON.parse(savedUserData);
+        setCachedUserData(parsedUserData);
+        
+        // Set user display properties from cached data
+        const firstName = parsedUserData.first_name || "";
+        const lastName = parsedUserData.last_name || "";
+        
+        // Set display name immediately
+        const displayName = firstName && lastName ? 
+          `${firstName} ${lastName}` : 
+          firstName || 
+          lastName || 
+          parsedUserData.email?.split('@')[0] || 
+          "User";
+        
+        setCachedDisplayName(displayName);
+        setCachedShortName(firstName || displayName.split(' ')[0] || "User");
+        setCachedInitial((firstName || displayName)[0].toUpperCase());
+
+        // Get profile photo URL directly from the correct profile
+        const profileUrl = parsedUserData.agentprofile?.profile_photo_url ||
+                         parsedUserData.clientprofile?.profile_photo_url;
+        if (profileUrl) {
+          setCachedProfileImage(profileUrl);
+          localStorage.setItem('profile_photo_url', profileUrl);
         }
+      } catch (error) {
+        console.error('Error parsing cached user data:', error);
       }
-      // Default placeholder if no image is found will be handled in the UI
     }
-  }, [profileImage, userData]);
+    
+    if (savedUserType) {
+      setCachedUserType(savedUserType);
+      const role = savedUserType === "AGENT" ? "Agent" :
+                  savedUserType === "LANDLORD" ? "Landlord" :
+                  savedUserType === "CLIENT" ? "Client" : "User";
+      setCachedRole(role);
+    }
+    
+    if (savedProfileImage) {
+      setCachedProfileImage(savedProfileImage);
+    }
+    
+    setIsInitialized(true);
+  }, []);
+
+  // Update cache when new data arrives
+  useEffect(() => {
+    if (!isInitialized) return;
+    
+    if (userData && !isLoading) {
+      setCachedUserData(userData);
+      localStorage.setItem('user_data', JSON.stringify(userData));
+      
+      const firstName = userData.first_name || "";
+      const lastName = userData.last_name || "";
+      
+      const displayName = firstName && lastName ? 
+        `${firstName} ${lastName}` : 
+        firstName || 
+        lastName || 
+        userData.email?.split('@')[0] || 
+        "User";
+      
+      setCachedDisplayName(displayName);
+      setCachedShortName(firstName || displayName.split(' ')[0] || "User");
+      setCachedInitial((firstName || displayName)[0].toUpperCase());
+    }
+  }, [userData, isLoading, isInitialized]);
+
+  // Update user type cache when it changes
+  useEffect(() => {
+    if (!isInitialized) return;
+    
+    if (userType && userType !== cachedUserType) {
+      setCachedUserType(userType);
+      localStorage.setItem('user_type', userType);
+      const role = userType === "AGENT" ? "Agent" :
+                  userType === "LANDLORD" ? "Landlord" :
+                  userType === "CLIENT" ? "Client" : "User";
+      setCachedRole(role);
+    }
+  }, [userType, cachedUserType, isInitialized]);
+
+  // Update profile image cache when it changes
+  useEffect(() => {
+    if (!isInitialized) return;
+    
+    if (profileImage && profileImage !== cachedProfileImage) {
+      setCachedProfileImage(profileImage);
+      localStorage.setItem('profile_photo_url', profileImage);
+    }
+  }, [profileImage, cachedProfileImage, isInitialized]);
 
   const isActive = (path) => pathname === path;
   
-  // Get user's first initial for avatar fallback (same as in TopNav)
-  const getInitial = () => {
-    const firstName = userData?.first_name || userData?.data?.first_name;
-    return firstName ? firstName.charAt(0).toUpperCase() : "U"; // Default to "U" for User
-  };
+  // Determine if user is signed in
+  const isSignedIn = cachedUserData || (userData && Object.keys(userData).length > 0);
   
-  // Get user display name based on the structure from /api/v1/users/me/ endpoint (same as in TopNav)
-  const getUserDisplayName = () => {
-    if (!userData) return "Guest";
-    
-    // Access directly from userData or from the data property
-    const firstName = userData.first_name || userData.data?.first_name || "";
-    const lastName = userData.last_name || userData.data?.last_name || "";
-    
-    if (firstName && lastName) {
-      return `${firstName} ${lastName}`;
-    } else if (firstName) {
-      return firstName;
-    } else if (lastName) {
-      return lastName;
-    }
-    
-    // Last resort: use email
-    return userData.email ? userData.email.split('@')[0] : "User";
-  };
-
-  // Get short name for mobile display (same as in TopNav)
-  const getShortName = () => {
-    const firstName = userData?.first_name || userData?.data?.first_name;
-    return firstName || "User";
-  };
-
-  // Get user role based on user_type (same as in TopNav)
-  const getUserRole = () => {
-    const type = userType || userData?.user_type || userData?.data?.user_type;
-    if (type === "AGENT" || type === "LANDLORD") return "Agent";
-    return "Client";
-  };
-  
-  // Determine dashboard URL based on user type
+  // Get dashboard URL based on user type
   const getDashboardUrl = () => {
-    const type = userType || userData?.user_type || userData?.data?.user_type;
-    if (type === "AGENT" || type === "LANDLORD") return "/agent-dashboard";
-    return "/dashboard";
+    const type = cachedUserType || userType;
+    return (type === "AGENT" || type === "LANDLORD") ? "/agent-dashboard" : "/dashboard";
   };
 
-  // Handle sign out confirmation
   const handleSignOutClick = () => {
-    setProfileMenuOpen(false); // Close the profile menu first
-    setShowSignOutModal(true); // Show confirmation modal
+    setProfileMenuOpen(false);
+    setShowSignOutModal(true);
   };
   
-  // Handle actual sign out - now uses the logout hook
   const handleConfirmSignOut = () => {
     logout();
     setShowSignOutModal(false);
@@ -155,37 +199,33 @@ const Navbar = () => {
         {/* Right Actions */}
         <div className="hidden md:flex items-center space-x-4">
           {isSignedIn ? (
-            // Profile image and dropdown for signed-in users
             <div className="relative">
               <div 
                 className="flex items-center gap-2 cursor-pointer"
                 onClick={() => setProfileMenuOpen(!profileMenuOpen)}
               >
                 <div className="w-10 h-10 relative rounded-full overflow-hidden border border-gray-300 shadow-sm">
-                  {!isLoading && profileImageUrl ? (
+                  {cachedProfileImage ? (
                     <Image
-                      src={profileImageUrl}
-                      alt="Profile"
+                      src={cachedProfileImage}
+                      alt={`${cachedDisplayName} Profile`}
                       width={40}
                       height={40}
                       className="rounded-full object-cover"
-                      key={profileImageUrl}
-                      onError={(e) => {
-                        setProfileImageUrl("https://i.pravatar.cc/150");
-                      }}
+                      priority
+                      unoptimized={cachedProfileImage.startsWith('data:')}
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gray-200">
                       <span className="text-xl font-medium text-gray-500">
-                        {getInitial()}
+                        {cachedInitial}
                       </span>
                     </div>
                   )}
                 </div>
-                {/* Display user name and role just like in TopNav */}
                 <div className="flex flex-col">
-                  <span className="text-sm font-medium text-gray-800">{getUserDisplayName()}</span>
-                  <span className="text-xs text-gray-500">{getUserRole()}</span>
+                  <span className="text-sm font-medium text-gray-800">{cachedDisplayName}</span>
+                  <span className="text-xs text-gray-500">{cachedRole}</span>
                 </div>
               </div>
               
@@ -227,128 +267,127 @@ const Navbar = () => {
       </div>
 
       {/* Mobile Dropdown Menu */}
-      <div
-  className={`md:hidden bg-gradient-to-b from-[rgb(246,246,246)] to-[rgb(203,228,221)] transform transition-all duration-500 ${
-    menuOpen ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
-  } overflow-hidden`}
->
-  {/* Navigation Links in Two-Column Grid */}
-  <div className="grid grid-cols-2 gap-3 p-4 text-gray-800">
-    {[
-      { name: "Buy", path: "/buy", icon: Search },
-      { name: "Rent", path: "/rent", icon: Home },
-      { name: "Add Listing", path: "/add-listing", icon: PlusCircle },
-      { name: "Manage", path: "/manage",icon: PlusCircle  },
-      { name: "About Us", path: "/about-us", icon: InfoIcon }, // Fixed icon name
-      { name: "Blog", path: "/blog", icon: Newspaper },
-      { name: "Contact Us", path: "/contact", icon: Settings }, // Fixed icon name
-    ].map(({ name, path, icon: Icon }) => (
-      <Link
-        key={path}
-        href={path}
-        className={`
-          flex items-center justify-center
-          px-3 py-3 rounded-xl 
-          group 
-          transition-all duration-300 
-          hover:shadow-md 
-          hover:scale-[1.02] 
-          active:scale-95
-          ${
-            isActive(path)
-              ? "bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white"
-              : "bg-white border border-gray-200 text-gray-700 hover:border-[#014d98]/30"
-          }
-        `}
-        onClick={() => setMenuOpen(false)}
-      >
-        <Icon 
-          className={`
-            mr-2 
-            ${
-              isActive(path)
-                ? "text-white" 
-                : "text-[#014d98] group-hover:text-[#3ab7b1] transition-colors"
-            }
-          `} 
-          size={20} 
-        />
-        <span className="text-xs font-medium">{name}</span>
-      </Link>
-    ))}
-  </div>
-
-  <div className="border-t border-gray-300 p-4">
-    {isSignedIn ? (
-      <div className="space-y-4">
-        {/* User Profile Section */}
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 relative rounded-full overflow-hidden border border-gray-300">
-            {!isLoading && profileImageUrl ? (
-              <Image
-                src={profileImageUrl}
-                alt="Profile"
-                width={40}
-                height={40}
-                className="rounded-full object-cover"
-                onError={() => setProfileImageUrl("https://i.pravatar.cc/150")}
+      <div className={`md:hidden bg-gradient-to-b from-[rgb(246,246,246)] to-[rgb(203,228,221)] transform transition-all duration-500 ${
+        menuOpen ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
+      } overflow-hidden`}>
+        {/* Navigation Links in Two-Column Grid */}
+        <div className="grid grid-cols-2 gap-3 p-4 text-gray-800">
+          {[
+            { name: "Buy", path: "/buy", icon: Search },
+            { name: "Rent", path: "/rent", icon: Home },
+            { name: "Add Listing", path: "/add-listing", icon: PlusCircle },
+            { name: "Manage", path: "/manage",icon: PlusCircle  },
+            { name: "About Us", path: "/about-us", icon: InfoIcon }, // Fixed icon name
+            { name: "Blog", path: "/blog", icon: Newspaper },
+            { name: "Contact Us", path: "/contact", icon: Settings }, // Fixed icon name
+          ].map(({ name, path, icon: Icon }) => (
+            <Link
+              key={path}
+              href={path}
+              className={`
+                flex items-center justify-center
+                px-3 py-3 rounded-xl 
+                group 
+                transition-all duration-300 
+                hover:shadow-md 
+                hover:scale-[1.02] 
+                active:scale-95
+                ${
+                  isActive(path)
+                    ? "bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white"
+                    : "bg-white border border-gray-200 text-gray-700 hover:border-[#014d98]/30"
+                }
+              `}
+              onClick={() => setMenuOpen(false)}
+            >
+              <Icon 
+                className={`
+                  mr-2 
+                  ${
+                    isActive(path)
+                      ? "text-white" 
+                      : "text-[#014d98] group-hover:text-[#3ab7b1] transition-colors"
+                  }
+                `} 
+                size={20} 
               />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                <span className="text-sm font-medium text-gray-500">
-                  {getInitial()}
-                </span>
-              </div>
-            )}
-          </div>
-          <div>
-            <p className="font-semibold text-gray-800">{getShortName()}</p>
-            <p className="text-xs text-gray-500">{getUserRole()}</p>
-          </div>
+              <span className="text-xs font-medium">{name}</span>
+            </Link>
+          ))}
         </div>
 
-        {/* Dashboard, Settings, Logout in a Single Row */}
-        <div className="grid grid-cols-3 gap-2">
-          <Link
-            href={getDashboardUrl()}
-            className="flex flex-col items-center justify-center bg-white border border-gray-200 rounded-xl p-2 text-xs text-gray-700 hover:bg-gray-100 hover:shadow-sm transition-all"
-            onClick={() => setMenuOpen(false)}
-          >
-            <Home size={20} className="mb-1 text-[#014d98]" />
-            Dashboard
-          </Link>
-          <Link
-            href={`${getDashboardUrl()}/settings`}
-            className="flex flex-col items-center justify-center bg-white border border-gray-200 rounded-xl p-2 text-xs text-gray-700 hover:bg-gray-100 hover:shadow-sm transition-all"
-            onClick={() => setMenuOpen(false)}
-          >
-            <Settings size={20} className="mb-1 text-[#014d98]" /> {/* Fixed icon name */}
-            Settings
-          </Link>
-          <button
-            className="flex flex-col items-center justify-center bg-white border border-red-200 text-red-600 rounded-xl p-2 text-xs hover:bg-red-50 hover:shadow-sm transition-all"
-            onClick={() => {
-              setMenuOpen(false);
-              setShowSignOutModal(true);
-            }}
-          >
-            <LogOut size={20} className="mb-1 text-red-500" />
-            Sign Out
-          </button>
+        {/* Mobile Profile Section */}
+        <div className="border-t border-gray-300 p-4">
+          {isSignedIn ? (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 relative rounded-full overflow-hidden border border-gray-300">
+                  {cachedProfileImage ? (
+                    <Image
+                      src={cachedProfileImage}
+                      alt={`${cachedDisplayName} Profile`}
+                      width={40}
+                      height={40}
+                      className="rounded-full object-cover"
+                      priority
+                      unoptimized={cachedProfileImage.startsWith('data:')}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                      <span className="text-sm font-medium text-gray-500">
+                        {cachedInitial}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-800">{cachedShortName}</p>
+                  <p className="text-xs text-gray-500">{cachedRole}</p>
+                </div>
+              </div>
+
+              {/* Dashboard, Settings, Logout buttons */}
+              <div className="grid grid-cols-3 gap-2">
+                <Link
+                  href={getDashboardUrl()}
+                  className="flex flex-col items-center justify-center bg-white border border-gray-200 rounded-xl p-2 text-xs text-gray-700 hover:bg-gray-100 hover:shadow-sm transition-all"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  <Home size={20} className="mb-1 text-[#014d98]" />
+                  Dashboard
+                </Link>
+                <Link
+                  href={`${getDashboardUrl()}/settings`}
+                  className="flex flex-col items-center justify-center bg-white border border-gray-200 rounded-xl p-2 text-xs text-gray-700 hover:bg-gray-100 hover:shadow-sm transition-all"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  <Settings size={20} className="mb-1 text-[#014d98]" /> {/* Fixed icon name */}
+                  Settings
+                </Link>
+                <button
+                  className="flex flex-col items-center justify-center bg-white border border-red-200 text-red-600 rounded-xl p-2 text-xs hover:bg-red-50 hover:shadow-sm transition-all"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setShowSignOutModal(true);
+                  }}
+                >
+                  <LogOut size={20} className="mb-1 text-red-500" />
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          ) : (
+            <Link
+              href="/signin"
+              className="w-full block text-center bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white py-3 rounded-lg hover:opacity-90"
+              onClick={() => setMenuOpen(false)}
+            >
+              Sign In
+            </Link>
+          )}
         </div>
       </div>
-    ) : (
-      <Link
-        href="/signin"
-        className="w-full block text-center bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white py-3 rounded-lg hover:opacity-90"
-        onClick={() => setMenuOpen(false)}
-      >
-        Sign In
-      </Link>
-    )}
-  </div>
-</div>
-      
+
       {/* Click outside to close profile dropdown */}
       {profileMenuOpen && (
         <div 

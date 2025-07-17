@@ -45,21 +45,28 @@ export default function TopNav() {
         setCachedUserData(parsedUserData);
         
         // Set user display properties from cached data
-        const firstName = parsedUserData.first_name || parsedUserData.data?.first_name || "";
-        const lastName = parsedUserData.last_name || parsedUserData.data?.last_name || "";
+        const firstName = parsedUserData.first_name || "";
+        const lastName = parsedUserData.last_name || "";
         
-        if (firstName && lastName) {
-          setCachedDisplayName(`${firstName} ${lastName}`);
-        } else if (firstName) {
-          setCachedDisplayName(firstName);
-        } else if (lastName) {
-          setCachedDisplayName(lastName);
-        } else if (parsedUserData.email) {
-          setCachedDisplayName(parsedUserData.email.split('@')[0]);
+        // Set display name immediately
+        const displayName = firstName && lastName ? 
+          `${firstName} ${lastName}` : 
+          firstName || 
+          lastName || 
+          parsedUserData.email?.split('@')[0] || 
+          "User";
+        
+        setCachedDisplayName(displayName);
+        setCachedShortName(firstName || displayName.split(' ')[0] || "User");
+        setCachedInitial((firstName || displayName)[0].toUpperCase());
+
+        // Get profile photo URL directly from the correct profile
+        const profileUrl = parsedUserData.agentprofile?.profile_photo_url ||
+                         parsedUserData.clientprofile?.profile_photo_url;
+        if (profileUrl) {
+          setCachedProfileImage(profileUrl);
+          localStorage.setItem('profile_photo_url', profileUrl);
         }
-        
-        setCachedShortName(firstName || "User");
-        setCachedInitial(firstName ? firstName.charAt(0).toUpperCase() : "U");
       } catch (error) {
         console.error('Error parsing cached user data:', error);
       }
@@ -67,9 +74,12 @@ export default function TopNav() {
     
     if (savedUserType) {
       setCachedUserType(savedUserType);
-      const role = savedUserType === "AGENT" ? "Agent" : "Client";
+      const role = savedUserType === "AGENT" ? "Agent" :
+                  savedUserType === "LANDLORD" ? "Landlord" :
+                  savedUserType === "CLIENT" ? "Client" : "User";
+      
       setCachedRole(role);
-      setCachedSettingsUrl(savedUserType === "AGENT" ? "/agent-dashboard/settings/profile" : "/dashboard/settings");
+      setCachedSettingsUrl(savedUserType === "CLIENT" ? "/dashboard/settings" : "/agent-dashboard/settings/profile");
     }
     
     if (savedProfileImage) {
@@ -81,30 +91,37 @@ export default function TopNav() {
   
   // Only update cache when new data arrives AND it's different from what we have
   useEffect(() => {
-    if (!isInitialized) return; // Don't update until we've loaded from localStorage
+    if (!isInitialized) return;
     
     if (userData && !isLoading && JSON.stringify(userData) !== JSON.stringify(cachedUserData)) {
       setCachedUserData(userData);
       localStorage.setItem('user_data', JSON.stringify(userData));
       
       // Extract and set user properties
-      const firstName = userData.first_name || userData.data?.first_name || "";
-      const lastName = userData.last_name || userData.data?.last_name || "";
+      const firstName = userData.first_name || "";
+      const lastName = userData.last_name || "";
       
-      if (firstName && lastName) {
-        setCachedDisplayName(`${firstName} ${lastName}`);
-      } else if (firstName) {
-        setCachedDisplayName(firstName);
-      } else if (lastName) {
-        setCachedDisplayName(lastName);
-      } else if (userData.email) {
-        setCachedDisplayName(userData.email.split('@')[0]);
+      // Set display name
+      const displayName = firstName && lastName ? 
+        `${firstName} ${lastName}` : 
+        firstName || 
+        lastName || 
+        userData.email?.split('@')[0] || 
+        "User";
+      
+      setCachedDisplayName(displayName);
+      setCachedShortName(firstName || displayName.split(' ')[0] || "User");
+      setCachedInitial((firstName || displayName)[0].toUpperCase());
+
+      // Get profile photo URL directly from the correct profile
+      const profileUrl = userData.agentprofile?.profile_photo_url ||
+                       userData.clientprofile?.profile_photo_url;
+      if (profileUrl && profileUrl !== cachedProfileImage) {
+        setCachedProfileImage(profileUrl);
+        localStorage.setItem('profile_photo_url', profileUrl);
       }
-      
-      setCachedShortName(firstName || "User");
-      setCachedInitial(firstName ? firstName.charAt(0).toUpperCase() : "U");
     }
-  }, [userData, isLoading, cachedUserData, isInitialized]);
+  }, [userData, isLoading, cachedUserData, cachedProfileImage, isInitialized]);
   
   // Only update user type cache when it actually changes
   useEffect(() => {
@@ -114,9 +131,12 @@ export default function TopNav() {
       setCachedUserType(userType);
       localStorage.setItem('user_type', userType);
       
-      const role = userType === "AGENT" ? "Agent" : "Client";
+      const role = userType === "AGENT" ? "Agent" :
+                  userType === "LANDLORD" ? "Landlord" :
+                  userType === "CLIENT" ? "Client" : "User";
+      
       setCachedRole(role);
-      setCachedSettingsUrl(userType === "AGENT" ? "/agent-dashboard/settings/profile" : "/dashboard/settings");
+      setCachedSettingsUrl(userType === "CLIENT" ? "/dashboard/settings" : "/agent-dashboard/settings/profile");
     }
   }, [userType, cachedUserType, isInitialized]);
   
@@ -149,37 +169,6 @@ export default function TopNav() {
       console.error('Failed to mark notification as read:', error);
     }
   };
-
-  // Get the profile image URL - returns null if no real image is available
-  const getProfileImageUrl = () => {
-    // Always prioritize cached version first
-    if (cachedProfileImage) {
-      return cachedProfileImage;
-    }
-    
-    // Then check the context value (only if we don't have cached)
-    if (profileImage) {
-      return profileImage;
-    } 
-    
-    // Then try to get from userData as backup
-    const userDataToUse = cachedUserData || userData;
-    if (userDataToUse) {
-      const photoUrl = userDataToUse?.profile_photo_url || 
-                      userDataToUse?.agent_profile?.profile_photo_url || 
-                      userDataToUse?.client_profile?.profile_photo_url;
-      if (photoUrl) {
-        return photoUrl;
-      }
-    }
-    
-    // Return null instead of placeholder - no mockup image
-    return null;
-  };
-
-  // Only show loading if we haven't initialized from cache yet
-  const shouldShowLoading = !isInitialized || (!cachedUserData && isLoading);
-  const profileImageUrl = getProfileImageUrl();
 
   // Render the modal overlay and notification content with portal
   const renderNotificationContent = () => {
@@ -265,15 +254,15 @@ export default function TopNav() {
           {/* User Profile */}
           <Link href={cachedSettingsUrl} className="flex items-center gap-2 cursor-pointer">
             <div className="w-10 h-10 relative rounded-full overflow-hidden border border-gray-300 shadow-sm">
-              {profileImageUrl && !shouldShowLoading ? (
+              {cachedProfileImage ? (
                 <Image
-                  src={profileImageUrl}
+                  src={cachedProfileImage}
                   alt={`${cachedDisplayName} Profile`}
                   width={40}
                   height={40}
                   className="rounded-full object-cover"
                   priority
-                  unoptimized={profileImageUrl.startsWith('data:')}
+                  unoptimized={cachedProfileImage.startsWith('data:')}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-gray-200">
@@ -291,17 +280,15 @@ export default function TopNav() {
         </div>
       </div>
 
-      {/* Mobile Navigation - Fixed padding to match page content */}
+      {/* Mobile Navigation */}
       <div className="sm:hidden flex justify-between items-center p-4 px-3">
         {/* Mobile Menu Button */}
         <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
           <Menu className="h-7 w-7 text-gray-600" />
         </button>
 
-        {/* Search Bar (Mobile) - removed */}
-        <div className="flex items-center flex-1 relative mx-4">
-         
-        </div>
+        {/* Search Bar (Mobile) */}
+        <div className="flex items-center flex-1 relative mx-4"></div>
 
         {/* Right side icons container */}
         <div className="flex items-center gap-3">
@@ -318,15 +305,15 @@ export default function TopNav() {
           {/* User Profile (Mobile) */}
           <Link href={cachedSettingsUrl} className="flex items-center gap-2 cursor-pointer">
             <div className="w-8 h-8 relative rounded-full overflow-hidden border border-gray-300">
-              {profileImageUrl && !shouldShowLoading ? (
+              {cachedProfileImage ? (
                 <Image
-                  src={profileImageUrl}
+                  src={cachedProfileImage}
                   alt={`${cachedShortName} Profile`}
                   width={32}
                   height={32}
                   className="rounded-full object-cover"
                   priority
-                  unoptimized={profileImageUrl.startsWith('data:')}
+                  unoptimized={cachedProfileImage.startsWith('data:')}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-gray-200">
