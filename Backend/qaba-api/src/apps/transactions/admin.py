@@ -3,7 +3,6 @@ import csv
 from django.contrib import admin
 from django.http import HttpResponse
 
-# Register your models here.
 from django.utils.html import format_html
 
 from .models import Transaction
@@ -40,10 +39,11 @@ class TransactionAdmin(admin.ModelAdmin):
         "property_info",
         "amount_display",
         "status_badge",
+        "payment_receipt_display",
         "created_at",
     ]
 
-    list_filter = ["status", AmountFilter, "created_at"]
+    list_filter = ["status", AmountFilter, "created_at", "payment_method"]
     search_fields = [
         "reference",
         "tx_ref",
@@ -58,6 +58,7 @@ class TransactionAdmin(admin.ModelAdmin):
         "flw_ref",
         "created_at",
         "updated_at",
+        "payment_receipt_display",
     ]
     date_hierarchy = "created_at"
 
@@ -72,6 +73,7 @@ class TransactionAdmin(admin.ModelAdmin):
                     "flw_ref",
                     "status",
                     "description",
+                    "payment_receipt_display",
                 )
             },
         ),
@@ -106,10 +108,10 @@ class TransactionAdmin(admin.ModelAdmin):
 
     def status_badge(self, obj):
         status_colors = {
-            Transaction.Status.SUCCESSFUL: "#28a745",  # Green
-            Transaction.Status.FAILED: "#dc3545",  # Red
+            Transaction.Status.SUCCESSFUL: "#28a745",
+            Transaction.Status.FAILED: "#dc3545",
         }
-        color = status_colors.get(obj.status, "#6c757d")  # Default gray
+        color = status_colors.get(obj.status, "#6c757d")
 
         return format_html(
             '<span style="background-color: {}; color: white; padding: 4px 8px; '
@@ -119,6 +121,20 @@ class TransactionAdmin(admin.ModelAdmin):
         )
 
     status_badge.short_description = "Status"
+
+    def payment_receipt_display(self, obj):
+        if obj.payment_receipt:
+            url = obj.payment_receipt.url
+            if url.lower().endswith((".jpg", ".jpeg", ".png")):
+                return format_html(
+                    '<a href="{}" target="_blank"><img src="{}" style="max-height:80px;"/></a>',
+                    url,
+                    url,
+                )
+            return format_html('<a href="{}" target="_blank">View Receipt</a>', url)
+        return "-"
+
+    payment_receipt_display.short_description = "Payment Receipt"
 
     def export_as_csv(self, request, queryset):
         meta = self.model._meta
@@ -136,10 +152,24 @@ class TransactionAdmin(admin.ModelAdmin):
 
     export_as_csv.short_description = "Export Selected Transactions"
 
+    def save_model(self, request, obj, form, change):
+        if (
+            change
+            and obj.status == obj.Status.SUCCESSFUL
+            and obj.payment_method == obj.PaymentMethod.OFFLINE
+        ):
+            property_obj = obj.property_obj
+            if property_obj:
+                if property_obj.listing_type == property_obj.ListingType.SALE:
+                    property_obj.property_status = property_obj.PropertyStatus.SOLD
+                    property_obj.save()
+                elif property_obj.listing_type == property_obj.ListingType.RENT:
+                    property_obj.property_status = property_obj.PropertyStatus.RENTED
+                    property_obj.save()
+        super().save_model(request, obj, form, change)
+
     def has_add_permission(self, request):
-        # Transactions should generally be created through the application flow
         return False
 
     def has_delete_permission(self, request, obj=None):
-        # For audit purposes, transactions generally shouldn't be deleted
         return False

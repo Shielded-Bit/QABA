@@ -524,7 +524,7 @@ class PropertyReviewAdmin(admin.ModelAdmin):
         (
             None,
             {"fields": ("reviewed_property", "reviewer", "rating", "comment")},
-        ),  # UPDATED
+        ),
         ("Status", {"fields": ("status", "approved_by")}),
         (
             "Timestamps",
