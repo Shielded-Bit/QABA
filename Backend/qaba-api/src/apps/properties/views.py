@@ -692,6 +692,7 @@ class AgentPropertyAnalyticsView(APIView):
         return years
 
 
+@extend_schema(tags=["Property Reviews"])
 class AllPropertyReviewsListView(generics.ListAPIView):
     """List all approved property reviews"""
 
