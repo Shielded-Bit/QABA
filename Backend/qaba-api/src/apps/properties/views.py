@@ -690,3 +690,15 @@ class AgentPropertyAnalyticsView(APIView):
             )
 
         return years
+
+
+class AllPropertyReviewsListView(generics.ListAPIView):
+    """List all approved property reviews"""
+
+    serializer_class = PropertyReviewSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        return PropertyReview.objects.filter(
+            status=PropertyReview.ReviewStatus.APPROVED
+        ).select_related("reviewer", "reviewed_property")

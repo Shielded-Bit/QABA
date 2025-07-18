@@ -11,10 +11,10 @@ from .views import (
     PropertyDocumentDetailView,
     PropertyDocumentView,
     PropertyViewSet,
+    AllPropertyReviewsListView,
 )
 
 
-# Define a path converter for integer IDs
 class IntConverter:
     regex = "[0-9]+"
 
@@ -25,7 +25,6 @@ class IntConverter:
         return str(value)
 
 
-# Register the converter
 register_converter(IntConverter, "int")
 
 
@@ -59,6 +58,11 @@ urlpatterns = [
         "reviews/property/<int:property_id>/",
         ListPropertyReviewsView.as_view(),
         name="property-reviews",
+    ),
+    path(
+        "reviews/all/",
+        AllPropertyReviewsListView.as_view(),
+        name="all-property-reviews",
     ),
     path(
         "analytics/agent/",

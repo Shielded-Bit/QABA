@@ -576,7 +576,6 @@ class PropertyReviewSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, attrs):
-        # Check if user is trying to review their own property
         request = self.context.get("request")
         property_obj = attrs.get("reviewed_property")
 

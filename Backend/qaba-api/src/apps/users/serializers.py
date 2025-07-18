@@ -148,17 +148,15 @@ class BaseUserRegistrationSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
-        # Remove password_confirm field
         validated_data.pop("password_confirm", None)
 
-        # Create user with manager method to ensure required fields validation
         user = User.objects.create_user(
             email=validated_data["email"],
             password=validated_data["password"],
             first_name=validated_data["first_name"],
             last_name=validated_data["last_name"],
             user_type=validated_data.get("user_type", User.UserType.CLIENT),
-            is_active=False,  # Inactive until email verified
+            is_active=False,
         )
 
         return user
@@ -223,7 +221,6 @@ class LoginSerializer(serializers.Serializer):
         return user
 
 
-# Update registration serializers to inherit correctly
 class ClientRegistrationSerializer(BaseUserRegistrationSerializer):
     class Meta(BaseUserRegistrationSerializer.Meta):
         pass
