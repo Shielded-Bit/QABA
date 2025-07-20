@@ -17,8 +17,9 @@ export default function Page() {
         </h1>
 
         {/* Sub Heading */}
-        <p className="text-base md:text-lg mb-5 text-black mt-1 text-left md:text-center">
-          Find verifiable homes to buy or rent at your convenience.
+        <p className="text-base md:text-lg mb-5 mt-1 text-left md:text-center">
+          <span className="text-black">Find verifiable homes to buy or rent at your convenience and </span>
+          <span className="text-[#014d98]">request to list your properties too.</span>
         </p>
 
         {/* Search Input */}

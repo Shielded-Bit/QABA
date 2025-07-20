@@ -5,6 +5,55 @@ import Link from 'next/link';
 import { motion, useScroll, useTransform, useInView, AnimatePresence } from 'framer-motion';
 
 const AboutPage = () => {
+  // Team members data
+  const teamMembers = [
+    { 
+      name: 'Dr. Francis', 
+      role: 'Founder & CEO',
+      image: 'https://res.cloudinary.com/dqbbm0guw/image/upload/v1752831216/e8dc205f3764aa41b240407b18fbb838a8c95bd2_f4ttue.jpg'
+    },
+    { 
+      name: 'Augustine Anwuchie', 
+      role: 'Project Manager',
+      image: 'https://res.cloudinary.com/dqbbm0guw/image/upload/v1752831216/970bf03ef57fbac492292cc1a01e963241b37072_vix0yn.jpg'
+    },
+    { 
+      name: 'Barr Obinna Nwali', 
+      role: 'Legal Advisor',
+      image: 'https://res.cloudinary.com/dqbbm0guw/image/upload/v1752831216/2ff7e6829479d3f2711230609d728a4fdf38b10b_n1appd.jpg'
+    },
+    { 
+      name: 'Ngozi Paschaline', 
+      role: 'Director of Communications',
+      image: 'https://res.cloudinary.com/dqbbm0guw/image/upload/v1752831216/686fdc43b680eb6988d2d5e9c657c1b8f4e7f95a_tme9hx.jpg'
+    },
+    { 
+      name: 'Steve Tylor', 
+      role: 'Strategic Advisor',
+      image: 'https://res.cloudinary.com/dqbbm0guw/image/upload/v1752831216/b9aa07f09a65f1983c484e5a566e48d7faf18755_idzalw.jpg'
+    },
+    { 
+      name: 'Dr Elias Eze', 
+      role: 'Consultant',
+      image: 'https://res.cloudinary.com/dqbbm0guw/image/upload/v1752834634/991b8383b25dc6b783b37dcc5ed08e4766490a9c_ce8zbo.png'
+    },
+    { 
+      name: 'Michael Nwogha', 
+      role: 'Backend Engineer',
+      image: 'https://res.cloudinary.com/dqbbm0guw/image/upload/v1752831217/dc493f7f71fe86d94e2fea23918fba8ff651b9db_n2krvq.jpg'
+    },
+    { 
+      name: 'Godwin Chisom .H.', 
+      role: 'Frontend Engineer',
+      image: 'https://res.cloudinary.com/dqbbm0guw/image/upload/v1752831216/1268bddf6bc58f2b5a398c774813568726601444_xjzhio.jpg'
+    },
+    { 
+      name: 'Onuorah Victor .M.', 
+      role: 'Product Designer',
+      image: 'https://res.cloudinary.com/dqbbm0guw/image/upload/v1752831216/ea487a1f5cf357adc16c7720a78b83d8c3c4acb1_eaupxr.jpg'
+    }
+  ];
+
   const [counters, setCounters] = useState({
     properties: 0,
     customers: 0,
@@ -12,10 +61,40 @@ const AboutPage = () => {
     support: 0
   });
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
+  const [testimonials, setTestimonials] = useState([
+    {
+      id: 1,
+      quote: "Thanks to this platform, I found my dream home in no time! The search feature made it incredibly easy to navigate through listings.",
+      name: "Emeka Anara",
+      title: "Homebuyer in Abuja",
+      image: "https://ui-avatars.com/api/?name=Emeka+Anara&background=014d98&color=ffffff&size=256&rounded=true"
+    },
+    {
+      id: 2,
+      quote: "The best real estate platform I've used. Professional service and excellent customer support throughout my property search.",
+      name: "Sarah Johnson",
+      title: "Property Investor",
+      image: "https://ui-avatars.com/api/?name=Sarah+Johnson&background=3ab7b1&color=ffffff&size=256&rounded=true"
+    },
+    {
+      id: 3,
+      quote: "QARBA made selling my property effortless. The listing process was smooth and I got genuine buyers quickly.",
+      name: "Michael Okafor",
+      title: "Property Seller in Lagos",
+      image: "https://ui-avatars.com/api/?name=Michael+Okafor&background=014d98&color=ffffff&size=256&rounded=true"
+    }
+  ]);
+  const [testimonialsLoading, setTestimonialsLoading] = useState(true);
+  const [testimonialsError, setTestimonialsError] = useState(null);
+  const [currentTeamIndex, setCurrentTeamIndex] = useState(0);
+  const [isTeamAutoScrolling, setIsTeamAutoScrolling] = useState(true);
   const statsRef = useRef(null);
   const heroRef = useRef(null);
   const missionRef = useRef(null);
   const teamRef = useRef(null);
+  const teamCarouselRef = useRef(null);
+
+  const defaultAvatar = "https://ui-avatars.com/api/?name=User&background=014d98&color=ffffff&size=256&rounded=true";
 
   const { scrollYProgress } = useScroll();
   const heroOpacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
@@ -54,30 +133,54 @@ const AboutPage = () => {
     }
   };
 
-  // Testimonials data
-  const testimonials = [
-    {
-      id: 1,
-      quote: "Thanks to this platform, I found my dream home in no time! The search feature made it incredibly easy to navigate through listings.",
-      name: "Emeka Anara",
-      title: "Homebuyer in Abuja",
-      image: "https://res.cloudinary.com/dqbbm0guw/image/upload/v1749026641/Franc_syeixd.jpg"
-    },
-    {
-      id: 2,
-      quote: "The best real estate platform I've used. Professional service and excellent customer support throughout my property search.",
-      name: "Sarah Johnson",
-      title: "Property Investor",
-      image: "https://res.cloudinary.com/dqbbm0guw/image/upload/v1749026641/Franc_syeixd.jpg"
-    },
-    {
-      id: 3,
-      quote: "QARBA made selling my property effortless. The listing process was smooth and I got genuine buyers quickly.",
-      name: "Michael Okafor",
-      title: "Property Seller in Lagos",
-      image: "https://res.cloudinary.com/dqbbm0guw/image/upload_v1749026641/Franc_syeixd.jpg"
-    }
-  ];
+  // Fetch testimonials from API
+  useEffect(() => {
+    const fetchTestimonials = async () => {
+      try {
+        setTestimonialsLoading(true);
+        const response = await fetch('https://qaba.onrender.com/api/v1/reviews/all/', {
+          headers: {
+            'accept': 'application/json',
+          }
+        });
+        
+        if (!response.ok) throw new Error('Failed to fetch reviews');
+        
+        const data = await response.json();
+        console.log('Fetched reviews data:', data); // Debug log
+        
+        // Take only approved reviews and map them to our testimonial format
+        const approvedReviews = data
+          .filter(review => review.status === 'APPROVED')
+          .slice(0, 4) // Take only first 4 reviews
+          .map((review, index) => ({
+            id: index + 1,
+            quote: review.comment,
+            name: review.reviewer_name,
+            title: `${review.reviewer_type}, ${review.property_name}`,
+            image: `https://ui-avatars.com/api/?name=${encodeURIComponent(review.reviewer_name || 'User')}&background=014d98&color=ffffff&size=256&rounded=true`, // Generate unique avatar for each user
+            rating: review.rating
+          }));
+
+        console.log('Approved reviews:', approvedReviews); // Debug log
+
+        // Only update if we have approved reviews, otherwise keep fallback
+        if (approvedReviews.length > 0) {
+          setTestimonials(approvedReviews);
+        }
+        
+        setTestimonialsLoading(false);
+        setTestimonialsError(null);
+      } catch (err) {
+        console.error('Error fetching testimonials:', err);
+        setTestimonialsLoading(false);
+        setTestimonialsError(null); // Don't show error, just use fallback
+        // Keep the initial fallback testimonials
+      }
+    };
+
+    fetchTestimonials();
+  }, []);
 
   // Counter animation function
   const animateCounter = (start, end, duration, callback) => {
@@ -154,12 +257,50 @@ const AboutPage = () => {
 
   // Auto-rotate testimonials
   useEffect(() => {
+    if (testimonials.length > 0 && !testimonialsLoading) {
+      const interval = setInterval(() => {
+        setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
+      }, 5000);
+
+      return () => clearInterval(interval);
+    }
+  }, [testimonials.length, testimonialsLoading]);
+
+  // Auto-scroll team carousel
+  useEffect(() => {
+    if (!isTeamAutoScrolling || !teamCarouselRef.current) return;
+
+    const cardWidth = 288; // 320px minus gap
+    const gap = 24; // 6 gap in pixels
+    const scrollAmount = cardWidth + gap;
+
     const interval = setInterval(() => {
-      setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
-    }, 5000);
+      setCurrentTeamIndex((prevIndex) => {
+        const nextIndex = (prevIndex + 1) % teamMembers.length;
+        
+        if (teamCarouselRef.current) {
+          teamCarouselRef.current.scrollTo({
+            left: nextIndex * scrollAmount,
+            behavior: 'smooth'
+          });
+        }
+        
+        return nextIndex;
+      });
+    }, 2000); // Auto-scroll every 2 seconds
 
     return () => clearInterval(interval);
-  }, [testimonials.length]);
+  }, [isTeamAutoScrolling, teamMembers.length]);
+
+  // Pause auto-scroll when user interacts
+  const handleTeamInteraction = () => {
+    setIsTeamAutoScrolling(false);
+    
+    // Resume auto-scroll after 10 seconds of inactivity
+    setTimeout(() => {
+      setIsTeamAutoScrolling(true);
+    }, 10000);
+  };
 
   // Format numbers for display
   const formatNumber = (num, suffix = '') => {
@@ -176,15 +317,20 @@ const AboutPage = () => {
   };
 
   const nextTestimonial = () => {
-    setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
+    if (testimonials.length > 0) {
+      setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
+    }
   };
 
   const prevTestimonial = () => {
-    setCurrentTestimonial((prev) => (prev - 1 + testimonials.length) % testimonials.length);
+    if (testimonials.length > 0) {
+      setCurrentTestimonial((prev) => (prev - 1 + testimonials.length) % testimonials.length);
+    }
   };
 
   return (
     <div className="min-h-screen bg-white overflow-x-hidden">
+      <div className="max-w-7xl mx-auto px-4 md:px-8">
       {/* Hero Banner Section */}
       <motion.div 
         ref={heroRef}
@@ -414,8 +560,8 @@ const AboutPage = () => {
               >
                 <div className="w-24 h-32 md:w-28 md:h-36 relative rounded-lg overflow-hidden">
                   <Image
-                    src="https://res.cloudinary.com/dqbbm0guw/image/upload/v1750167907/75e38b33199d3659e9dafaf019ce76d1eaadc7e6_ica1ok.jpg"
-                    alt="Aerial view of properties"
+                    src="https://res.cloudinary.com/dqbbm0guw/image/upload/v1750167908/4744e3fba07a6711d66f357c1757555c8306b0a3_ftxspq.jpg"
+                    alt="Future of real estate"
                     layout="fill"
                     objectFit="cover"
                     className="rounded-lg"
@@ -444,6 +590,74 @@ const AboutPage = () => {
               </motion.p>
             </motion.div>
           </div>
+
+          {/* Vision Section */}
+          <div className="grid md:grid-cols-2 gap-16 items-center mt-20">
+            {/* Vision Content */}
+            <motion.div 
+              className="space-y-4"
+              variants={fadeInUp}
+            >
+              <motion.h2 
+                className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#014d98] to-[#3ab7b1] bg-clip-text text-transparent mb-4"
+                variants={fadeInUp}
+              >
+                Our Vision
+              </motion.h2>
+              <motion.p 
+                className="text-gray-700 text-base md:text-lg leading-relaxed"
+                variants={fadeInUp}
+              >
+                To become Nigeria&apos;s most trusted digital real estate platform, revolutionizing how people buy, 
+                sell, and rent properties through innovative technology and unwavering commitment to transparency 
+                and customer satisfaction.
+              </motion.p>
+            </motion.div>
+
+            {/* Vision Image */}
+            <motion.div 
+              className="relative overflow-visible"
+              variants={fadeInUp}
+            >
+              <motion.div 
+                className="absolute -top-6 -right-6 w-16 h-16 bg-gradient-to-r from-[#3ab7b1] to-[#014d98] rounded-2xl"
+                animate={{ rotate: [0, -360] }}
+                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+              />
+              <motion.div 
+                className="relative bg-white rounded-2xl shadow-xl overflow-hidden z-10"
+                whileHover={{ scale: 1.02 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="h-80 relative">
+                  <Image
+                    src="https://res.cloudinary.com/dqbbm0guw/image/upload/v1750167907/711132722f7d555237a57c3105c2ffb89aeb58f8_utfmok.jpg"
+                    alt="Modern real estate vision"
+                    layout="fill"
+                    objectFit="cover"
+                    className="rounded-2xl"
+                  />
+                </div>
+              </motion.div>
+              <motion.div 
+                className="absolute top-1/2 -left-6 md:left-0 transform -translate-y-1/2 md:-translate-x-12 bg-white p-3 rounded-xl shadow-lg z-20"
+                initial={{ x: -100, opacity: 0 }}
+                whileInView={{ x: 0, opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.3 }}
+              >
+                <div className="w-24 h-32 md:w-28 md:h-36 relative rounded-lg overflow-hidden">
+                  <Image
+                    src="https://res.cloudinary.com/dqbbm0guw/image/upload/v1750167908/4744e3fba07a6711d66f357c1757555c8306b0a3_ftxspq.jpg"
+                    alt="Future of real estate"
+                    layout="fill"
+                    objectFit="cover"
+                    className="rounded-lg"
+                  />
+                </div>
+              </motion.div>
+            </motion.div>
+          </div>
         </motion.div>
 
         {/* Testimonials Section */}
@@ -460,205 +674,370 @@ const AboutPage = () => {
           >
             Hear From Our Users
           </motion.h2>
-          <motion.div 
-            className="relative max-w-5xl mx-auto flex flex-col md:flex-row items-center md:items-stretch md:justify-center gap-8"
-            variants={staggerChildren}
-          >
-            {/* Profile Images Row */}
+          
+          {/* Loading State */}
+          {testimonialsLoading ? (
             <motion.div 
-              className="flex flex-row justify-center items-end gap-4 md:gap-8 md:pr-0 flex-shrink-0 w-full md:w-auto"
+              className="relative max-w-5xl mx-auto flex flex-col md:flex-row items-center md:items-stretch md:justify-center gap-8"
               variants={staggerChildren}
             >
-              {testimonials.map((testimonial, index) => (
-                <motion.div 
-                  key={testimonial.id}
-                  className={`transition-all duration-300 flex flex-col items-center ${
-                    index === currentTestimonial 
-                      ? 'shadow-xl scale-110 bg-white border-2 border-[#014d98]' 
-                      : 'opacity-60'
-                  } rounded-3xl overflow-hidden w-20 h-20 md:w-32 md:h-32 cursor-pointer`}
-                  style={{ minWidth: '5rem', minHeight: '5rem' }}
-                  onClick={() => setCurrentTestimonial(index)}
-                  whileHover={{ scale: index === currentTestimonial ? 1.1 : 1.05 }}
-                  variants={scaleIn}
-                >
-                  <Image
-                    src={testimonial.image}
-                    alt={testimonial.name}
-                    width={128}
-                    height={128}
-                    className="object-cover w-full h-full rounded-3xl"
+              <div className="flex flex-row justify-center items-end gap-4 md:gap-8 md:pr-0 flex-shrink-0 w-full md:w-auto">
+                {[...Array(3)].map((_, index) => (
+                  <div 
+                    key={index}
+                    className="animate-pulse bg-gray-200 rounded-3xl w-20 h-20 md:w-32 md:h-32"
                   />
-                </motion.div>
-              ))}
+                ))}
+              </div>
+              <div className="flex-1 flex flex-col justify-center items-center md:items-start min-w-[280px] md:min-w-[340px]">
+                <div className="max-w-xl w-full bg-gray-100 border rounded-2xl p-6 md:p-8 animate-pulse">
+                  <div className="h-20 bg-gray-200 rounded mb-6"></div>
+                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                </div>
+              </div>
             </motion.div>
-            
-            {/* Testimonial Content */}
-            <AnimatePresence mode="wait">
-              <motion.div 
-                key={currentTestimonial}
-                className="flex-1 flex flex-col justify-center items-center md:items-start min-w-[280px] md:min-w-[340px]"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
-              >
-                <motion.div 
-                  className="max-w-xl w-full bg-gradient-to-r from-[#014d98]/[.07] to-[#3ab7b1]/[.07] border border-[#014d98] rounded-2xl shadow-lg p-6 md:p-8 md:ml-0"
-                  whileHover={{ scale: 1.02 }}
-                >
-                  <motion.blockquote 
-                    className="text-base md:text-xl text-gray-700 italic mb-6 leading-relaxed"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                  >
-                    &ldquo;{testimonials[currentTestimonial].quote}&rdquo;
-                  </motion.blockquote>
-                  <motion.div 
-                    className="font-semibold text-gray-900 text-base md:text-lg"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.3 }}
-                  >
-                    {testimonials[currentTestimonial].name}
-                  </motion.div>
-                  <motion.div 
-                    className="text-gray-600 text-xs md:text-sm"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.4 }}
-                  >
-                    {testimonials[currentTestimonial].title}
-                  </motion.div>
-                  
-                  {/* Navigation Arrows */}
-                  <motion.div 
-                    className="flex justify-start gap-4 mt-8"
-                    variants={staggerChildren}
-                  >
-                    <motion.button
-                      onClick={prevTestimonial}
-                      className="w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-[#014d98] flex items-center justify-center hover:bg-gradient-to-r hover:from-[#014d98] hover:to-[#3ab7b1] hover:text-white transition-colors"
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                      </svg>
-                    </motion.button>
-                    <motion.button
-                      onClick={nextTestimonial}
-                      className="w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-[#014d98] flex items-center justify-center hover:bg-gradient-to-r hover:from-[#014d98] hover:to-[#3ab7b1] hover:text-white transition-colors"
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </motion.button>
-                  </motion.div>
-                </motion.div>
-              </motion.div>
-            </AnimatePresence>
-          </motion.div>
-        </motion.div>
-
-        {/* Meet the Team Section */}
-        <motion.div 
-          ref={teamRef}
-          className="mb-20 bg-gradient-to-r from-[#014d98]/[.07] to-[#3ab7b1]/[.07] rounded-xl px-4 md:px-8 py-16 max-w-6xl mx-auto"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          variants={staggerChildren}
-        >
-          <motion.div 
-            className="text-center mb-12"
-            variants={fadeInUp}
-          >
-            <motion.h2 
-              className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#014d98] to-[#3ab7b1] bg-clip-text text-transparent mb-4"
-              variants={fadeInUp}
+          ) : testimonials.length > 0 ? (
+            <motion.div 
+              className="relative max-w-5xl mx-auto flex flex-col md:flex-row items-center md:items-stretch md:justify-center gap-8"
+              variants={staggerChildren}
             >
-              Meet the Team
-            </motion.h2>
-            <motion.p 
-              className="text-gray-600 text-lg"
-              variants={fadeInUp}
-            >
-              Behind QARBA is a diverse, passionate team of:
-            </motion.p>
-          </motion.div>
-          
-          <motion.div 
-            className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6"
-            variants={staggerChildren}
-          >
-            {[1, 2, 3, 4].map((index) => (
+              {/* Profile Images Row */}
               <motion.div 
-                key={index}
-                className="text-center p-2 md:p-4"
-                variants={scaleIn}
-                whileHover={{ y: -10 }}
+                className="flex flex-row justify-center items-end gap-4 md:gap-8 md:pr-0 flex-shrink-0 w-full md:w-auto"
+                variants={staggerChildren}
               >
-                <motion.div 
-                  className="mb-3 md:mb-4"
-                  whileHover={{ scale: 1.05 }}
-                  transition={{ duration: 0.3 }}
-                >
+                {testimonials.map((testimonial, index) => (
                   <motion.div 
-                    className="w-32 h-32 md:w-56 md:h-56 mx-auto overflow-hidden border-4 border-white shadow-lg bg-white flex items-end"
-                    style={{ borderRadius: '0 0 50px 0' }}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: index * 0.1 }}
+                    key={testimonial?.id || index}
+                    className={`transition-all duration-300 flex flex-col items-center ${
+                      index === currentTestimonial 
+                        ? 'shadow-xl scale-110 bg-white border-2 border-[#014d98]' 
+                        : 'opacity-60'
+                    } rounded-3xl overflow-hidden w-20 h-20 md:w-32 md:h-32 cursor-pointer relative`}
+                    style={{ minWidth: '5rem', minHeight: '5rem' }}
+                    onClick={() => setCurrentTestimonial(index)}
+                    whileHover={{ scale: index === currentTestimonial ? 1.1 : 1.05 }}
+                    variants={scaleIn}
                   >
                     <Image
-                      src="https://res.cloudinary.com/dqbbm0guw/image/upload_v1749026641/Franc_syeixd.jpg"
-                      alt="Dr. Francis"
-                      width={224}
-                      height={224}
-                      className="w-full h-full object-cover"
+                      src={testimonial?.image || defaultAvatar}
+                      alt={testimonial?.name || 'Anonymous User'}
+                      width={256}
+                      height={256}
+                      className="object-cover w-full h-full rounded-3xl"
+                      onError={(e) => {
+                        e.currentTarget.src = defaultAvatar;
+                      }}
                     />
+                    {/* Rating Badge */}
+                    {testimonial?.rating && (
+                      <div className="absolute bottom-1 right-1 bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white text-xs px-1 py-0.5 rounded-full">
+                        {testimonial.rating}★
+                      </div>
+                    )}
                   </motion.div>
-                </motion.div>
-                <motion.h3 
-                  className="font-bold bg-gradient-to-r from-[#014d98] to-[#3ab7b1] bg-clip-text text-transparent text-base md:text-lg mb-1"
-                  variants={fadeInUp}
-                >
-                  Dr. Francis
-                </motion.h3>
-                <motion.p 
-                  className="text-gray-600 text-xs md:text-sm mb-2 md:mb-3"
-                  variants={fadeInUp}
-                >
-                  Founder
-                </motion.p>
-                <motion.div 
-                  className="flex justify-center gap-1 md:gap-2"
-                  variants={staggerChildren}
-                >
-                  {['facebook', 'linkedin', 'instagram'].map((social, i) => (
-                    <motion.a
-                      key={social}
-                      href="#"
-                      className="w-6 h-6 md:w-8 md:h-8 bg-gradient-to-r from-[#014d98] to-[#3ab7b1] rounded text-white flex items-center justify-center text-xs hover:opacity-90 transition"
-                      whileHover={{ scale: 1.2, rotate: 5 }}
-                      variants={scaleIn}
-                    >
-                      <svg className="w-3 h-3 md:w-4 md:h-4" fill="currentColor" viewBox="0 0 24 24">
-                        {/* Facebook Icon */}
-                        <path d="M22.675 0h-21.35C.595 0 0 .592 0 1.326v21.348C0 23.408.595 24 1.325 24h11.495v-9.294H9.691v-3.622h3.129V8.413c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.797.143v3.24l-1.918.001c-1.504 0-1.797.715-1.797 1.763v2.313h3.587l-.467 3.622h-3.12V24h6.116C23.406 24 24 23.408 24 22.674V1.326C24 .592 23.406 0 22.675 0"/>
-                      </svg>
-                    </motion.a>
-                  ))}
-                </motion.div>
+                ))}
               </motion.div>
+              
+              {/* Testimonial Content */}
+              <AnimatePresence mode="wait">
+                {testimonials[currentTestimonial] && (
+                  <motion.div 
+                    key={currentTestimonial}
+                    className="flex-1 flex flex-col justify-center items-center md:items-start min-w-[280px] md:min-w-[340px]"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <motion.div 
+                      className="max-w-xl w-full bg-gradient-to-r from-[#014d98]/[.07] to-[#3ab7b1]/[.07] border border-[#014d98] rounded-2xl shadow-lg p-6 md:p-8 md:ml-0"
+                      whileHover={{ scale: 1.02 }}
+                    >
+                      <motion.blockquote 
+                        className="text-base md:text-xl text-gray-700 italic mb-6 leading-relaxed"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.2 }}
+                      >
+                        &ldquo;{testimonials[currentTestimonial]?.quote || 'No quote available'}&rdquo;
+                      </motion.blockquote>
+                      <motion.div 
+                        className="font-semibold text-gray-900 text-base md:text-lg"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.3 }}
+                      >
+                        {testimonials[currentTestimonial]?.name || 'Anonymous'}
+                      </motion.div>
+                      <motion.div 
+                        className="text-gray-600 text-xs md:text-sm"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.4 }}
+                      >
+                        {testimonials[currentTestimonial]?.title || 'Customer'}
+                      </motion.div>
+                      
+                      {/* Navigation Arrows */}
+                      <motion.div 
+                        className="flex justify-start gap-4 mt-8"
+                        variants={staggerChildren}
+                      >
+                        <motion.button
+                          onClick={prevTestimonial}
+                          className="w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-[#014d98] flex items-center justify-center hover:bg-gradient-to-r hover:from-[#014d98] hover:to-[#3ab7b1] hover:text-white transition-colors"
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                          </svg>
+                        </motion.button>
+                        <motion.button
+                          onClick={nextTestimonial}
+                          className="w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-[#014d98] flex items-center justify-center hover:bg-gradient-to-r hover:from-[#014d98] hover:to-[#3ab7b1] hover:text-white transition-colors"
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </motion.button>
+                      </motion.div>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          ) : (
+            <motion.div 
+              className="relative max-w-5xl mx-auto text-center"
+              variants={fadeInUp}
+            >
+              <p className="text-gray-600">No testimonials available at the moment.</p>
+            </motion.div>
+          )}
+        </motion.div>
+
+  
+{/* Meet the Team Section */}
+<motion.div 
+  ref={teamRef}
+  className="mb-16 py-12 w-full overflow-hidden"
+  initial="hidden"
+  whileInView="visible"
+  viewport={{ once: true }}
+  variants={staggerChildren}
+>
+  <motion.div 
+    className="text-center mb-8 px-2"
+    variants={fadeInUp}
+  >
+    <motion.h2 
+      className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#014d98] to-[#3ab7b1] bg-clip-text text-transparent mb-4"
+      variants={fadeInUp}
+    >
+      Meet the Team
+    </motion.h2>
+    <motion.p 
+      className="text-gray-600 text-lg"
+      variants={fadeInUp}
+    >
+      Behind QARBA is a diverse and passionate team of experts
+    </motion.p>
+  </motion.div>
+
+  {/* Carousel Container */}
+  <div className="relative">
+    {/* Navigation Arrows */}
+    <button 
+      onClick={() => {
+        handleTeamInteraction();
+        const container = teamCarouselRef.current;
+        if (container) {
+          container.scrollBy({ left: -320, behavior: 'smooth' });
+          setCurrentTeamIndex(prev => Math.max(0, prev - 1));
+        }
+      }}
+      className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group hover:bg-gradient-to-r hover:from-[#014d98] hover:to-[#3ab7b1]"
+    >
+      <svg className="w-6 h-6 text-gray-600 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+      </svg>
+    </button>
+
+    <button 
+      onClick={() => {
+        handleTeamInteraction();
+        const container = teamCarouselRef.current;
+        if (container) {
+          container.scrollBy({ left: 320, behavior: 'smooth' });
+          setCurrentTeamIndex(prev => Math.min(teamMembers.length - 1, prev + 1));
+        }
+      }}
+      className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group hover:bg-gradient-to-r hover:from-[#014d98] hover:to-[#3ab7b1]"
+    >
+      <svg className="w-6 h-6 text-gray-600 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+      </svg>
+    </button>
+
+    {/* Auto-scroll indicator */}
+    <div className="absolute top-4 right-4 z-10">
+      <div className={`w-2 h-2 rounded-full transition-all duration-300 ${
+        isTeamAutoScrolling ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
+      }`} />
+    </div>
+
+    {/* Scrollable Container */}
+    <div 
+      ref={teamCarouselRef}
+      className="flex gap-6 overflow-x-auto scrollbar-hide px-12 py-4"
+      style={{ 
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none',
+        WebkitScrollbar: { display: 'none' }
+      }}
+      onMouseEnter={handleTeamInteraction}
+      onTouchStart={handleTeamInteraction}
+      onScroll={handleTeamInteraction}
+    >
+      {teamMembers.map((member, index) => (
+        <motion.div 
+          key={index}
+          className="flex-none w-72 text-center p-4 group"
+          variants={scaleIn}
+          whileHover={{ y: -10 }}
+          initial={{ opacity: 0, x: 50 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: index * 0.1 }}
+          onMouseEnter={handleTeamInteraction}
+          onFocus={handleTeamInteraction}
+        >
+          <motion.div 
+            className="mb-4"
+            whileHover={{ scale: 1.05 }}
+            transition={{ duration: 0.3 }}
+          >
+            <motion.div 
+              className="w-48 h-48 mx-auto overflow-hidden border-4 border-white shadow-lg bg-white"
+              style={{ borderRadius: '0 0 60px 0' }}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: index * 0.1 }}
+            >
+              <Image
+                src={member.image}
+                alt={member.name}
+                width={192}
+                height={192}
+                className="w-full h-full object-cover"
+              />
+            </motion.div>
+          </motion.div>
+
+          <motion.h3 
+            className="font-bold bg-gradient-to-r from-[#014d98] to-[#3ab7b1] bg-clip-text text-transparent text-lg mb-1"
+            variants={fadeInUp}
+          >
+            {member.name}
+          </motion.h3>
+          
+          <motion.p 
+            className="text-gray-600 text-sm mb-3"
+            variants={fadeInUp}
+          >
+            {member.role}
+          </motion.p>
+
+          <motion.div 
+            className="flex justify-center gap-2"
+            variants={staggerChildren}
+          >
+            {[
+              { 
+                name: 'facebook', 
+                icon: "M22.675 0h-21.35C.595 0 0 .592 0 1.326v21.348C0 23.408.595 24 1.325 24h11.495v-9.294H9.691v-3.622h3.129V8.413c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.797.143v3.24l-1.918.001c-1.504 0-1.797.715-1.797 1.763v2.313h3.587l-.467 3.622h-3.12V24h6.116C23.406 24 24 23.408 24 22.674V1.326C24 .592 23.406 0 22.675 0"
+              },
+              { 
+                name: 'linkedin', 
+                icon: "M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"
+              },
+              { 
+                name: 'instagram', 
+                icon: "M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"
+              }
+            ].map((social, i) => (
+              <motion.a
+                key={social.name}
+                href="#"
+                className="w-8 h-8 bg-gradient-to-r from-[#014d98] to-[#3ab7b1] rounded text-white flex items-center justify-center text-xs hover:opacity-90 transition"
+                whileHover={{ scale: 1.2, rotate: 5 }}
+                variants={scaleIn}
+              >
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <path d={social.icon} />
+                </svg>
+              </motion.a>
             ))}
           </motion.div>
         </motion.div>
+      ))}
+    </div>
+
+    {/* Scroll Indicators */}
+    <div className="flex justify-center mt-8 gap-2">
+      {Array.from({ length: Math.ceil(teamMembers.length / 3) }).map((_, index) => (
+        <button
+          key={index}
+          onClick={() => {
+            handleTeamInteraction();
+            const container = teamCarouselRef.current;
+            if (container) {
+              container.scrollTo({ left: index * 960, behavior: 'smooth' });
+              setCurrentTeamIndex(index * 3);
+            }
+          }}
+          className={`w-3 h-3 rounded-full transition-all duration-300 ${
+            Math.floor(currentTeamIndex / 3) === index 
+              ? 'bg-gradient-to-r from-[#014d98] to-[#3ab7b1] scale-125' 
+              : 'bg-gray-300 hover:bg-gray-400'
+          }`}
+        ></button>
+      ))}
+    </div>
+    
+    {/* Progress bar for auto-scroll */}
+    <div className="w-32 h-1 bg-gray-200 rounded-full mx-auto mt-4 overflow-hidden">
+      <motion.div 
+        className="h-full bg-gradient-to-r from-[#014d98] to-[#3ab7b1] rounded-full"
+        animate={{ 
+          width: isTeamAutoScrolling ? "100%" : "0%" 
+        }}
+        transition={{ 
+          duration: isTeamAutoScrolling ? 2 : 0.3,
+          ease: "linear",
+          repeat: isTeamAutoScrolling ? Infinity : 0
+        }}
+      />
+    </div>
+  </div>
+
+  {/* Additional CSS for hiding scrollbar */}
+  <style jsx>{`
+    .scrollbar-hide {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    .scrollbar-hide::-webkit-scrollbar {
+      display: none;
+    }
+  `}</style>
+</motion.div>
 
         {/* CTA Section */}
         <motion.div 
@@ -702,6 +1081,7 @@ const AboutPage = () => {
             </motion.div>
           </motion.div>
         </motion.div>
+      </div>
       </div>
     </div>
   );

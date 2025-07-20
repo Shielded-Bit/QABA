@@ -4,7 +4,7 @@ import Image from 'next/image';
 const Card = ({ logo, title, description, logoWidth, logoHeight }) => {
   return (
     <div
-      className="w-full max-w-96 shadow-lg rounded-lg p-6 flex flex-col items-center text-center h-[380px] relative overflow-hidden"
+      className="w-full shadow-lg rounded-lg p-6 flex flex-col items-center text-center h-[380px] relative overflow-hidden"
       style={{
         backgroundImage: "url('/card-bg.svg')",
         backgroundSize: 'cover',

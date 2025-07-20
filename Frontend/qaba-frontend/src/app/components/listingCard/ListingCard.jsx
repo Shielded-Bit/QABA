@@ -134,7 +134,7 @@ const ListingCard = ({
   };
 
   return (
-    <div className="max-w-md bg-white rounded-lg overflow-hidden shadow-md relative h-full" onClick={handleCardClick}>
+    <div className="w-full bg-white rounded-lg overflow-hidden shadow-md relative h-full" onClick={handleCardClick}>
       {/* Image */}
       <div className="relative p-4">
         <div className="h-64 relative">

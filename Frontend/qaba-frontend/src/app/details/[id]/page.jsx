@@ -371,8 +371,8 @@ const PropertyDetails = ({ params }) => {
                     // phone: property.listed_by.phone_number,
                     userType: property.listed_by.user_type,
                     location: property.listed_by.profile ? 
-                      `${property.listed_by.profile.city || ''}, ${property.listed_by.profile.state || ''}`.trim() : 
-                      property.city ? `${property.city}, ${property.state}` : "Nigeria",
+                      `${property.listed_by.profile.state || ''}, ${property.listed_by.profile.country || 'Nigeria'}`.trim() : 
+                      property.state ? `${property.state}, Nigeria` : "Nigeria",
                     verified: property.listed_by.is_email_verified
                   }} 
                 />

@@ -1,10 +1,21 @@
 "use client";
+import { useState, useEffect } from 'react';
 import AddForRent from '../components/AddForRent';
 import { Toaster } from 'react-hot-toast';
 
-export default function FavouritesPage() {
+export default function ForRentPage() {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return null; // or a loading skeleton
+  }
+
   return (
-    <>
+    <div suppressHydrationWarning>
       {/* Toaster for notifications */}
       <Toaster position="top-right" />
 
@@ -21,6 +32,6 @@ export default function FavouritesPage() {
           <AddForRent />
         </section>
       </div>
-    </>
+    </div>
   );
 }

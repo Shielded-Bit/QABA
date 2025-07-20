@@ -1,9 +1,11 @@
+
 'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
 import ListingCard from '../components/listingCard/ListingCard';
 import Button from '../components/shared/Button';
 import { IoMdArrowDropdown } from "react-icons/io";
+import { VscClearAll } from "react-icons/vsc";
 import { PropertyCardSkeleton } from '../agent-dashboard/favourites/components/LoadingSkeletons';
 import { useSearchParams } from 'next/navigation';
 import { propertyLocationIndex } from "../utils/propertyLocationIndex";
@@ -13,13 +15,20 @@ function RentContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [visibleListings, setVisibleListings] = useState(6);
-  const [lastUpdated] = useState('April 10, 2025');
+  // Remove static date to prevent hydration mismatch
+  const lastUpdated = new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
   
   const [filters, setFilters] = useState({
-    location: '',
     city: '',
-    type: 'rent',
-    purpose: '',
+    state: '',
+    property_type: '',
+    price_range: '',
+    property_status: '',
+    lister_type: ''
   });
 
   const searchParams = useSearchParams();
@@ -45,7 +54,37 @@ function RentContent() {
     const fetchProperties = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/properties/?listing_status=APPROVED&listing_type=RENT`, {
+        // Start with base URL
+        let url = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/properties/?listing_status=APPROVED&listing_type=RENT`;
+        
+        // Add all filter parameters if they exist
+        if (filters.city) {
+          url += `&q=${encodeURIComponent(filters.city)}&city=${encodeURIComponent(filters.city)}`;
+        }
+        
+        if (filters.property_type) {
+          url += `&property_type=${encodeURIComponent(filters.property_type)}`;
+        }
+
+        if (filters.property_status) {
+          url += `&property_status=${encodeURIComponent(filters.property_status)}`;
+        }
+
+        if (filters.lister_type) {
+          url += `&lister_type=${encodeURIComponent(filters.lister_type)}`;
+        }
+        
+        // Add price range parameters if they exist
+        if (filters.price_range) {
+          const [min, max] = filters.price_range.split('-').map(Number);
+          if (filters.price_range.endsWith('+')) {
+            url += `&min_total=${min}`;
+          } else {
+            url += `&min_total=${min}&max_total=${max}`;
+          }
+        }
+
+        const response = await fetch(url, {
           headers: {
             'accept': 'application/json',
           }
@@ -85,53 +124,100 @@ function RentContent() {
     };
 
     fetchProperties();
-  }, []);
+  }, [filters.price_range, filters.city, filters.property_type, filters.property_status, filters.lister_type]); // Refetch when any filter changes
 
-  // Get unique locations and cities for filters
-  const uniqueLocations = [...new Set(properties.map(property => property.location).filter(Boolean))];
+  // Get unique cities for filters
   const uniqueCities = [...new Set(properties.map(property => property.city).filter(Boolean))];
 
-  // Filter properties based on selected filters
-  const handleSearch = () => {
-    // Implementation remains in the client-side for now
-    const results = properties.filter((property) =>
-      (filters.location ? property.location === filters.location : true) &&
-      (filters.city ? property.city === filters.city : true) &&
-      (filters.purpose ? filters.purpose.toLowerCase() === 'rent' : true)
-    );
-    
-    setVisibleListings(6); // Reset to show first 6 when filtering
+  // Reset filters
+  const handleResetFilters = () => {
+    setFilters({
+      city: '',
+      state: '',
+      property_type: '',
+      price_range: '',
+      property_status: '',
+      lister_type: ''
+    });
+    setVisibleListings(6); // Reset to show first 6 items
   };
 
   // Load more properties
   const handleLoadMore = () => setVisibleListings((prev) => prev + 6);
 
-  // Dropdown filter component
-  const FilterDropdown = ({ label, options, onChange }) => (
-    <div className="relative">
-      <select
-        className="border border-black rounded-lg p-2 appearance-none pr-8"
-        onChange={(e) => onChange(e.target.value)}
-      >
-        <option value="">{label}</option>
-        {options.map((option) => (
-          <option key={option} value={option}>{option}</option>
-        ))}
-      </select>
-      <IoMdArrowDropdown className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 pointer-events-none text-2xl" />
-    </div>
-  );
+  // Dropdown filter component with client-side hydration handling
+  const FilterDropdown = ({ label, options, onChange, value }) => {
+    const [mounted, setMounted] = useState(false);
+    
+    useEffect(() => {
+      setMounted(true);
+    }, []);
 
-  // Get filtered properties based on search query and filters
+    if (!mounted) {
+      return (
+        <div className="relative">
+          <div className="border border-gray-300 rounded-md p-1 md:p-2 text-xs md:text-sm bg-white min-w-[70px] md:min-w-[120px] h-[28px] md:h-[38px]"></div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="relative">
+        <select
+          value={value}
+          className="border border-gray-300 rounded-md p-1 md:p-2 appearance-none pr-4 md:pr-8 text-xs md:text-sm bg-white hover:border-gray-400 focus:border-[#014d98] focus:outline-none min-w-[70px] md:min-w-[120px] cursor-pointer h-[28px] md:h-[38px]"
+          onChange={(e) => onChange(e.target.value)}
+        >
+          <option value="">{label}</option>
+          {options.map((option) => (
+            <option key={option.value || option} value={option.value || option}>
+              {option.label || option}
+            </option>
+          ))}
+        </select>
+        <div className="absolute right-1 md:right-2 top-1/2 transform -translate-y-1/2 pointer-events-none bg-white">
+          <IoMdArrowDropdown className="text-gray-500 text-sm md:text-xl" />
+        </div>
+      </div>
+    );
+  };
+
+  const propertyTypes = [
+    { value: 'TWO_BEDROOM_FLAT', label: 'Two Bedroom Flat' },
+    { value: 'THREE_BEDROOM_FLAT', label: 'Three Bedroom Flat' },
+    { value: 'STUDIO', label: 'Studio' },
+    { value: 'DUPLEX', label: 'Duplex' },
+    { value: 'BUNGALOW', label: 'Bungalow' }
+  ];
+
+  const propertyStatusOptions = [
+    { value: 'AVAILABLE', label: 'Available Now' },
+    { value: 'RENTED', label: 'Already Rented' }
+  ];
+
+  const listerTypeOptions = [
+    { value: 'LANDLORD', label: 'Direct from Owner' },
+    { value: 'AGENT', label: 'Listed by Agent' }
+  ];
+
+  const priceRanges = [
+    { value: '0-100000', label: 'Up to ₦100,000' },
+    { value: '100000-300000', label: '₦100,000 - ₦300,000' },
+    { value: '300000-500000', label: '₦300,000 - ₦500,000' },
+    { value: '500000-1000000', label: '₦500,000 - ₦1,000,000' },
+    { value: '1000000-2000000', label: '₦1M - ₦2M' },
+    { value: '2000000+', label: 'Above ₦2M' }
+  ];
+
+  // Filter properties only by search query as other filters are handled by the backend
   const filteredProperties = properties.filter((property) => {
-    const matchesLocation = filters.location ? property.location === filters.location : true;
-    const matchesCity = filters.city ? property.city === filters.city : true;
     const matchesSearch = searchQuery
       ? property.title.toLowerCase().includes(searchQuery) ||
         property.location.toLowerCase().includes(searchQuery) ||
         property.city.toLowerCase().includes(searchQuery)
       : true;
-    return matchesLocation && matchesCity && matchesSearch;
+
+    return matchesSearch;
   });
 
   // Find similar properties if no exact match
@@ -172,33 +258,50 @@ function RentContent() {
     <div className="px-2 sm:px-14 py-4">
       <div className="pt-6">
         {/* Filters */}
-        <div className="flex flex-wrap gap-4 mb-4 md:mb-6">
-          <FilterDropdown
-            label="Location"
-            options={uniqueLocations}
-            onChange={(value) => setFilters({ ...filters, location: value })}
-          />
+        <div className="flex flex-wrap items-center gap-1 md:gap-3 mb-4 md:mb-6 overflow-x-auto">
           <FilterDropdown
             label="City"
             options={uniqueCities}
+            value={filters.city}
             onChange={(value) => setFilters({ ...filters, city: value })}
           />
           <FilterDropdown
             label="Type"
-            options={['rent']}
-            onChange={(value) => setFilters({ ...filters, type: value })}
+            options={propertyTypes}
+            value={filters.property_type}
+            onChange={(value) => setFilters({ ...filters, property_type: value })}
           />
           <FilterDropdown
-            label="Purpose"
-            options={['Rent']}
-            onChange={(value) => setFilters({ ...filters, purpose: value })}
+            label="Price"
+            options={priceRanges}
+            value={filters.price_range}
+            onChange={(value) => setFilters({ ...filters, price_range: value })}
           />
-          <Button
-            label="Search"
-            onClick={handleSearch}
-            variant="primary"
-            className="h-10"
+          <FilterDropdown
+            label="Status"
+            options={propertyStatusOptions}
+            value={filters.property_status}
+            onChange={(value) => setFilters({ ...filters, property_status: value })}
           />
+          <FilterDropdown
+            label="By"
+            options={listerTypeOptions}
+            value={filters.lister_type}
+            onChange={(value) => setFilters({ ...filters, lister_type: value })}
+          />
+          <button
+            onClick={handleResetFilters}
+            className={`flex items-center gap-1 md:gap-2 transition-colors duration-200 ml-1 md:ml-0 ${
+              Object.values(filters).some(value => value) 
+                ? 'text-[#014d98] hover:text-[#3ab7b1]' 
+                : 'text-gray-400 cursor-not-allowed'
+            }`}
+            disabled={!Object.values(filters).some(value => value)}
+            title="Reset filters"
+          >
+            <VscClearAll className="transform rotate-90" size={14} />
+            <span className="text-xs md:text-sm">Reset</span>
+          </button>
         </div>
       </div>
 

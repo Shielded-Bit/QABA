@@ -10,6 +10,10 @@ const SearchInput = ({ onSearch, placeholder = "e.g Abakiliki" }) => {
   const router = useRouter();
 
   const handleTabClick = (tab) => {
+    if (tab === 'sell') {
+      router.push('/add-listing');
+      return;
+    }
     setActiveTab(tab);
   };
 
@@ -46,6 +50,12 @@ const SearchInput = ({ onSearch, placeholder = "e.g Abakiliki" }) => {
           onClick={() => handleTabClick("rent")}
         >
           Rent
+        </button>
+        <button
+          className={`px-4 sm:px-6 py-2 text-sm sm:text-lg font-medium text-gray-500 hover:text-black hover:border-b-2 hover:border-blue-500 transition-all duration-200`}
+          onClick={() => handleTabClick("sell")}
+        >
+          List Your Property
         </button>
       </div>
 
