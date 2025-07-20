@@ -1,24 +1,35 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import ListingCard from '../components/listingCard/ListingCard';
 import Button from '../components/shared/Button';
 import { IoMdArrowDropdown } from "react-icons/io";
+import { VscClearAll } from "react-icons/vsc";
 import { PropertyCardSkeleton } from '../agent-dashboard/favourites/components/LoadingSkeletons';
+import { useSearchParams } from 'next/navigation';
+import { propertyLocationIndex } from "../utils/propertyLocationIndex";
 
-export default function Buy() {
+function BuyContent() {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [visibleListings, setVisibleListings] = useState(6); // Initial listings to show
-  const [lastUpdated] = useState('April 10, 2025');
+  const [visibleListings, setVisibleListings] = useState(6);
+  const lastUpdated = new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
   
   const [filters, setFilters] = useState({
-    location: '',
     city: '',
-    type: 'buy',
-    purpose: '',
+    property_type: '',
+    price_range: '',
+    property_status: '',
+    lister_type: ''
   });
+
+  const searchParams = useSearchParams();
+  const searchQuery = searchParams.get('q')?.toLowerCase() || '';
 
   // Function to extract and format price from property data
   const extractPrice = (property) => {
@@ -35,12 +46,42 @@ export default function Buy() {
     return formattedPrice || "Price on request";
   };
 
-  // Fetch approved properties for sale from API
+  // Fetch approved sale properties from API
   useEffect(() => {
     const fetchProperties = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/properties/?listing_status=APPROVED&listing_type=SALE`, {
+        // Start with base URL
+        let url = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/properties/?listing_status=APPROVED&listing_type=SALE`;
+        
+        // Add all filter parameters if they exist
+        if (filters.city) {
+          url += `&q=${encodeURIComponent(filters.city)}&city=${encodeURIComponent(filters.city)}`;
+        }
+        
+        if (filters.property_type) {
+          url += `&property_type=${encodeURIComponent(filters.property_type)}`;
+        }
+
+        if (filters.property_status) {
+          url += `&property_status=${encodeURIComponent(filters.property_status)}`;
+        }
+
+        if (filters.lister_type) {
+          url += `&lister_type=${encodeURIComponent(filters.lister_type)}`;
+        }
+        
+        // Add price range parameters if they exist
+        if (filters.price_range) {
+          const [min, max] = filters.price_range.split('-').map(Number);
+          if (filters.price_range.endsWith('+')) {
+            url += `&min_sale=${min}`;
+          } else {
+            url += `&min_sale=${min}&max_sale=${max}`;
+          }
+        }
+
+        const response = await fetch(url, {
           headers: {
             'accept': 'application/json',
           }
@@ -51,18 +92,15 @@ export default function Buy() {
         }
 
         const responseData = await response.json();
-        
-        // Extract the data array based on the actual API response structure
         const propertiesData = responseData.data || [];
         
-        // Map API data to our component's expected format
         const formattedProperties = propertiesData.map(property => ({
           id: property.id,
           title: property.property_name || 'Beautiful Property',
           price: extractPrice(property),
           description: `${property.bedrooms || 0} bed, ${property.bathrooms || 0} bath property in ${property.location || 'premium location'}`,
           image: property.thumbnail || 'https://res.cloudinary.com/dqbbm0guw/image/upload/v1734105941/Cliff_house_design_by_THE_LINE_visualization_1_1_ghvctf.png',
-          type: 'buy',
+          type: 'sale',
           location: property.location || '',
           city: property.city || '',
           propertyStatus: property.property_status_display || 'Available',
@@ -80,74 +118,162 @@ export default function Buy() {
     };
 
     fetchProperties();
-  }, []);
+  }, [
+    filters.price_range,
+    filters.city,
+    filters.property_type,
+    filters.property_status,
+    filters.lister_type
+  ]);
 
   // Get unique locations and cities for filters
   const uniqueLocations = [...new Set(properties.map(property => property.location).filter(Boolean))];
   const uniqueCities = [...new Set(properties.map(property => property.city).filter(Boolean))];
 
-  // Filter properties based on selected filters
-  const handleSearch = () => {
-    // Implementation remains in the client-side for now
-    setVisibleListings(6); // Reset to show first 6 when filtering
+  // Reset filters
+  const handleResetFilters = () => {
+    setFilters({
+      city: '',
+      property_type: '',
+      price_range: '',
+      property_status: '',
+      lister_type: ''
+    });
+    setVisibleListings(6); // Reset to show first 6 items
   };
 
   // Load more properties
   const handleLoadMore = () => setVisibleListings((prev) => prev + 6);
 
-  // Dropdown filter component
-  const FilterDropdown = ({ label, options, onChange }) => (
-    <div className="relative">
-      <select
-        className="border border-black rounded-lg p-2 appearance-none pr-8"
-        onChange={(e) => onChange(e.target.value)}
-      >
-        <option value="">{label}</option>
-        {options.map((option) => (
-          <option key={option} value={option}>{option}</option>
-        ))}
-      </select>
-      <IoMdArrowDropdown className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 pointer-events-none text-2xl" />
-    </div>
-  );
+  // Dropdown filter component with client-side hydration handling
+  const FilterDropdown = ({ label, options, onChange, value }) => {
+    const [mounted, setMounted] = useState(false);
+    
+    useEffect(() => {
+      setMounted(true);
+    }, []);
 
-  // Get filtered properties
-  const filteredProperties = properties.filter((property) =>
-    (filters.location ? property.location === filters.location : true) &&
-    (filters.city ? property.city === filters.city : true)
-  );
+    if (!mounted) {
+      return (
+        <div className="relative">
+          <div className="border border-gray-300 rounded-md p-1 md:p-2 text-xs md:text-sm bg-white min-w-[70px] md:min-w-[120px] h-[28px] md:h-[38px]"></div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="relative">
+        <select
+          value={value}
+          className="border border-gray-300 rounded-md p-1 md:p-2 appearance-none pr-4 md:pr-8 text-xs md:text-sm bg-white text-black hover:border-gray-400 focus:border-[#014d98] focus:outline-none min-w-[70px] md:min-w-[120px] cursor-pointer h-[28px] md:h-[38px] shadow-sm"
+          onChange={(e) => onChange(e.target.value)}
+          style={{
+            WebkitAppearance: 'none',
+            MozAppearance: 'none',
+            appearance: 'none',
+            backgroundImage: 'none'
+          }}
+        >
+          <option value="" className="bg-white text-black">{label}</option>
+          {options.map((option) => (
+            <option key={option.value || option} value={option.value || option} className="bg-white text-black">
+              {option.label || option}
+            </option>
+          ))}
+        </select>
+        <div className="absolute right-1 md:right-2 top-1/2 transform -translate-y-1/2 pointer-events-none bg-white">
+          <IoMdArrowDropdown className="text-gray-500 text-sm md:text-xl" />
+        </div>
+      </div>
+    );
+  };
+
+  const propertyTypes = [
+    { value: 'TWO_BEDROOM_FLAT', label: 'Two Bedroom Flat' },
+    { value: 'THREE_BEDROOM_FLAT', label: 'Three Bedroom Flat' },
+    { value: 'STUDIO', label: 'Studio' },
+    { value: 'DUPLEX', label: 'Duplex' },
+    { value: 'BUNGALOW', label: 'Bungalow' }
+  ];
+
+  const propertyStatusOptions = [
+    { value: 'AVAILABLE', label: 'Available' },
+    { value: 'SOLD', label: 'Sold' }
+  ];
+
+  const listerTypeOptions = [
+    { value: 'LANDLORD', label: 'Landlord' },
+    { value: 'AGENT', label: 'Agent' }
+  ];
+
+  const priceRanges = [
+    { value: '0-5000000', label: 'Up to ₦5M' },
+    { value: '5000000-10000000', label: '₦5M - ₦10M' },
+    { value: '10000000-20000000', label: '₦10M - ₦20M' },
+    { value: '20000000-50000000', label: '₦20M - ₦50M' },
+    { value: '50000000-100000000', label: '₦50M - ₦100M' },
+    { value: '100000000+', label: 'Above ₦100M' }
+  ];
+
+  // Filter properties by search query as other filters are handled by backend
+  const filteredProperties = properties.filter((property) => {
+    const matchesSearch = searchQuery
+      ? property.title.toLowerCase().includes(searchQuery) ||
+        property.location.toLowerCase().includes(searchQuery) ||
+        property.city.toLowerCase().includes(searchQuery)
+      : true;
+
+    return matchesSearch;
+  });
 
   return (
     <div className="px-2 sm:px-14 py-4">
       <div className="pt-6">
         {/* Filters */}
-        <div className="flex flex-wrap gap-4 mb-4 md:mb-6">
-          <FilterDropdown
-            label="Location"
-            options={uniqueLocations}
-            onChange={(value) => setFilters({ ...filters, location: value })}
-          />
+        <div className="flex flex-wrap items-center gap-1 md:gap-3 mb-4 md:mb-6 overflow-x-auto">
           <FilterDropdown
             label="City"
             options={uniqueCities}
+            value={filters.city}
             onChange={(value) => setFilters({ ...filters, city: value })}
           />
           <FilterDropdown
             label="Type"
-            options={['buy']}
-            onChange={(value) => setFilters({ ...filters, type: value })}
+            options={propertyTypes}
+            value={filters.property_type}
+            onChange={(value) => setFilters({ ...filters, property_type: value })}
           />
           <FilterDropdown
-            label="Purpose"
-            options={['Buy']}
-            onChange={(value) => setFilters({ ...filters, purpose: value })}
+            label="Price"
+            options={priceRanges}
+            value={filters.price_range}
+            onChange={(value) => setFilters({ ...filters, price_range: value })}
           />
-          <Button
-            label="Search"
-            onClick={handleSearch}
-            variant="primary"
-            className="h-10"
+          <FilterDropdown
+            label="Status"
+            options={propertyStatusOptions}
+            value={filters.property_status}
+            onChange={(value) => setFilters({ ...filters, property_status: value })}
           />
+          <FilterDropdown
+            label="By"
+            options={listerTypeOptions}
+            value={filters.lister_type}
+            onChange={(value) => setFilters({ ...filters, lister_type: value })}
+          />
+          <button
+            onClick={handleResetFilters}
+            className={`flex items-center gap-1 md:gap-2 transition-colors duration-200 ml-1 md:ml-0 ${
+              Object.values(filters).some(value => value) 
+                ? 'text-[#014d98] hover:text-[#3ab7b1]' 
+                : 'text-gray-400 cursor-not-allowed'
+            }`}
+            disabled={!Object.values(filters).some(value => value)}
+            title="Reset filters"
+          >
+            <VscClearAll className="transform rotate-90" size={14} />
+            <span className="text-xs md:text-sm">Reset</span>
+          </button>
         </div>
       </div>
 
@@ -255,5 +381,13 @@ export default function Buy() {
         </>
       )}
     </div>
+  );
+}
+
+export default function Buy() {
+  return (
+    <Suspense fallback={<div className="w-full flex justify-center py-10"><PropertyCardSkeleton /></div>}>
+      <BuyContent />
+    </Suspense>
   );
 }

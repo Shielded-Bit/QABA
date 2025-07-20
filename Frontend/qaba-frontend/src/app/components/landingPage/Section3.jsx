@@ -118,31 +118,54 @@ const Section3 = () => {
   }, []);
 
   return (
-    <section className="bg-gray-50 px-6 sm:px-12 py-16">
+    <section className="bg-gray-50 px-2 md:px-14 py-16">
       {/* Section Heading */}
-      <h2 className="text-3xl font-bold mb-8 text-center">
-        Best Properties Available
-      </h2>
+      <div className="max-w-6xl mx-auto text-center mb-12">
+        <h2 className="text-3xl font-bold mb-8">
+          Best Properties Available
+        </h2>
+      </div>
 
       {/* Loading State - Use Skeletons */}
       {loading && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-8">
-          {[...Array(3)].map((_, idx) => (
-            <PropertyCardSkeleton key={idx} />
-          ))}
+        <div className="max-w-6xl mx-auto">
+          <Swiper
+            spaceBetween={30}
+            slidesPerView={1}
+            breakpoints={{
+              640: {
+                slidesPerView: 1,
+              },
+              768: {
+                slidesPerView: 2,
+              },
+              1024: {
+                slidesPerView: 3,
+              },
+            }}
+            modules={[Pagination, Autoplay]}
+          >
+            {[...Array(3)].map((_, idx) => (
+              <SwiperSlide key={idx}>
+                <div className="flex flex-col px-2">
+                  <PropertyCardSkeleton />
+                </div>
+              </SwiperSlide>
+            ))}
+          </Swiper>
         </div>
       )}
 
       {/* Error State */}
       {error && !loading && (
-        <div className="text-center text-red-500 mb-4">
+        <div className="max-w-6xl mx-auto text-center text-red-500 mb-4">
           {error}
         </div>
       )}
 
       {/* Swiper Carousel Container */}
       {!loading && properties.length > 0 && (
-        <div className="swiper-container">
+        <div className="max-w-6xl mx-auto">
           <Swiper
             spaceBetween={30}
             slidesPerView={1}
@@ -151,9 +174,7 @@ const Section3 = () => {
               delay: 4000,
               disableOnInteraction: false,
             }}
-            pagination={{
-              clickable: true,
-            }}
+            pagination={{ clickable: true }}
             breakpoints={{
               640: {
                 slidesPerView: 1,
@@ -169,8 +190,10 @@ const Section3 = () => {
           >
             {properties.map((property) => (
               <SwiperSlide key={property.id}>
-                <div className="animate-fadeIn">
-                  <ListingCard {...property} />
+                <div className="flex flex-col px-2">
+                  <div className="animate-fadeIn">
+                    <ListingCard {...property} />
+                  </div>
                 </div>
               </SwiperSlide>
             ))}
@@ -178,11 +201,8 @@ const Section3 = () => {
         </div>
       )}
 
-      {/* Pagination Container */}
-      <div className="swiper-pagination custom-pagination mt-6" />
-
       {/* Button */}
-      <div className="flex justify-center mt-8">
+      <div className="max-w-6xl mx-auto flex justify-center mt-8">
         {/* <div className="p-4">
           <Button
             label="Load More"
