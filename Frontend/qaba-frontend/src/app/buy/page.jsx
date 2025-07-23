@@ -51,47 +51,40 @@ function BuyContent() {
     const fetchProperties = async () => {
       try {
         setLoading(true);
-        // Start with base URL
-        let url = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/properties/?listing_status=APPROVED&listing_type=SALE`;
+        setError(null);
         
-        // Add all filter parameters if they exist
+        // Build API URL with filters
+        let apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/properties/?listing_status=APPROVED&listing_type=SALE`;
+        
+        // Add filter parameters
         if (filters.city) {
-          url += `&q=${encodeURIComponent(filters.city)}&city=${encodeURIComponent(filters.city)}`;
+          apiUrl += `&city=${encodeURIComponent(filters.city)}`;
         }
         
         if (filters.property_type) {
-          url += `&property_type=${encodeURIComponent(filters.property_type)}`;
-        }
-
-        if (filters.property_status) {
-          url += `&property_status=${encodeURIComponent(filters.property_status)}`;
-        }
-
-        if (filters.lister_type) {
-          url += `&lister_type=${encodeURIComponent(filters.lister_type)}`;
+          apiUrl += `&property_type=${filters.property_type}`;
         }
         
-        // Add price range parameters if they exist
+        // Add price range parameters
         if (filters.price_range) {
           const [min, max] = filters.price_range.split('-').map(Number);
           if (filters.price_range.endsWith('+')) {
-            url += `&min_sale=${min}`;
+            apiUrl += `&min_price=${min}`;
           } else {
-            url += `&min_sale=${min}&max_sale=${max}`;
+            apiUrl += `&min_price=${min}&max_price=${max}`;
           }
         }
 
-        const response = await fetch(url, {
+        const res = await fetch(apiUrl, {
+          method: 'GET',
           headers: {
-            'accept': 'application/json',
-          }
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+          },
         });
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch properties');
-        }
-
-        const responseData = await response.json();
+        
+        if (!res.ok) throw new Error('Failed to fetch properties');
+        const responseData = await res.json();
         const propertiesData = responseData.data || [];
         
         const formattedProperties = propertiesData.map(property => ({

@@ -15,50 +15,61 @@ const PriceBreakdown = ({ property }) => {
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4 mb-6 shadow-sm">
-      <h3 className="font-semibold text-gray-900 mb-3">Price Breakdown</h3>
+    <div className="bg-white rounded-lg shadow-sm p-5">
+      <h3 className="text-xl font-semibold text-gray-900 mb-4">
+        Price Breakdown
+      </h3>
       
-      <div className="space-y-2 text-sm">
-        <div className="flex justify-between">
+      <div className="space-y-3">
+        {/* Base Price */}
+        <div className="flex justify-between items-center py-2">
           <span className="text-gray-600">
             {isRent ? `${frequency} Rent` : 'Sale Price'}
           </span>
-          <span className="font-medium">₦{formatPrice(basePrice)}</span>
+          <span className="font-semibold text-gray-900">₦{formatPrice(basePrice)}</span>
         </div>
         
+        {/* Agent Commission */}
         {agentCommission && parseFloat(agentCommission) > 0 && (
-          <div className="flex justify-between">
+          <div className="flex justify-between items-center py-2">
             <span className="text-gray-600">Agent Commission</span>
-            <span className="font-medium">₦{formatPrice(agentCommission)}</span>
+            <span className="font-semibold text-gray-900">₦{formatPrice(agentCommission)}</span>
           </div>
         )}
         
+        {/* Qaba Service Fee */}
         {qabaFee && parseFloat(qabaFee) > 0 && (
-          <div className="flex justify-between">
-            <span className="text-gray-600">Qaba Service Fee</span>
-            <span className="font-medium">₦{formatPrice(qabaFee)}</span>
+          <div className="flex justify-between items-center py-2">
+            <span className="text-gray-600">Service Fee</span>
+            <span className="font-semibold text-gray-900">₦{formatPrice(qabaFee)}</span>
           </div>
         )}
         
-        <hr className="my-2" />
+        {/* Divider */}
+        <div className="border-t border-gray-200 my-3"></div>
         
-        <div className="flex justify-between font-semibold text-lg">
-          <span>Total Amount</span>
-          <span className="text-blue-600">
-            ₦{formatPrice(totalPrice || basePrice)}
-            {isRent && ` / ${frequency}`}
-          </span>
+        {/* Total Amount */}
+        <div className="flex justify-between items-center py-2 bg-blue-50 px-4 rounded-lg">
+          <span className="font-semibold text-blue-900">Total Amount</span>
+          <div className="text-right">
+            <span className="font-bold text-xl text-blue-900">
+              ₦{formatPrice(totalPrice || basePrice)}
+            </span>
+            {isRent && (
+              <div className="text-blue-600 text-sm">
+                / {frequency}
+              </div>
+            )}
+          </div>
         </div>
       </div>
       
+      {/* Simple note */}
       {(agentCommission || qabaFee) && (
-        <div className="mt-3 p-2 bg-blue-50 rounded text-xs text-blue-700">
-          <span className="flex items-center">
-            <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-            </svg>
-            Additional fees may apply for processing and verification services.
-          </span>
+        <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+          <p className="text-gray-600 text-sm">
+            All fees are included in the total amount shown above.
+          </p>
         </div>
       )}
     </div>

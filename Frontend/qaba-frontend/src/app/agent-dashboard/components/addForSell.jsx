@@ -163,6 +163,24 @@ const fetchAmenities = async () => {
 };
 
 const AddForSell = () => {
+  // Get authenticated user type from localStorage
+  const getAuthenticatedUserType = () => {
+    if (typeof window !== 'undefined') {
+      const userType = localStorage.getItem('user_type');
+      // Convert LANDLORD to LandLord and AGENT to agent for form compatibility
+      if (userType === 'LANDLORD') return 'LandLord';
+      if (userType === 'AGENT') return 'agent';
+      return 'LandLord'; // Default fallback
+    }
+    return 'LandLord';
+  };
+
+  // Helper function to determine if property type should show bedroom/bathroom fields
+  const shouldShowBedroomBathroom = (propertyType) => {
+    const typesWithoutBedrooms = ['EMPTY_LAND'];
+    return !typesWithoutBedrooms.includes(propertyType);
+  };
+
   // Form state
   const [formData, setFormData] = useState({
     property_name: "",
@@ -177,7 +195,7 @@ const AddForSell = () => {
     sale_price: "",
     property_status: "New",
     amenities_ids: [],
-    user_type: "LandLord",
+    user_type: getAuthenticatedUserType(), // Set based on authenticated user
     state: "",
     city: ""
   });
@@ -205,6 +223,32 @@ const AddForSell = () => {
   const [submissionType, setSubmissionType] = useState(null);
 
   // Effects
+  // Ensure user type stays in sync with authenticated user
+  useEffect(() => {
+    const currentAuthUserType = getAuthenticatedUserType();
+    if (formData.user_type !== currentAuthUserType) {
+      setFormData(prev => ({ ...prev, user_type: currentAuthUserType }));
+    }
+  }, [formData.user_type]);
+
+  // Reset bedroom/bathroom values when property type changes to one that doesn't need them
+  useEffect(() => {
+    if (!shouldShowBedroomBathroom(formData.property_type)) {
+      setFormData(prev => ({ 
+        ...prev, 
+        bedrooms: 0, 
+        bathrooms: 0 
+      }));
+    } else if (formData.bedrooms === 0) {
+      // Reset to default values if switching back to a property type that needs them
+      setFormData(prev => ({ 
+        ...prev, 
+        bedrooms: 1, 
+        bathrooms: 1 
+      }));
+    }
+  }, [formData.property_type]);
+
   useEffect(() => {
     if (formData.sale_price) {
       setDisplayPrice(formatNumberWithCommas(formData.sale_price));
@@ -411,12 +455,16 @@ const AddForSell = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <FormField label="What best describes you?">
-          <Select 
-            name="user_type"
-            value={formData.user_type}
-            onChange={handleInputChange}
-            options={userTypeOptions}
+          <input
+            type="text"
+            value={formData.user_type === 'agent' ? 'Agent' : 'Landlord'}
+            disabled
+            className="w-full border border-gray-200 p-2 rounded-md bg-gray-50 text-gray-600 cursor-not-allowed"
+            title="User type is automatically detected based on your account"
           />
+          <p className="text-xs text-gray-500 mt-1">
+            Automatically detected from your account type
+          </p>
         </FormField>
         <FormField label="Property Type">
           <Select 
@@ -434,22 +482,27 @@ const AddForSell = () => {
             placeholder="Greenhood House"
           />
         </FormField>
-        <FormField label="Number of Bedrooms">
-          <Select 
-            name="bedrooms"
-            value={formData.bedrooms}
-            onChange={handleInputChange}
-            options={countOptions}
-          />
-        </FormField>
-        <FormField label="Number of Bathrooms">
-          <Select 
-            name="bathrooms"
-            value={formData.bathrooms}
-            onChange={handleInputChange}
-            options={countOptions}
-          />
-        </FormField>
+        {/* Conditional Bedroom and Bathroom fields based on property type */}
+        {shouldShowBedroomBathroom(formData.property_type) && (
+          <>
+            <FormField label="Number of Bedrooms">
+              <Select 
+                name="bedrooms"
+                value={formData.bedrooms}
+                onChange={handleInputChange}
+                options={countOptions}
+              />
+            </FormField>
+            <FormField label="Number of Bathrooms">
+              <Select 
+                name="bathrooms"
+                value={formData.bathrooms}
+                onChange={handleInputChange}
+                options={countOptions}
+              />
+            </FormField>
+          </>
+        )}
         <FormField label="Listing Type">
           <Select 
             name="listing_type"

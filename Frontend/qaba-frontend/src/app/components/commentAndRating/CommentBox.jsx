@@ -115,7 +115,6 @@ export default function CommentBox({ propertyId }) {
 
   return (
     <div className="mt-6 rounded-xl">
-      <h4 className="font-semibold text-gray-900 mb-4 text-lg">Share your feedback</h4>
       
       {error && (
         <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">

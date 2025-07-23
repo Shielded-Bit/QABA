@@ -191,6 +191,24 @@ const FeeBreakdown = ({ fees, frequency }) => {
 };
 
 const AddForRent = () => {
+  // Get authenticated user type from localStorage
+  const getAuthenticatedUserType = () => {
+    if (typeof window !== 'undefined') {
+      const userType = localStorage.getItem('user_type');
+      // Convert LANDLORD to landlord and AGENT to agent for form compatibility
+      if (userType === 'LANDLORD') return 'landlord';
+      if (userType === 'AGENT') return 'agent';
+      return 'landlord'; // Default fallback
+    }
+    return 'landlord';
+  };
+
+  // Helper function to determine if property type should show bedroom/bathroom fields
+  const shouldShowBedroomBathroom = (propertyType) => {
+    const typesWithoutBedrooms = ['WAREHOUSE', 'EMPTY_LAND'];
+    return !typesWithoutBedrooms.includes(propertyType);
+  };
+
   // Form state with default values
   const [formData, setFormData] = useState({
     property_name: "",
@@ -206,7 +224,7 @@ const AddForRent = () => {
     rent_price: "",
     total_price: "",
     amenities_ids: [], 
-    user_type: "landlord",
+    user_type: getAuthenticatedUserType(), // Set based on authenticated user
     state: "",
     city: ""
   });
@@ -226,6 +244,32 @@ const AddForRent = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [submissionType, setSubmissionType] = useState(null);
+
+  // Ensure user type stays in sync with authenticated user
+  useEffect(() => {
+    const currentAuthUserType = getAuthenticatedUserType();
+    if (formData.user_type !== currentAuthUserType) {
+      setFormData(prev => ({ ...prev, user_type: currentAuthUserType }));
+    }
+  }, [formData.user_type]);
+
+  // Reset bedroom/bathroom values when property type changes to one that doesn't need them
+  useEffect(() => {
+    if (!shouldShowBedroomBathroom(formData.property_type)) {
+      setFormData(prev => ({ 
+        ...prev, 
+        bedrooms: 0, 
+        bathrooms: 0 
+      }));
+    } else if (formData.bedrooms === 0) {
+      // Reset to default values if switching back to a property type that needs them
+      setFormData(prev => ({ 
+        ...prev, 
+        bedrooms: 1, 
+        bathrooms: 1 
+      }));
+    }
+  }, [formData.property_type]);
 
   // Calculate fees when price or user type changes
   useEffect(() => {
@@ -365,18 +409,19 @@ const AddForRent = () => {
       <h2 className="text-2xl font-normal text-[#014d98] mb-6">Property Details</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* User Type */}
+        {/* User Type - Auto-detected based on authenticated user */}
         <div>
           <label className="block text-gray-700">What best describes you?</label>
-          <select 
-            name="user_type"
-            value={formData.user_type}
-            onChange={handleInputChange}
-            className="w-full border border-gray-300 p-2 rounded-md"
-          >
-            <option value="landlord">LandLord</option>
-            <option value="agent">Agent</option>
-          </select>
+          <input
+            type="text"
+            value={formData.user_type === 'agent' ? 'Agent' : 'Landlord'}
+            disabled
+            className="w-full border border-gray-200 p-2 rounded-md bg-gray-50 text-gray-600 cursor-not-allowed"
+            title="User type is automatically detected based on your account"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Automatically detected from your account type
+          </p>
         </div>
         {/* Property Type */}
         <div>
@@ -404,19 +449,23 @@ const AddForRent = () => {
             placeholder="Greenhood House"
           />
         </div>
-        {/* Basic Property Details */}
-        <div>
-          <label className="block text-gray-700">Bedrooms</label>
-          <select name="bedrooms" value={formData.bedrooms} onChange={handleInputChange} className="w-full border border-gray-300 p-2 rounded-md">
-            {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}{n === 5 ? '+' : ''}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="block text-gray-700">Bathrooms</label>
-          <select name="bathrooms" value={formData.bathrooms} onChange={handleInputChange} className="w-full border border-gray-300 p-2 rounded-md">
-            {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}{n === 5 ? '+' : ''}</option>)}
-          </select>
-        </div>
+        {/* Basic Property Details - Conditional based on property type */}
+        {shouldShowBedroomBathroom(formData.property_type) && (
+          <>
+            <div>
+              <label className="block text-gray-700">Bedrooms</label>
+              <select name="bedrooms" value={formData.bedrooms} onChange={handleInputChange} className="w-full border border-gray-300 p-2 rounded-md">
+                {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}{n === 5 ? '+' : ''}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-gray-700">Bathrooms</label>
+              <select name="bathrooms" value={formData.bathrooms} onChange={handleInputChange} className="w-full border border-gray-300 p-2 rounded-md">
+                {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}{n === 5 ? '+' : ''}</option>)}
+              </select>
+            </div>
+          </>
+        )}
         <div>
           <label className="block text-gray-700">Square Footage (Optional)</label>
           <input

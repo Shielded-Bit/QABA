@@ -14,7 +14,7 @@ const FAQs = [
 	},
 	{
 		question: 'Are the properties verified before being listed?',
-		answer: 'Yes, every property is verified by our team to ensure the accuracy of the information provided.',
+		answer: 'Yes, property is verified by our team to ensure the accuracy of the information provided.',
 	},
 	{
 		question: 'What financing options are available?',
