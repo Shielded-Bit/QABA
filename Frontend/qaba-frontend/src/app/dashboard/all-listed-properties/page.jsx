@@ -11,20 +11,32 @@ const AllListedProperties = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedState, setSelectedState] = useState("");
+  const [selectedCity, setSelectedCity] = useState("");
   const [showResetDropdown, setShowResetDropdown] = useState(false);
 
   const states = useMemo(() => {
     if (!allProperties.length) return [];
     const stateSet = new Set();
     allProperties.forEach(property => {
-      const addressParts = property.address.split(',');
-      if (addressParts.length > 1) {
-        const state = addressParts[addressParts.length - 1].trim();
-        if (state) stateSet.add(state);
+      if (property.state && property.state.trim()) {
+        stateSet.add(property.state.trim());
       }
     });
     return Array.from(stateSet).sort();
   }, [allProperties]);
+
+  const cities = useMemo(() => {
+    if (!allProperties.length) return [];
+    const citySet = new Set();
+    allProperties.forEach(property => {
+      // Filter cities by selected state if one is chosen
+      if (selectedState && property.state !== selectedState) return;
+      if (property.city && property.city.trim()) {
+        citySet.add(property.city.trim());
+      }
+    });
+    return Array.from(citySet).sort();
+  }, [allProperties, selectedState]);
 
   // Modern filtering using useMemo for better performance
   const filteredProperties = useMemo(() => {
@@ -33,14 +45,10 @@ const AllListedProperties = () => {
       const matchesFilter = activeFilter === "ALL" || property.listingType === activeFilter;
       
       // Filter by state
-      const matchesState = !selectedState || (() => {
-        const addressParts = property.address.split(',');
-        if (addressParts.length > 1) {
-          const state = addressParts[addressParts.length - 1].trim();
-          return state === selectedState;
-        }
-        return false;
-      })();
+      const matchesState = !selectedState || property.state === selectedState;
+      
+      // Filter by city
+      const matchesCity = !selectedCity || property.city === selectedCity;
       
       // Filter by search term
       const matchesSearch = !searchTerm || (() => {
@@ -49,9 +57,9 @@ const AllListedProperties = () => {
                property.address.toLowerCase().includes(term);
       })();
       
-      return matchesFilter && matchesState && matchesSearch;
+      return matchesFilter && matchesState && matchesCity && matchesSearch;
     });
-  }, [allProperties, activeFilter, selectedState, searchTerm]);
+  }, [allProperties, activeFilter, selectedState, selectedCity, searchTerm]);
 
   useEffect(() => {
     fetchAllProperties();
@@ -73,6 +81,8 @@ const AllListedProperties = () => {
         id: item.id,
         name: item.property_name,
         address: item.location,
+        state: item.state || '',
+        city: item.city || '',
         price: item.listing_type === 'RENT'
           ? `₦${Number(item.rent_price).toLocaleString()} / ${item.rent_frequency?.toLowerCase()}`
           : `₦${Number(item.sale_price).toLocaleString()}`,
@@ -92,6 +102,7 @@ const AllListedProperties = () => {
   const resetFilters = () => {
     setSearchTerm("");
     setSelectedState("");
+    setSelectedCity("");
     setActiveFilter("ALL");
     setShowResetDropdown(false);
   };
@@ -106,12 +117,19 @@ const AllListedProperties = () => {
     setShowResetDropdown(false);
   };
 
+  const resetCityFilter = () => {
+    setSelectedCity("");
+    setShowResetDropdown(false);
+  };
+
   const resetListingType = () => {
     setActiveFilter("ALL");
     setShowResetDropdown(false);
   };
 
-  const hasActiveFilters = searchTerm || selectedState || activeFilter !== "ALL";
+  const hasActiveFilters = searchTerm || selectedState || selectedCity || activeFilter !== "ALL";
+
+
 
   const PropertyCard = ({ id, image, name, address, status, price, listed_date }) => (
     <Link href={`/details/${id}`} passHref>
@@ -182,11 +200,11 @@ const AllListedProperties = () => {
 
   return (
     <div 
-      className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 ml-12 lg:ml-0"
+      className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 ml-12 lg:ml-0 -mt-12"
       onClick={() => setShowResetDropdown(false)}
     >
       {/* Navigation Tabs - Fully Responsive */}
-      <div className="bg-white/80 backdrop-blur-md border-b border-gray-200/50 sticky top-0 z-10 shadow-sm">
+      <div className="bg-white/80 backdrop-blur-md border-b border-gray-200/50 sticky -top-4 z-10 shadow-sm">
         <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8">
           <div className="flex gap-1 sm:gap-2 p-2 sm:p-3 overflow-x-auto scrollbar-hide">
             <button 
@@ -224,7 +242,7 @@ const AllListedProperties = () => {
       </div>
 
       {/* Filters Section - Improved Layout */}
-      <div className="bg-white/70 backdrop-blur-sm border-b border-gray-200/50">
+      <div className="bg-white/70 backdrop-blur-sm border-b border-gray-200/50 lg:mt-4">
         <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8 py-4 sm:py-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             {/* Left Side - Search Input */}
@@ -250,11 +268,34 @@ const AllListedProperties = () => {
                 <select
                   className="block w-full sm:w-48 lg:w-56 rounded-xl border-0 bg-gray-50 py-2.5 sm:py-3 px-3 sm:px-4 pr-8 sm:pr-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-[#014d98] focus:bg-white transition-all duration-200 text-sm appearance-none"
                   value={selectedState}
-                  onChange={(e) => setSelectedState(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedState(e.target.value);
+                    setSelectedCity(""); // Reset city when state changes
+                  }}
                 >
                   <option value="">All States</option>
                   {states.map(state => (
                     <option key={state} value={state}>{state}</option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <ChevronDown className="h-4 w-4 text-gray-400" />
+                </div>
+              </div>
+              
+              {/* City Filter */}
+              <div className="relative flex-1 sm:flex-none">
+                <select
+                  className="block w-full sm:w-48 lg:w-56 rounded-xl border-0 bg-gray-50 py-2.5 sm:py-3 px-3 sm:px-4 pr-8 sm:pr-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-[#014d98] focus:bg-white transition-all duration-200 text-sm appearance-none"
+                  value={selectedCity}
+                  onChange={(e) => setSelectedCity(e.target.value)}
+                  disabled={!selectedState}
+                >
+                  <option value="">
+                    {selectedState ? 'All Cities' : 'Select State First'}
+                  </option>
+                  {cities.map(city => (
+                    <option key={city} value={city}>{city}</option>
                   ))}
                 </select>
                 <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
@@ -299,6 +340,16 @@ const AllListedProperties = () => {
                       >
                         <Filter className="h-4 w-4" />
                         <span>Clear State Filter</span>
+                      </button>
+                    )}
+                    
+                    {selectedCity && (
+                      <button
+                        onClick={resetCityFilter}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-red-50 hover:text-red-700 transition-colors"
+                      >
+                        <Filter className="h-4 w-4" />
+                        <span>Clear City Filter</span>
                       </button>
                     )}
                     
@@ -348,6 +399,7 @@ const AllListedProperties = () => {
                   <span className="text-gray-600"> found</span>
                   {activeFilter !== "ALL" && <span className="text-gray-600"> for {activeFilter.toLowerCase()}</span>}
                   {selectedState && <span className="text-gray-600"> in {selectedState}</span>}
+                  {selectedCity && <span className="text-gray-600">, {selectedCity}</span>}
                   {searchTerm && <span className="text-gray-600"> matching &quot;{searchTerm}&quot;</span>}
                 </p>
               </div>
@@ -359,10 +411,13 @@ const AllListedProperties = () => {
       {/* Main Content */}
       <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8 py-6 sm:py-8">
         {isLoading ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
-            {[...Array(6)].map((_, idx) => (
-              <PropertyCardSkeleton key={idx} />
-            ))}
+          <div>
+            <p className="text-center text-blue-600 mb-4">Loading properties...</p>
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+              {[...Array(6)].map((_, idx) => (
+                <PropertyCardSkeleton key={idx} />
+              ))}
+            </div>
           </div>
         ) : filteredProperties.length > 0 ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
@@ -378,17 +433,30 @@ const AllListedProperties = () => {
               </div>
               <h3 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-3">No properties found</h3>
               <p className="text-gray-600 mb-6 sm:mb-8 leading-relaxed text-sm sm:text-base">
-                We couldn&apos;t find any properties matching your current search criteria. Try adjusting your filters or search terms.
+                {hasActiveFilters 
+                  ? "We couldn't find any properties matching your current search criteria. Try adjusting your filters or search terms."
+                  : "No properties are currently available. Please check back later or contact support."
+                }
               </p>
-              <button
-                onClick={resetFilters}
-                className="inline-flex items-center px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white rounded-xl hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-200 font-medium text-sm"
-              >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Reset all filters
-              </button>
+              <div className="space-y-2">
+                {hasActiveFilters && (
+                  <button
+                    onClick={resetFilters}
+                    className="inline-flex items-center px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white rounded-xl hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-200 font-medium text-sm"
+                  >
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Reset all filters
+                  </button>
+                )}
+                <button
+                  onClick={() => fetchAllProperties()}
+                  className="block mx-auto text-blue-600 hover:text-blue-800 text-sm"
+                >
+                  Refresh properties
+                </button>
+              </div>
             </div>
           </div>
         )}

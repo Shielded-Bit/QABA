@@ -7,7 +7,7 @@ const ListedByCard = ({ agent }) => {
   const emptyStars = 5 - filledStars;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-lg hover:border-blue-300 transition-all duration-300 w-full">
+    <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-lg hover:border-blue-300 transition-all duration-300 w-full relative z-0">
       <div className="flex items-start gap-4">
         {/* Profile Picture */}
         <div className="w-16 h-16 rounded-xl overflow-hidden relative ring-2 ring-gray-100">

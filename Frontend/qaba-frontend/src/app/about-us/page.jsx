@@ -5,10 +5,13 @@ import Link from 'next/link';
 import { motion, useScroll, useTransform, useInView, AnimatePresence } from 'framer-motion';
 
 const AboutPage = () => {
+  // Default avatar for fallback
+  const defaultAvatar = "https://ui-avatars.com/api/?name=User&background=014d98&color=ffffff&size=128&rounded=true";
+
   // Team members data
   const teamMembers = [
     { 
-      name: 'Dr. Francis', 
+      name: 'Dr. Francis Nwebonyi', 
       role: 'Founder & CEO',
       image: 'https://res.cloudinary.com/dqbbm0guw/image/upload/v1752831216/e8dc205f3764aa41b240407b18fbb838a8c95bd2_f4ttue.jpg'
     },
@@ -60,41 +63,17 @@ const AboutPage = () => {
     successRate: 0,
     support: 0
   });
-  const [currentTestimonial, setCurrentTestimonial] = useState(0);
-  const [testimonials, setTestimonials] = useState([
-    {
-      id: 1,
-      quote: "Thanks to this platform, I found my dream home in no time! The search feature made it incredibly easy to navigate through listings.",
-      name: "Emeka Anara",
-      title: "Homebuyer in Abuja",
-      image: "https://ui-avatars.com/api/?name=Emeka+Anara&background=014d98&color=ffffff&size=256&rounded=true"
-    },
-    {
-      id: 2,
-      quote: "The best real estate platform I've used. Professional service and excellent customer support throughout my property search.",
-      name: "Sarah Johnson",
-      title: "Property Investor",
-      image: "https://ui-avatars.com/api/?name=Sarah+Johnson&background=3ab7b1&color=ffffff&size=256&rounded=true"
-    },
-    {
-      id: 3,
-      quote: "QARBA made selling my property effortless. The listing process was smooth and I got genuine buyers quickly.",
-      name: "Michael Okafor",
-      title: "Property Seller in Lagos",
-      image: "https://ui-avatars.com/api/?name=Michael+Okafor&background=014d98&color=ffffff&size=256&rounded=true"
-    }
-  ]);
-  const [testimonialsLoading, setTestimonialsLoading] = useState(true);
-  const [testimonialsError, setTestimonialsError] = useState(null);
   const [currentTeamIndex, setCurrentTeamIndex] = useState(0);
-  const [isTeamAutoScrolling, setIsTeamAutoScrolling] = useState(true);
+  
+  // Testimonials state
+  const [testimonials, setTestimonials] = useState([]);
+  const [testimonialsLoading, setTestimonialsLoading] = useState(true);
+  const [currentTestimonial, setCurrentTestimonial] = useState(0);
   const statsRef = useRef(null);
   const heroRef = useRef(null);
   const missionRef = useRef(null);
   const teamRef = useRef(null);
   const teamCarouselRef = useRef(null);
-
-  const defaultAvatar = "https://ui-avatars.com/api/?name=User&background=014d98&color=ffffff&size=256&rounded=true";
 
   const { scrollYProgress } = useScroll();
   const heroOpacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
@@ -132,55 +111,6 @@ const AboutPage = () => {
       transition: { duration: 0.5, ease: "easeOut" }
     }
   };
-
-  // Fetch testimonials from API
-  useEffect(() => {
-    const fetchTestimonials = async () => {
-      try {
-        setTestimonialsLoading(true);
-        const response = await fetch('https://qaba.onrender.com/api/v1/reviews/all/', {
-          headers: {
-            'accept': 'application/json',
-          }
-        });
-        
-        if (!response.ok) throw new Error('Failed to fetch reviews');
-        
-        const data = await response.json();
-        console.log('Fetched reviews data:', data); // Debug log
-        
-        // Take only approved reviews and map them to our testimonial format
-        const approvedReviews = data
-          .filter(review => review.status === 'APPROVED')
-          .slice(0, 4) // Take only first 4 reviews
-          .map((review, index) => ({
-            id: index + 1,
-            quote: review.comment,
-            name: review.reviewer_name,
-            title: `${review.reviewer_type}, ${review.property_name}`,
-            image: `https://ui-avatars.com/api/?name=${encodeURIComponent(review.reviewer_name || 'User')}&background=014d98&color=ffffff&size=256&rounded=true`, // Generate unique avatar for each user
-            rating: review.rating
-          }));
-
-        console.log('Approved reviews:', approvedReviews); // Debug log
-
-        // Only update if we have approved reviews, otherwise keep fallback
-        if (approvedReviews.length > 0) {
-          setTestimonials(approvedReviews);
-        }
-        
-        setTestimonialsLoading(false);
-        setTestimonialsError(null);
-      } catch (err) {
-        console.error('Error fetching testimonials:', err);
-        setTestimonialsLoading(false);
-        setTestimonialsError(null); // Don't show error, just use fallback
-        // Keep the initial fallback testimonials
-      }
-    };
-
-    fetchTestimonials();
-  }, []);
 
   // Counter animation function
   const animateCounter = (start, end, duration, callback) => {
@@ -255,51 +185,81 @@ const AboutPage = () => {
     };
   }, []);
 
-  // Auto-rotate testimonials
+  // Manual scroll team carousel (auto-scroll disabled)
+
+  // Fetch testimonials from API
   useEffect(() => {
-    if (testimonials.length > 0 && !testimonialsLoading) {
-      const interval = setInterval(() => {
-        setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
-      }, 5000);
+    const fetchReviews = async () => {
+      try {
+        setTestimonialsLoading(true);
+        const response = await fetch('https://qaba.onrender.com/api/v1/reviews/all/', {
+          headers: {
+            'accept': 'application/json',
+          }
+        });
+        
+        if (!response.ok) throw new Error('Failed to fetch reviews');
+        
+        const data = await response.json();
+        // Take only approved reviews and map them to our testimonial format
+        const approvedReviews = data
+          .filter(review => review.status === 'APPROVED')
+          .slice(0, 6) // Take first 6 reviews for about page
+          .map(review => ({
+            id: review.id || Math.random(),
+            quote: review.comment,
+            name: review.reviewer_name,
+            title: `${review.reviewer_type}${review.property_name ? `, ${review.property_name}` : ''}`,
+            image: `https://ui-avatars.com/api/?name=${encodeURIComponent(review.reviewer_name || 'User')}&background=014d98&color=ffffff&size=128&rounded=true`,
+            rating: review.rating
+          }));
+        
+        setTestimonials(approvedReviews);
+      } catch (err) {
+        console.error('Error fetching testimonials:', err);
+        // Fallback to empty array on error
+        setTestimonials([]);
+      } finally {
+        setTestimonialsLoading(false);
+      }
+    };
 
-      return () => clearInterval(interval);
-    }
-  }, [testimonials.length, testimonialsLoading]);
+    fetchReviews();
+  }, []);
 
-  // Auto-scroll team carousel
+  // Auto-scroll testimonials
   useEffect(() => {
-    if (!isTeamAutoScrolling || !teamCarouselRef.current) return;
-
-    const cardWidth = 288; // 320px minus gap
-    const gap = 24; // 6 gap in pixels
-    const scrollAmount = cardWidth + gap;
-
+    if (testimonials.length === 0) return;
+    
     const interval = setInterval(() => {
-      setCurrentTeamIndex((prevIndex) => {
-        const nextIndex = (prevIndex + 1) % teamMembers.length;
-        
-        if (teamCarouselRef.current) {
-          teamCarouselRef.current.scrollTo({
-            left: nextIndex * scrollAmount,
-            behavior: 'smooth'
-          });
-        }
-        
-        return nextIndex;
-      });
-    }, 2000); // Auto-scroll every 2 seconds
+      nextTestimonial();
+    }, 5000); // Change testimonial every 5 seconds
 
     return () => clearInterval(interval);
-  }, [isTeamAutoScrolling, teamMembers.length]);
+  }, [testimonials.length]);
 
-  // Pause auto-scroll when user interacts
-  const handleTeamInteraction = () => {
-    setIsTeamAutoScrolling(false);
-    
-    // Resume auto-scroll after 10 seconds of inactivity
-    setTimeout(() => {
-      setIsTeamAutoScrolling(true);
-    }, 10000);
+  // Manual navigation for team carousel
+  const handleTeamNavigation = (direction) => {
+    const cardWidth = 320; // Card width + gap
+    const container = teamCarouselRef.current;
+    if (!container) return;
+
+    if (direction === 'prev') {
+      container.scrollBy({ left: -cardWidth, behavior: 'smooth' });
+      setCurrentTeamIndex(prev => Math.max(0, prev - 1));
+    } else {
+      container.scrollBy({ left: cardWidth, behavior: 'smooth' });
+      setCurrentTeamIndex(prev => Math.min(teamMembers.length - 1, prev + 1));
+    }
+  };
+
+  // Testimonial navigation functions
+  const nextTestimonial = () => {
+    setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
+  };
+
+  const prevTestimonial = () => {
+    setCurrentTestimonial((prev) => (prev - 1 + testimonials.length) % testimonials.length);
   };
 
   // Format numbers for display
@@ -314,18 +274,6 @@ const AboutPage = () => {
       return `${num}/7`;
     }
     return num.toString();
-  };
-
-  const nextTestimonial = () => {
-    if (testimonials.length > 0) {
-      setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
-    }
-  };
-
-  const prevTestimonial = () => {
-    if (testimonials.length > 0) {
-      setCurrentTestimonial((prev) => (prev - 1 + testimonials.length) % testimonials.length);
-    }
   };
 
   return (
@@ -678,10 +626,10 @@ const AboutPage = () => {
           {/* Loading State */}
           {testimonialsLoading ? (
             <motion.div 
-              className="relative max-w-5xl mx-auto flex flex-col md:flex-row items-center md:items-stretch md:justify-center gap-8"
+              className="relative max-w-5xl mx-auto flex flex-col md:flex-row items-center md:items-stretch justify-center gap-8"
               variants={staggerChildren}
             >
-              <div className="flex flex-row justify-center items-end gap-4 md:gap-8 md:pr-0 flex-shrink-0 w-full md:w-auto">
+              <div className="flex flex-row justify-center items-end gap-4 md:gap-8 flex-shrink-0">
                 {[...Array(3)].map((_, index) => (
                   <div 
                     key={index}
@@ -699,12 +647,12 @@ const AboutPage = () => {
             </motion.div>
           ) : testimonials.length > 0 ? (
             <motion.div 
-              className="relative max-w-5xl mx-auto flex flex-col md:flex-row items-center md:items-stretch md:justify-center gap-8"
+              className="relative max-w-5xl mx-auto flex flex-col md:flex-row items-center md:items-stretch justify-center gap-8"
               variants={staggerChildren}
             >
               {/* Profile Images Row */}
               <motion.div 
-                className="flex flex-row justify-center items-end gap-4 md:gap-8 md:pr-0 flex-shrink-0 w-full md:w-auto"
+                className="flex flex-row justify-center items-end gap-4 md:gap-8 flex-shrink-0"
                 variants={staggerChildren}
               >
                 {testimonials.map((testimonial, index) => (
@@ -729,6 +677,8 @@ const AboutPage = () => {
                       onError={(e) => {
                         e.currentTarget.src = defaultAvatar;
                       }}
+                      placeholder="blur"
+                      blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
                     />
                     {/* Rating Badge */}
                     {testimonial?.rating && (
@@ -752,7 +702,7 @@ const AboutPage = () => {
                     transition={{ duration: 0.3 }}
                   >
                     <motion.div 
-                      className="max-w-xl w-full bg-gradient-to-r from-[#014d98]/[.07] to-[#3ab7b1]/[.07] border border-[#014d98] rounded-2xl shadow-lg p-6 md:p-8 md:ml-0"
+                      className="max-w-xl w-full bg-gradient-to-r from-[#014d98]/[.07] to-[#3ab7b1]/[.07] border border-[#014d98] rounded-2xl shadow-lg p-6 md:p-8"
                       whileHover={{ scale: 1.02 }}
                     >
                       <motion.blockquote 
@@ -813,10 +763,18 @@ const AboutPage = () => {
             </motion.div>
           ) : (
             <motion.div 
-              className="relative max-w-5xl mx-auto text-center"
+              className="relative max-w-5xl mx-auto text-center py-16"
               variants={fadeInUp}
             >
-              <p className="text-gray-600">No testimonials available at the moment.</p>
+              <div className="bg-gray-50 rounded-2xl p-8">
+                <div className="w-16 h-16 mx-auto mb-4 bg-gray-200 rounded-full flex items-center justify-center">
+                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                </div>
+                <p className="text-gray-600 text-lg">No testimonials available at the moment.</p>
+                <p className="text-gray-500 text-sm mt-2">Check back later for customer reviews.</p>
+              </div>
             </motion.div>
           )}
         </motion.div>
@@ -853,15 +811,9 @@ const AboutPage = () => {
   <div className="relative">
     {/* Navigation Arrows */}
     <button 
-      onClick={() => {
-        handleTeamInteraction();
-        const container = teamCarouselRef.current;
-        if (container) {
-          container.scrollBy({ left: -320, behavior: 'smooth' });
-          setCurrentTeamIndex(prev => Math.max(0, prev - 1));
-        }
-      }}
+      onClick={() => handleTeamNavigation('prev')}
       className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group hover:bg-gradient-to-r hover:from-[#014d98] hover:to-[#3ab7b1]"
+      aria-label="Previous team members"
     >
       <svg className="w-6 h-6 text-gray-600 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -869,27 +821,16 @@ const AboutPage = () => {
     </button>
 
     <button 
-      onClick={() => {
-        handleTeamInteraction();
-        const container = teamCarouselRef.current;
-        if (container) {
-          container.scrollBy({ left: 320, behavior: 'smooth' });
-          setCurrentTeamIndex(prev => Math.min(teamMembers.length - 1, prev + 1));
-        }
-      }}
+      onClick={() => handleTeamNavigation('next')}
       className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group hover:bg-gradient-to-r hover:from-[#014d98] hover:to-[#3ab7b1]"
+      aria-label="Next team members"
     >
       <svg className="w-6 h-6 text-gray-600 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
       </svg>
     </button>
 
-    {/* Auto-scroll indicator */}
-    <div className="absolute top-4 right-4 z-10">
-      <div className={`w-2 h-2 rounded-full transition-all duration-300 ${
-        isTeamAutoScrolling ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
-      }`} />
-    </div>
+
 
     {/* Scrollable Container */}
     <div 
@@ -900,9 +841,6 @@ const AboutPage = () => {
         msOverflowStyle: 'none',
         WebkitScrollbar: { display: 'none' }
       }}
-      onMouseEnter={handleTeamInteraction}
-      onTouchStart={handleTeamInteraction}
-      onScroll={handleTeamInteraction}
     >
       {teamMembers.map((member, index) => (
         <motion.div 
@@ -914,8 +852,7 @@ const AboutPage = () => {
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
           transition={{ delay: index * 0.1 }}
-          onMouseEnter={handleTeamInteraction}
-          onFocus={handleTeamInteraction}
+
         >
           <motion.div 
             className="mb-4"
@@ -995,7 +932,6 @@ const AboutPage = () => {
         <button
           key={index}
           onClick={() => {
-            handleTeamInteraction();
             const container = teamCarouselRef.current;
             if (container) {
               container.scrollTo({ left: index * 960, behavior: 'smooth' });
@@ -1007,24 +943,11 @@ const AboutPage = () => {
               ? 'bg-gradient-to-r from-[#014d98] to-[#3ab7b1] scale-125' 
               : 'bg-gray-300 hover:bg-gray-400'
           }`}
+          aria-label={`Go to team members ${index * 3 + 1}-${Math.min((index + 1) * 3, teamMembers.length)}`}
         ></button>
       ))}
     </div>
-    
-    {/* Progress bar for auto-scroll */}
-    <div className="w-32 h-1 bg-gray-200 rounded-full mx-auto mt-4 overflow-hidden">
-      <motion.div 
-        className="h-full bg-gradient-to-r from-[#014d98] to-[#3ab7b1] rounded-full"
-        animate={{ 
-          width: isTeamAutoScrolling ? "100%" : "0%" 
-        }}
-        transition={{ 
-          duration: isTeamAutoScrolling ? 2 : 0.3,
-          ease: "linear",
-          repeat: isTeamAutoScrolling ? Infinity : 0
-        }}
-      />
-    </div>
+
   </div>
 
   {/* Additional CSS for hiding scrollbar */}

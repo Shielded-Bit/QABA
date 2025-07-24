@@ -1,9 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
-import { ChevronDown } from "lucide-react";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -46,8 +43,6 @@ const PropertyStatsSkeleton = () => (
 );
 
 export default function PropertyStats() {
-  const [startDate, setStartDate] = useState(new Date("2024-12-01"));
-  const [endDate, setEndDate] = useState(new Date("2024-12-31"));
   const [sold, setSold] = useState(0);
   const [rented, setRented] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -100,37 +95,11 @@ export default function PropertyStats() {
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
       {/* Section Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-        {/* Left Side (Text) */}
-        <div className="md:max-w-[60%]">
-          <h2 className="text-lg md:text-xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-[#014d98] via-[#1d86a9] to-[#3ab7b1]">Property Overview</h2>
-          <p className="text-gray-500 text-xs md:text-base">
-            This chart provides a clear breakdown of the listing type that gets a lot of engagement
-          </p>
-        </div>
-        {/* Right Side (Date Selector) */}
-        <div className="mt-4 md:mt-0 border border-gray-300 rounded-lg px-4 py-2 flex items-center gap-2 cursor-pointer w-full md:w-auto">
-          <DatePicker
-            selected={startDate}
-            onChange={(date) => setStartDate(date)}
-            dateFormat="dd MMM"
-            selectsStart
-            startDate={startDate}
-            endDate={endDate}
-            className="outline-none w-20 md:w-24 bg-transparent text-gray-600 text-sm md:text-base"
-          />
-          <span className="text-gray-500">-</span>
-          <DatePicker
-            selected={endDate}
-            onChange={(date) => setEndDate(date)}
-            dateFormat="dd MMM yyyy"
-            selectsEnd
-            startDate={startDate}
-            endDate={endDate}
-            className="outline-none w-24 md:w-28 bg-transparent text-gray-600 text-sm md:text-base"
-          />
-          <ChevronDown className="w-4 h-4 text-gray-500" />
-        </div>
+      <div className="mb-6">
+        <h2 className="text-lg md:text-xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-[#014d98] via-[#1d86a9] to-[#3ab7b1]">Property Overview</h2>
+        <p className="text-gray-500 text-xs md:text-base">
+          This chart provides a clear breakdown of the listing type that gets a lot of engagement
+        </p>
       </div>
       {/* Grid Layout */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
