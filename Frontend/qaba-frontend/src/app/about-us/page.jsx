@@ -5,9 +5,6 @@ import Link from 'next/link';
 import { motion, useScroll, useTransform, useInView, AnimatePresence } from 'framer-motion';
 
 const AboutPage = () => {
-  // Default avatar for fallback
-  const defaultAvatar = "https://ui-avatars.com/api/?name=User&background=014d98&color=ffffff&size=128&rounded=true";
-
   // Team members data
   const teamMembers = [
     { 
@@ -64,11 +61,6 @@ const AboutPage = () => {
     support: 0
   });
   const [currentTeamIndex, setCurrentTeamIndex] = useState(0);
-  
-  // Testimonials state
-  const [testimonials, setTestimonials] = useState([]);
-  const [testimonialsLoading, setTestimonialsLoading] = useState(true);
-  const [currentTestimonial, setCurrentTestimonial] = useState(0);
   const statsRef = useRef(null);
   const heroRef = useRef(null);
   const missionRef = useRef(null);
@@ -187,56 +179,7 @@ const AboutPage = () => {
 
   // Manual scroll team carousel (auto-scroll disabled)
 
-  // Fetch testimonials from API
-  useEffect(() => {
-    const fetchReviews = async () => {
-      try {
-        setTestimonialsLoading(true);
-        const response = await fetch('https://qaba.onrender.com/api/v1/reviews/all/', {
-          headers: {
-            'accept': 'application/json',
-          }
-        });
-        
-        if (!response.ok) throw new Error('Failed to fetch reviews');
-        
-        const data = await response.json();
-        // Take only approved reviews and map them to our testimonial format
-        const approvedReviews = data
-          .filter(review => review.status === 'APPROVED')
-          .slice(0, 6) // Take first 6 reviews for about page
-          .map(review => ({
-            id: review.id || Math.random(),
-            quote: review.comment,
-            name: review.reviewer_name,
-            title: `${review.reviewer_type}${review.property_name ? `, ${review.property_name}` : ''}`,
-            image: `https://ui-avatars.com/api/?name=${encodeURIComponent(review.reviewer_name || 'User')}&background=014d98&color=ffffff&size=128&rounded=true`,
-            rating: review.rating
-          }));
-        
-        setTestimonials(approvedReviews);
-      } catch (err) {
-        console.error('Error fetching testimonials:', err);
-        // Fallback to empty array on error
-        setTestimonials([]);
-      } finally {
-        setTestimonialsLoading(false);
-      }
-    };
 
-    fetchReviews();
-  }, []);
-
-  // Auto-scroll testimonials
-  useEffect(() => {
-    if (testimonials.length === 0) return;
-    
-    const interval = setInterval(() => {
-      nextTestimonial();
-    }, 5000); // Change testimonial every 5 seconds
-
-    return () => clearInterval(interval);
-  }, [testimonials.length]);
 
   // Manual navigation for team carousel
   const handleTeamNavigation = (direction) => {
@@ -253,14 +196,7 @@ const AboutPage = () => {
     }
   };
 
-  // Testimonial navigation functions
-  const nextTestimonial = () => {
-    setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
-  };
 
-  const prevTestimonial = () => {
-    setCurrentTestimonial((prev) => (prev - 1 + testimonials.length) % testimonials.length);
-  };
 
   // Format numbers for display
   const formatNumber = (num, suffix = '') => {
@@ -608,176 +544,7 @@ const AboutPage = () => {
           </div>
         </motion.div>
 
-        {/* Testimonials Section */}
-        <motion.div 
-          className="mb-20 text-center"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          variants={staggerChildren}
-        >
-          <motion.h2 
-            className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#014d98] to-[#3ab7b1] bg-clip-text text-transparent mb-16"
-            variants={fadeInUp}
-          >
-            Hear From Our Users
-          </motion.h2>
-          
-          {/* Loading State */}
-          {testimonialsLoading ? (
-            <motion.div 
-              className="relative max-w-5xl mx-auto flex flex-col md:flex-row items-center md:items-stretch justify-center gap-8"
-              variants={staggerChildren}
-            >
-              <div className="flex flex-row justify-center items-end gap-4 md:gap-8 flex-shrink-0">
-                {[...Array(3)].map((_, index) => (
-                  <div 
-                    key={index}
-                    className="animate-pulse bg-gray-200 rounded-3xl w-20 h-20 md:w-32 md:h-32"
-                  />
-                ))}
-              </div>
-              <div className="flex-1 flex flex-col justify-center items-center md:items-start min-w-[280px] md:min-w-[340px]">
-                <div className="max-w-xl w-full bg-gray-100 border rounded-2xl p-6 md:p-8 animate-pulse">
-                  <div className="h-20 bg-gray-200 rounded mb-6"></div>
-                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                </div>
-              </div>
-            </motion.div>
-          ) : testimonials.length > 0 ? (
-            <motion.div 
-              className="relative max-w-5xl mx-auto flex flex-col md:flex-row items-center md:items-stretch justify-center gap-8"
-              variants={staggerChildren}
-            >
-              {/* Profile Images Row */}
-              <motion.div 
-                className="flex flex-row justify-center items-end gap-4 md:gap-8 flex-shrink-0"
-                variants={staggerChildren}
-              >
-                {testimonials.map((testimonial, index) => (
-                  <motion.div 
-                    key={testimonial?.id || index}
-                    className={`transition-all duration-300 flex flex-col items-center ${
-                      index === currentTestimonial 
-                        ? 'shadow-xl scale-110 bg-white border-2 border-[#014d98]' 
-                        : 'opacity-60'
-                    } rounded-3xl overflow-hidden w-20 h-20 md:w-32 md:h-32 cursor-pointer relative`}
-                    style={{ minWidth: '5rem', minHeight: '5rem' }}
-                    onClick={() => setCurrentTestimonial(index)}
-                    whileHover={{ scale: index === currentTestimonial ? 1.1 : 1.05 }}
-                    variants={scaleIn}
-                  >
-                    <Image
-                      src={testimonial?.image || defaultAvatar}
-                      alt={testimonial?.name || 'Anonymous User'}
-                      width={256}
-                      height={256}
-                      className="object-cover w-full h-full rounded-3xl"
-                      onError={(e) => {
-                        e.currentTarget.src = defaultAvatar;
-                      }}
-                      placeholder="blur"
-                      blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
-                    />
-                    {/* Rating Badge */}
-                    {testimonial?.rating && (
-                      <div className="absolute bottom-1 right-1 bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white text-xs px-1 py-0.5 rounded-full">
-                        {testimonial.rating}★
-                      </div>
-                    )}
-                  </motion.div>
-                ))}
-              </motion.div>
-              
-              {/* Testimonial Content */}
-              <AnimatePresence mode="wait">
-                {testimonials[currentTestimonial] && (
-                  <motion.div 
-                    key={currentTestimonial}
-                    className="flex-1 flex flex-col justify-center items-center md:items-start min-w-[280px] md:min-w-[340px]"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <motion.div 
-                      className="max-w-xl w-full bg-gradient-to-r from-[#014d98]/[.07] to-[#3ab7b1]/[.07] border border-[#014d98] rounded-2xl shadow-lg p-6 md:p-8"
-                      whileHover={{ scale: 1.02 }}
-                    >
-                      <motion.blockquote 
-                        className="text-base md:text-xl text-gray-700 italic mb-6 leading-relaxed"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.2 }}
-                      >
-                        &ldquo;{testimonials[currentTestimonial]?.quote || 'No quote available'}&rdquo;
-                      </motion.blockquote>
-                      <motion.div 
-                        className="font-semibold text-gray-900 text-base md:text-lg"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.3 }}
-                      >
-                        {testimonials[currentTestimonial]?.name || 'Anonymous'}
-                      </motion.div>
-                      <motion.div 
-                        className="text-gray-600 text-xs md:text-sm"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.4 }}
-                      >
-                        {testimonials[currentTestimonial]?.title || 'Customer'}
-                      </motion.div>
-                      
-                      {/* Navigation Arrows */}
-                      <motion.div 
-                        className="flex justify-start gap-4 mt-8"
-                        variants={staggerChildren}
-                      >
-                        <motion.button
-                          onClick={prevTestimonial}
-                          className="w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-[#014d98] flex items-center justify-center hover:bg-gradient-to-r hover:from-[#014d98] hover:to-[#3ab7b1] hover:text-white transition-colors"
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.95 }}
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                          </svg>
-                        </motion.button>
-                        <motion.button
-                          onClick={nextTestimonial}
-                          className="w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-[#014d98] flex items-center justify-center hover:bg-gradient-to-r hover:from-[#014d98] hover:to-[#3ab7b1] hover:text-white transition-colors"
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.95 }}
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </motion.button>
-                      </motion.div>
-                    </motion.div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
-          ) : (
-            <motion.div 
-              className="relative max-w-5xl mx-auto text-center py-16"
-              variants={fadeInUp}
-            >
-              <div className="bg-gray-50 rounded-2xl p-8">
-                <div className="w-16 h-16 mx-auto mb-4 bg-gray-200 rounded-full flex items-center justify-center">
-                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                  </svg>
-                </div>
-                <p className="text-gray-600 text-lg">No testimonials available at the moment.</p>
-                <p className="text-gray-500 text-sm mt-2">Check back later for customer reviews.</p>
-              </div>
-            </motion.div>
-          )}
-        </motion.div>
+
 
   
 {/* Meet the Team Section */}
