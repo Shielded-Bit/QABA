@@ -243,7 +243,7 @@ export const SuccessIndicator = ({ show, message = "Success!" }) => (
   </AnimatePresence>
 );
 
-export default {
+const EnhancedLoadingComponents = {
   PropertyCardSkeleton,
   PropertyDetailsSkeleton,
   LoadingSpinner,
@@ -252,4 +252,6 @@ export default {
   SmartLoader,
   ErrorFallback,
   SuccessIndicator
-}; 
+};
+
+export default EnhancedLoadingComponents; 

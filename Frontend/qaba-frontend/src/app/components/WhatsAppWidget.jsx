@@ -34,7 +34,7 @@ const WhatsAppWidget = () => {
               </div>
               <div>
                 <h3 className="font-semibold">QARBA Support</h3>
-                <p className="text-sm opacity-90">We're here to help!</p>
+                <p className="text-sm opacity-90">We&apos;re here to help!</p>
               </div>
             </div>
             <button
