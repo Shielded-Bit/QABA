@@ -3,15 +3,18 @@
 import Header2 from '../components/header2';
 import Transactions from './transactions';
 
-export default function FavouritesPage() {
+export default function TransactionsPage() {
   return (
-    <>
-      <div className="dashboard-header lg:ml-4 ml-3">
+    <div className="min-h-screen">
+      {/* Consistent Header Wrapper */}
+      <div className="px-4 lg:px-6 pt-4">
         <Header2 />
       </div>
-      <div className="space-y-4 ml-14 lg:ml-5 mt-5">
-        < Transactions/>
+
+      {/* Main Content with Consistent Spacing */}
+      <div className="px-4 lg:px-6 py-6">
+        <Transactions />
       </div>
-    </>
+    </div>
   );
 }

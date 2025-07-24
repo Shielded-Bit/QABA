@@ -68,7 +68,7 @@ const DashboardWithProvider = () => (
 );
 
 const Dashboard = () => (
-  <div className="px-2 py-1">
+  <div>
     <div className="hidden md:grid md:grid-cols-2 gap-4">
       <MonthlyRevenue />
       <NotificationsSection />

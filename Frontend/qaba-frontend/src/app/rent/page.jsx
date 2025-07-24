@@ -82,7 +82,6 @@ function RentContent() {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
           },
         });
         

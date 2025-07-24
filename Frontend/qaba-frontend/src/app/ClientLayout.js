@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Navbar from "./components/static/Navbar";
 import Footer from "./components/static/Footer";
+import WhatsAppWidget from "./components/WhatsAppWidget";
 import { usePathname } from "next/navigation";
 import { ProfileProvider } from "../contexts/ProfileContext";
 
@@ -24,6 +25,9 @@ export default function ClientLayout({ children }) {
           {mounted && children}
         </div>
         {mounted && !hideNavAndFooter && <Footer />}
+        
+        {/* WhatsApp Widget - Available on all pages */}
+        {mounted && <WhatsAppWidget />}
       </div>
     </ProfileProvider>
   );

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useState, useEffect } from "react";
 import {
   Menu,
+  X,
   Building2,
   SquarePlus,
   Heart,
@@ -64,7 +65,7 @@ export default function Sidebar() {
         isSidebarCollapsed ? "w-16" : "w-64"
       }`}
     >
-      <div className="px-6 sm:px-6 py-3 sm:py-7 flex items-center justify-between border-b">
+      <div className="flex items-center justify-between border-b px-3 md:px-10 py-6">
         <div className={`text-xl font-bold ${isSidebarCollapsed ? "hidden" : "block"}`}>
           <Link href="/" className="text-gradient hover:opacity-80 transition-opacity">
             QARBA
@@ -72,7 +73,7 @@ export default function Sidebar() {
         </div>
         {isMobile && (
           <button onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} className="px-0 hover:bg-gray-100 rounded">
-            <Menu />
+            {isSidebarCollapsed ? <Menu /> : <X />}
           </button>
         )}
       </div>
@@ -91,7 +92,7 @@ export default function Sidebar() {
         {renderLink("/agent-dashboard/help-support", "Help & Support", pathname, HelpCircle, isSidebarCollapsed)}
         {renderLink("/agent-dashboard/settings/profile", "Settings", pathname, Settings, isSidebarCollapsed)}
         <div className={getLinkClass(pathname, "/agent-dashboard/logout", isSidebarCollapsed)}>
-          <LogoutButton />
+          <LogoutButton collapsed={isSidebarCollapsed} />
         </div>
       </div>
     </div>

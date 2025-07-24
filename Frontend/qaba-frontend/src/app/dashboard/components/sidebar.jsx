@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import {
   Menu,
+  X,
   Building2,
   Key,
   Home,
@@ -70,7 +71,7 @@ export default function Sidebar() {
         isSidebarCollapsed ? 'w-16' : 'w-64'
       }`}
     >
-      <div className="p-4 flex items-center justify-between border-b px-6 py-7">
+      <div className="flex items-center justify-between border-b px-3 md:px-10 py-6">
         {/* Logo - always shown on large screens, only shown when expanded on mobile */}
         {(!isMobile || (isMobile && !isSidebarCollapsed)) && (
           <div className="flex items-center justify-start">
@@ -89,7 +90,7 @@ export default function Sidebar() {
             onClick={toggleSidebar} 
             className={`p-1 hover:bg-gray-100 rounded-full ${isSidebarCollapsed ? 'mx-auto' : ''}`}
           >
-            <Menu size={20} />
+            {isSidebarCollapsed ? <Menu size={20} /> : <X size={20} />}
           </button>
         )}
       </div>
