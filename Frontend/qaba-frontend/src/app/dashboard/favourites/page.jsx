@@ -80,7 +80,7 @@ export default function FavouritesPage() {
               My Favorites
             </h1>
             <p className="text-gray-600 text-sm lg:text-base">
-              Keep track of properties you're interested in
+              Keep track of properties you&apos;re interested in
             </p>
           </div>
           
