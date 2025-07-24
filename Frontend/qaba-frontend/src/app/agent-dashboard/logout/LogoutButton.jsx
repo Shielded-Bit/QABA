@@ -2,11 +2,11 @@
 
 import { XCircle, AlertCircle, LogOut } from "lucide-react";
 import { useState } from "react";
-import useLogout from "../../hooks/useLogout"; // Use the correct logout hook
+import useLogout from "../../hooks/useLogout";
 
-const LogoutButton = ({ onClose, className = "", iconSize = 20 }) => {
+const LogoutButton = ({ collapsed = false, onClose, className = "" }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const { logout } = useLogout(); // This will now call the backend endpoint
+  const { logout } = useLogout();
 
   const openModal = () => {
     setIsOpen(true);
@@ -26,11 +26,18 @@ const LogoutButton = ({ onClose, className = "", iconSize = 20 }) => {
     <>
       <button
         onClick={openModal}
-        className={`flex items-center ${className}`}
+        className={`group flex items-center w-full transition-all duration-200 ${className}`}
         aria-label="Open logout confirmation"
       >
-        <LogOut size={iconSize} className="mr-2" />
-        Log Out
+        <div className="relative">
+          <LogOut className={collapsed ? 'mx-auto' : 'mr-2'} size={16} />
+          {collapsed && (
+            <div className="absolute left-full z-50 ml-2 bg-black text-white text-xs px-2 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+              Log Out
+            </div>
+          )}
+        </div>
+        <span className={collapsed ? 'hidden' : 'inline'}>Log Out</span>
       </button>
 
       {/* Logout Modal */}

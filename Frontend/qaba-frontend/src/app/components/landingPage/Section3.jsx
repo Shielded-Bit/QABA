@@ -56,17 +56,8 @@ const Section3 = () => {
         // Extract the data array based on the actual API response structure
         const propertiesData = responseData.data || [];
         
-        // Filter for sale and for rent properties
-        const saleProperties = propertiesData.filter(property => 
-          property.listing_type === 'SALE'
-        ).slice(0, 2);
-        
-        const rentProperties = propertiesData.filter(property => 
-          property.listing_type === 'RENT'
-        ).slice(0, 1);
-        
-        // Combine the filtered properties
-        const featuredProperties = [...saleProperties, ...rentProperties];
+        // Take the first 3 approved properties regardless of type
+        const featuredProperties = propertiesData.slice(0, 3);
         
         // Map API data to our component's expected format
         const formattedProperties = featuredProperties.map(property => ({
@@ -75,7 +66,11 @@ const Section3 = () => {
           price: extractPrice(property),
           description: `${property.bedrooms || 0} bed, ${property.bathrooms || 0} bath property in ${property.location || 'premium location'}`,
           image: property.thumbnail || 'https://res.cloudinary.com/dqbbm0guw/image/upload/v1734105941/Cliff_house_design_by_THE_LINE_visualization_1_1_ghvctf.png',
-          type: property.listing_type === 'RENT' ? 'rent' : 'buy'
+          type: property.listing_type === 'RENT' ? 'rent' : 'buy',
+          location: property.location || '',
+          city: property.city || '',
+          propertyStatus: property.property_status_display || 'Available',
+          amenities: property.amenities || []
         }));
         
         setProperties(formattedProperties);

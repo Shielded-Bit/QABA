@@ -16,14 +16,14 @@ export default function DashboardLayout({ children }) {
           </aside>
 
           {/* Main Content */}
-          <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 flex flex-col overflow-hidden ml-16 lg:ml-0">
             {/* Header - Global */}
             <header className="shadow-md">
               <Header1 />
             </header>
 
-            {/* Main Content - Dynamic */}
-            <main className="flex-1 overflow-y-auto bg-gray-100 p-4">
+            {/* Main Content - Dynamic - Remove padding to allow precise alignment */}
+            <main className="flex-1 overflow-y-auto bg-gray-100">
               {children}
             </main>
           </div>

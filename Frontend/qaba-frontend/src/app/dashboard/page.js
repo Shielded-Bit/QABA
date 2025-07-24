@@ -7,23 +7,28 @@ import Transactions from './components/transactions';
 
 export default function DashboardPage() {
   return (
-    <div className="bg-gray-100 ml-12 lg:ml-4 mt-5 mb-10">
-      <div>
-        {/* Header Wrapper */}
-        <div className="dashboard-header lg:ml-4 ml-2">
-          <Header2 />
-        </div>
+    <div className="min-h-screen">
+      {/* Consistent Header Wrapper */}
+      <div className="px-4 lg:px-6 pt-4">
+        <Header2 />
+      </div>
 
-        {/* Main Content */}
-        <div className='mt-6 px-2 lg:px-4'>
-          {/* <PropertiesNumber /> */}
-          <div>
-            <Cards />
-          </div>
-          <div className='mt-2'>
-            <Transactions />
-          </div>
-        </div>
+      {/* Main Content with Consistent Spacing */}
+      <div className="px-4 lg:px-6 py-6 space-y-6">
+        {/* Properties Number Section */}
+        <section>
+          <PropertiesNumber />
+        </section>
+
+        {/* Cards Section */}
+        <section>
+          <Cards />
+        </section>
+
+        {/* Transactions Section */}
+        <section>
+          <Transactions />
+        </section>
       </div>
     </div>
   );

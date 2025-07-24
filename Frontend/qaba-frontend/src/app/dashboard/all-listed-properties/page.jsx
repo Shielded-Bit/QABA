@@ -200,50 +200,71 @@ const AllListedProperties = () => {
 
   return (
     <div 
-      className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 ml-12 lg:ml-0 -mt-12"
+      className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100"
       onClick={() => setShowResetDropdown(false)}
     >
-      {/* Navigation Tabs - Fully Responsive */}
-      <div className="bg-white/80 backdrop-blur-md border-b border-gray-200/50 sticky -top-4 z-10 shadow-sm">
-        <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8">
-          <div className="flex gap-1 sm:gap-2 p-2 sm:p-3 overflow-x-auto scrollbar-hide">
-            <button 
-              className={`flex-1 min-w-0 py-2 sm:py-2.5 px-2 sm:px-4 text-center font-medium rounded-lg transition-all duration-200 text-xs sm:text-sm whitespace-nowrap ${
-                activeFilter === "ALL" 
-                  ? "text-white bg-gradient-to-r from-[#014d98] to-[#3ab7b1] shadow-lg shadow-blue-500/25" 
-                  : "text-gray-600 hover:text-gray-800 hover:bg-gray-100"
-              }`}
-              onClick={() => setActiveFilter("ALL")}
-            >
-              All Properties
-            </button>
-            <button 
-              className={`flex-1 min-w-0 py-2 sm:py-2.5 px-2 sm:px-4 text-center font-medium rounded-lg transition-all duration-200 text-xs sm:text-sm whitespace-nowrap ${
-                activeFilter === "RENT" 
-                  ? "text-white bg-gradient-to-r from-[#014d98] to-[#3ab7b1] shadow-lg shadow-blue-500/25" 
-                  : "text-gray-600 hover:text-gray-800 hover:bg-gray-100"
-              }`}
-              onClick={() => setActiveFilter("RENT")}
-            >
-              For Rent
-            </button>
-            <button 
-              className={`flex-1 min-w-0 py-2 sm:py-2.5 px-2 sm:px-4 text-center font-medium rounded-lg transition-all duration-200 text-xs sm:text-sm whitespace-nowrap ${
-                activeFilter === "SALE" 
-                  ? "text-white bg-gradient-to-r from-[#014d98] to-[#3ab7b1] shadow-lg shadow-blue-500/25" 
-                  : "text-gray-600 hover:text-gray-800 hover:bg-gray-100"
-              }`}
-              onClick={() => setActiveFilter("SALE")}
-            >
-              For Sale
-            </button>
+      {/* Header Section - Consistent Spacing */}
+      <div className="px-4 lg:px-6 pt-6 pb-4">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="flex-1">
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
+              Property Listings
+            </h1>
+            <p className="text-gray-600 text-sm lg:text-base">
+              Browse and discover your perfect property from our curated collection
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <div className="flex items-center text-sm text-gray-500">
+              <span className="font-medium">{filteredProperties.length}</span>
+              <span className="ml-1">
+                {filteredProperties.length === 1 ? 'property' : 'properties'} found
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Filters Section - Improved Layout */}
-      <div className="bg-white/70 backdrop-blur-sm border-b border-gray-200/50 lg:mt-4">
-        <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8 py-4 sm:py-6">
+      <div className="bg-white/70 backdrop-blur-sm border-b border-gray-200/50">
+        <div className="px-4 lg:px-6 py-4 sm:py-6">
+          {/* Navigation Tabs - Fully Responsive */}
+          <div className="mb-6">
+            <div className="flex gap-1 sm:gap-2 p-2 sm:p-3 overflow-x-auto scrollbar-hide bg-white/50 rounded-lg">
+              <button 
+                className={`flex-1 min-w-0 py-2 sm:py-2.5 px-2 sm:px-4 text-center font-medium rounded-lg transition-all duration-200 text-xs sm:text-sm whitespace-nowrap ${
+                  activeFilter === "ALL" 
+                    ? "text-white bg-gradient-to-r from-[#014d98] to-[#3ab7b1] shadow-lg shadow-blue-500/25" 
+                    : "text-gray-600 hover:text-gray-800 hover:bg-gray-100"
+                }`}
+                onClick={() => setActiveFilter("ALL")}
+              >
+                All Properties
+              </button>
+              <button 
+                className={`flex-1 min-w-0 py-2 sm:py-2.5 px-2 sm:px-4 text-center font-medium rounded-lg transition-all duration-200 text-xs sm:text-sm whitespace-nowrap ${
+                  activeFilter === "RENT" 
+                    ? "text-white bg-gradient-to-r from-[#014d98] to-[#3ab7b1] shadow-lg shadow-blue-500/25" 
+                    : "text-gray-600 hover:text-gray-800 hover:bg-gray-100"
+                }`}
+                onClick={() => setActiveFilter("RENT")}
+              >
+                For Rent
+              </button>
+              <button 
+                className={`flex-1 min-w-0 py-2 sm:py-2.5 px-2 sm:px-4 text-center font-medium rounded-lg transition-all duration-200 text-xs sm:text-sm whitespace-nowrap ${
+                  activeFilter === "SALE" 
+                    ? "text-white bg-gradient-to-r from-[#014d98] to-[#3ab7b1] shadow-lg shadow-blue-500/25" 
+                    : "text-gray-600 hover:text-gray-800 hover:bg-gray-100"
+                }`}
+                onClick={() => setActiveFilter("SALE")}
+              >
+                For Sale
+              </button>
+            </div>
+          </div>
+
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             {/* Left Side - Search Input */}
             <div className="flex-1 lg:max-w-md xl:max-w-lg">
@@ -408,8 +429,8 @@ const AllListedProperties = () => {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8 py-6 sm:py-8">
+      {/* Main Content Area */}
+      <div className="px-4 lg:px-6 py-6">
         {isLoading ? (
           <div>
             <p className="text-center text-blue-600 mb-4">Loading properties...</p>

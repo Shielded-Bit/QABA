@@ -2,27 +2,35 @@
 import PropertiesNumber from '../components/propertiesnumber';
 import Draft from '../components/draft';
 
-export default function FavouritesPage() {
+export default function DraftPage() {
   return (
-    <div className="pl-12"> {/* Wrapped everything in a single div with pl-6 */}
-      
-      {/* Gradient Header at the Top */}
-      <h1 className="text-2xl font-normal text-gradient bg-clip-text px-2 py-6">
-        My Draft
-      </h1>
+    <div className="min-h-screen">
+      {/* Header Section */}
+      <div className="px-4 lg:px-6 pt-6 pb-4">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="flex-1">
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
+              My Draft Properties
+            </h1>
+            <p className="text-gray-600 text-sm lg:text-base">
+              Continue working on your saved property drafts
+            </p>
+          </div>
+        </div>
+      </div>
 
-      {/* Properties Section */}
-      <div className="space-y-2">
+      {/* Main Content with Consistent Spacing */}
+      <div className="px-4 lg:px-6 py-6 space-y-6">
+        {/* Properties Number Section */}
         <section>
           <PropertiesNumber />
         </section>
-      </div>
 
-      {/* Draft Section */}
-      <div className="space-y-2">
-        <Draft />
+        {/* Draft Section */}
+        <section>
+          <Draft />
+        </section>
       </div>
-
     </div>
   );
 }

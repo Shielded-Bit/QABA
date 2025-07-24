@@ -52,7 +52,7 @@ const Dashboard = () => {
   }, []);
 
   return (
-    <div className="px-0 sm:px-2">
+    <div>
       {/* Desktop view with grid */}
       <div className="hidden md:grid md:grid-cols-2 gap-4">
         <PropertiesSection properties={properties} isLoading={isLoading} />

@@ -15,22 +15,27 @@ export default function ForRentPage() {
   }
 
   return (
-    <div suppressHydrationWarning>
+    <div suppressHydrationWarning className="min-h-screen">
       {/* Toaster for notifications */}
       <Toaster position="top-right" />
 
-      {/* Top Numbers Row Wrapper */}
-      <div className="dashboard-numbers sm:pl-10 pl-16 px-6">
-        {/* Text with fixed gradient */}
-        <h1 className="text-xl font-normal px-2 md:px-2 py-4 bg-clip-text text-transparent bg-gradient-to-r from-[#014d98] via-[#1d86a9] to-[#3ab7b1]">
-          Add Property &gt; <span className="text-[#1d86a9]">For Rent</span>
-        </h1>
-        <p className="pb-6 px-2 sm:px-2 text-sm text-gray-500">
-          Fill in the details below to create a new property listing. Ensure all information is accurate and complete to attract potential buyers or renters. High-quality images and a detailed description will help your listing stand out.
-        </p>
-        <section className="ml-2 lg:ml-0">
-          <AddForRent />
-        </section>
+      {/* Header Section */}
+      <div className="px-4 lg:px-6 pt-6 pb-4">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="flex-1">
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
+              Add Property <span className="text-blue-600">› For Rent</span>
+            </h1>
+            <p className="text-gray-600 text-sm lg:text-base">
+              Fill in the details below to create a new property listing. Ensure all information is accurate and complete to attract potential renters. High-quality images and a detailed description will help your listing stand out.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="px-4 lg:px-6 py-6">
+        <AddForRent />
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { BellDot, X, Menu } from "lucide-react";
+import { BellDot, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useProfile } from "../../../contexts/ProfileContext";
@@ -10,7 +10,6 @@ import { createPortal } from "react-dom";
 
 export default function TopNav() {
   const [showNotifications, setShowNotifications] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isBrowser, setIsBrowser] = useState(false);
   
   // Cache state - initialize from localStorage on mount
@@ -282,11 +281,6 @@ export default function TopNav() {
 
       {/* Mobile Navigation */}
       <div className="sm:hidden flex justify-between items-center p-4 px-3">
-        {/* Mobile Menu Button */}
-        <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-          <Menu className="h-7 w-7 text-gray-600" />
-        </button>
-
         {/* Search Bar (Mobile) */}
         <div className="flex items-center flex-1 relative mx-4"></div>
 
@@ -332,15 +326,7 @@ export default function TopNav() {
       {showNotifications && renderNotificationContent()}
 
       {/* Mobile Menu Portal */}
-      {mobileMenuOpen && isBrowser && createPortal(
-        <div 
-          className="sm:hidden fixed inset-0 bg-black bg-opacity-50 z-40" 
-          onClick={() => setMobileMenuOpen(false)}
-        >
-          {/* ...existing mobile menu content... */}
-        </div>,
-        document.body
-      )}
+      {/* The mobile menu portal is removed as the menu button is removed */}
     </div>
   );
 }

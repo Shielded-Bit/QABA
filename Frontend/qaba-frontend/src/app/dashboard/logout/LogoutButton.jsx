@@ -1,12 +1,12 @@
 "use client";
 
-import { XCircle, AlertCircle, LogOut } from "lucide-react"; // Import the LogOut icon
+import { XCircle, AlertCircle, LogOut } from "lucide-react";
 import useModal from "./useModal";
-import useLogout from "../../hooks/useLogout"; // Use the correct logout hook
+import useLogout from "../../hooks/useLogout";
 
-const LogoutButton = () => {
+const LogoutButton = ({ collapsed = false }) => {
   const { isOpen, openModal, closeModal } = useModal();
-  const { logout } = useLogout(); // This will now call the backend endpoint
+  const { logout } = useLogout();
 
   const handleLogout = () => {
     logout();
@@ -17,11 +17,18 @@ const LogoutButton = () => {
     <>
       <button
         onClick={openModal}
-        className="flex items-center text-black hover:text-white transition duration-200"
+        className="group flex items-center w-full transition-all duration-200"
         aria-label="Open logout confirmation"
       >
-        <LogOut size={20} className="mr-3" /> {/* Add the LogOut icon */}
-        Log Out
+        <div className="relative">
+          <LogOut className={collapsed ? 'mx-auto' : 'mr-2'} size={16} />
+          {collapsed && (
+            <div className="absolute left-full z-50 ml-2 bg-black text-white text-xs px-2 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+              Log Out
+            </div>
+          )}
+        </div>
+        <span className={collapsed ? 'hidden' : 'inline'}>Log Out</span>
       </button>
 
       {/* Logout Modal */}
