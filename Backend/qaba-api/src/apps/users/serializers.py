@@ -190,11 +190,26 @@ class UserSerializer(serializers.ModelSerializer):
 
     def get_profile(self, obj):
         if obj.user_type == User.UserType.CLIENT:
-            return ClientProfileSerializer(obj.clientprofile).data
+            try:
+                return ClientProfileSerializer(obj.clientprofile).data
+            except ClientProfile.DoesNotExist:
+                # Create profile if it doesn't exist
+                profile = ClientProfile.objects.create(user=obj)
+                return ClientProfileSerializer(profile).data
         elif obj.user_type == User.UserType.AGENT:
-            return AgentProfileSerializer(obj.agentprofile).data
+            try:
+                return AgentProfileSerializer(obj.agentprofile).data
+            except AgentProfile.DoesNotExist:
+                # Create profile if it doesn't exist
+                profile = AgentProfile.objects.create(user=obj)
+                return AgentProfileSerializer(profile).data
         elif obj.user_type == User.UserType.LANDLORD:
-            return LandlordProfileSerializer(obj.landlordprofile).data
+            try:
+                return LandlordProfileSerializer(obj.landlordprofile).data
+            except LandlordProfile.DoesNotExist:
+                # Create profile if it doesn't exist
+                profile = LandlordProfile.objects.create(user=obj)
+                return LandlordProfileSerializer(profile).data
 
 
 class UserUpdateSerializer(serializers.ModelSerializer):

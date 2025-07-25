@@ -2,6 +2,8 @@ from cloudinary.models import CloudinaryField
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
 
 
@@ -198,7 +200,7 @@ class PropertySurveyMeeting(models.Model):
             from apps.properties.models import Property
 
             return Property.objects.get(id=self.property_id)
-        except:
+        except (Property.DoesNotExist, ImportError):
             return None
 
     @property
@@ -248,3 +250,16 @@ class PropertySurveyMeeting(models.Model):
     def save(self, *args, **kwargs):
         self.clean()
         super().save(*args, **kwargs)
+
+
+# Signal handlers to automatically create profiles when users are created
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    """Create appropriate profile when a user is created"""
+    if created:
+        if instance.user_type == User.UserType.CLIENT:
+            ClientProfile.objects.get_or_create(user=instance)
+        elif instance.user_type == User.UserType.AGENT:
+            AgentProfile.objects.get_or_create(user=instance)
+        elif instance.user_type == User.UserType.LANDLORD:
+            LandlordProfile.objects.get_or_create(user=instance)
