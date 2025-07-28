@@ -5,6 +5,7 @@ import { Search, ChevronLeft, ChevronRight, Filter, X, Bookmark } from 'lucide-r
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
+import Cookies from 'js-cookie';
 import { PropertyCardSkeleton, LoadingGrid, HeaderSkeleton } from './components/LoadingSkeletons';
 
 // Property Card Component
@@ -100,7 +101,18 @@ const AgentFavoritesPage = () => {
     const fetchFavorites = async () => {
       try {
         setIsLoading(true);
-        const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+        const token = Cookies.get('access_token') || localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+        
+        console.log('Fetching favorites with token:', token ? 'Token found' : 'No token');
+        
+        if (!token) {
+          console.error('No authentication token found');
+          setFavorites([]);
+          setFilteredFavorites([]);
+          setTotalPages(0);
+          setIsLoading(false);
+          return;
+        }
         
         const response = await axios.get(
           `${process.env.NEXT_PUBLIC_API_URL}/api/v1/favorites/`,
@@ -112,8 +124,11 @@ const AgentFavoritesPage = () => {
           }
         );
         
+        console.log('Favorites API response:', response.data);
+        
         if (response.status === 200) {
           const favoritesData = response.data.data || [];
+          console.log('Favorites data:', favoritesData);
           
           setFavorites(favoritesData);
           setFilteredFavorites(favoritesData);
@@ -121,6 +136,7 @@ const AgentFavoritesPage = () => {
         }
       } catch (error) {
         console.error('Error fetching favorites:', error);
+        console.error('Error details:', error.response?.data);
         setFavorites([]);
         setFilteredFavorites([]);
         setTotalPages(0);
@@ -194,7 +210,7 @@ const AgentFavoritesPage = () => {
   // Toggle favorite status
   const toggleFavorite = async (property) => {
     try {
-      const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+      const token = Cookies.get('access_token') || localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
       const propertyId = property.id || property.property?.id;
       
       // Use the toggle endpoint
@@ -398,141 +414,158 @@ const AgentFavoritesPage = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {isLoading ? (
-        <>
-          <HeaderSkeleton />
-          <LoadingGrid />
-        </>
-      ) : (
-        <>
-          <div className="mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-normal text-transparent text-gradient py-2 sm:py-3 lg:py-4 text-center md:text-left">
-              My Favorite Properties
-            </h1>
-            
-            {/* Modern Search Bar with Floating Filter Panel */}
-            <div className="w-full md:w-auto relative">
-              <div className="flex items-center">
-                <div className="relative flex-grow w-full md:w-64 lg:w-80">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Search size={16} className="text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Search properties..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border-0 rounded-full shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all duration-300"
-                  />
-                  {searchTerm && (
-                    <button
-                      onClick={() => setSearchTerm('')}
-                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
-                    >
-                      <X size={14} />
-                    </button>
-                  )}
-                </div>
-                
+    <div className="container mx-auto px-6 py-8">
+      {/* Header, Search, and Filters - Always Visible */}
+      <div className="mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-normal bg-clip-text text-transparent bg-gradient-to-r from-[#014d98] to-[#3ab7b1] py-2 sm:py-3 lg:py-4 text-center md:text-left">
+          My Favorite Properties
+        </h1>
+        
+        {/* Modern Search Bar with Floating Filter Panel */}
+        <div className="w-full md:w-auto relative">
+          <div className="flex items-center">
+            <div className="relative flex-grow w-full md:w-64 lg:w-80">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search size={16} className="text-gray-400" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search properties..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border-0 rounded-full shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all duration-300"
+              />
+              {searchTerm && (
                 <button
-                  onClick={toggleFilters}
-                  className={`ml-2 p-2.5 rounded-full transition-all duration-300 ${
-                    showFilters || filterType !== 'all' 
-                      ? 'bg-gradient-to-r from-blue-900 to-green-600 text-white shadow-md' 
-                      : 'bg-gray-50 text-gray-700 shadow-sm hover:shadow'
-                  }`}
-                  aria-label="Toggle filters"
+                  onClick={() => setSearchTerm('')}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
                 >
-                  <Filter size={16} />
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+            
+            <button
+              onClick={toggleFilters}
+              className={`ml-2 p-2.5 rounded-full transition-all duration-300 ${
+                showFilters || filterType !== 'all' 
+                  ? 'bg-gradient-to-r from-blue-900 to-green-600 text-white shadow-md' 
+                  : 'bg-gray-50 text-gray-700 shadow-sm hover:shadow'
+              }`}
+              aria-label="Toggle filters"
+            >
+              <Filter size={16} />
+            </button>
+          </div>
+          
+          {/* Floating Filter Panel */}
+          {showFilters && (
+            <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-100 p-4 z-10 animate-in fade-in slide-in-from-top-5 duration-300">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-medium text-sm text-gray-700">Filters</h3>
+                <button 
+                  onClick={clearFilters}
+                  className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                >
+                  Clear all
                 </button>
               </div>
               
-              {/* Floating Filter Panel */}
-              {showFilters && (
-                <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-100 p-4 z-10 animate-in fade-in slide-in-from-top-5 duration-300">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-medium text-sm text-gray-700">Filters</h3>
-                    <button 
-                      onClick={clearFilters}
-                      className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
-                    >
-                      Clear all
-                    </button>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-xs font-medium text-gray-600 block mb-1.5">
-                        Property Type
-                      </label>
-                      <div className="grid grid-cols-3 gap-1">
-                        {['all', 'rent', 'buy'].map(type => (
-                          <button
-                            key={type}
-                            onClick={() => setFilterType(type)}
-                            className={`text-xs py-1.5 px-2 rounded-lg capitalize transition-all duration-300 ${
-                              filterType === type
-                                ? 'bg-gradient-to-r from-blue-900 to-green-600 text-white font-medium'
-                                : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
-                            }`}
-                          >
-                            {type === 'all' ? 'All' : type}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    <div className="pt-2">
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-medium text-gray-600 block mb-1.5">
+                    Property Type
+                  </label>
+                  <div className="grid grid-cols-3 gap-1">
+                    {['all', 'rent', 'buy'].map(type => (
                       <button
-                        onClick={() => setShowFilters(false)}
-                        className="w-full py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-sm rounded-lg transition-colors duration-300"
+                        key={type}
+                        onClick={() => setFilterType(type)}
+                        className={`text-xs py-1.5 px-2 rounded-lg capitalize transition-all duration-300 ${
+                          filterType === type
+                            ? 'bg-gradient-to-r from-blue-900 to-green-600 text-white font-medium'
+                            : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
+                        }`}
                       >
-                        Apply Filters
+                        {type === 'all' ? 'All' : type}
                       </button>
-                    </div>
+                    ))}
                   </div>
                 </div>
-              )}
+                
+                <div className="pt-2">
+                  <button
+                    onClick={() => setShowFilters(false)}
+                    className="w-full py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-sm rounded-lg transition-colors duration-300"
+                  >
+                    Apply Filters
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
-          
-          {/* Active Filters Display */}
-          {(searchTerm || filterType !== 'all') && (
-            <div className="mb-6 flex flex-wrap gap-2 items-center">
-              <span className="text-xs text-gray-500">Active filters:</span>
-              {filterType !== 'all' && (
-                <div className="inline-flex items-center bg-blue-50 text-blue-800 text-xs rounded-full px-3 py-1">
-                  <span className="capitalize">{filterType}</span>
-                  <button
-                    onClick={() => setFilterType('all')}
-                    className="ml-1.5 text-blue-500 hover:text-blue-700"
-                  >
-                    <X size={12} />
-                  </button>
-                </div>
-              )}
-              {searchTerm && (
-                <div className="inline-flex items-center bg-blue-50 text-blue-800 text-xs rounded-full px-3 py-1">
-                  <span>&quot;{searchTerm}&quot;</span>
-                  <button
-                    onClick={() => setSearchTerm('')}
-                    className="ml-1.5 text-blue-500 hover:text-blue-700"
-                  >
-                    <X size={12} />
-                  </button>
-                </div>
-              )}
+          )}
+        </div>
+      </div>
+      
+      {/* Active Filters Display - Always Visible */}
+      {(searchTerm || filterType !== 'all') && (
+        <div className="mb-6 flex flex-wrap gap-2 items-center">
+          <span className="text-xs text-gray-500">Active filters:</span>
+          {filterType !== 'all' && (
+            <div className="inline-flex items-center bg-blue-50 text-blue-800 text-xs rounded-full px-3 py-1">
+              <span className="capitalize">{filterType}</span>
               <button
-                onClick={clearFilters}
-                className="text-xs text-blue-600 hover:text-blue-800 hover:underline ml-1"
+                onClick={() => setFilterType('all')}
+                className="ml-1.5 text-blue-500 hover:text-blue-700"
               >
-                Clear all
+                <X size={12} />
               </button>
             </div>
           )}
-          
-          {/* Properties Grid */}
+          {searchTerm && (
+            <div className="inline-flex items-center bg-blue-50 text-blue-800 text-xs rounded-full px-3 py-1">
+              <span>&quot;{searchTerm}&quot;</span>
+              <button
+                onClick={() => setSearchTerm('')}
+                className="ml-1.5 text-blue-500 hover:text-blue-700"
+              >
+                <X size={12} />
+              </button>
+            </div>
+          )}
+          <button
+            onClick={clearFilters}
+            className="text-xs text-blue-600 hover:text-blue-800 hover:underline ml-1"
+          >
+            Clear all
+          </button>
+        </div>
+      )}
+      
+      {/* Properties Grid - Only This Shows Loading */}
+      {isLoading ? (
+        <LoadingGrid />
+      ) : filteredFavorites.length === 0 ? (
+        <div className="text-center py-16">
+          <div className="text-gray-400 mb-4">
+            <svg className="w-16 h-16 mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Favorites Yet</h3>
+          <p className="text-gray-600 mb-6">Start browsing properties and save your favorites here</p>
+          <a 
+            href="/buy" 
+            className="bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white px-6 py-3 rounded-lg hover:opacity-90 transition-all inline-flex items-center gap-2"
+          >
+            Browse Properties
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </a>
+        </div>
+      ) : (
+        <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {currentItems.map((favorite) => {
               const formattedProperty = formatPropertyForCard(favorite);

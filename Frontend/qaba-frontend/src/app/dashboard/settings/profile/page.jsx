@@ -39,10 +39,10 @@ const FormInput = ({
 
 // Profile Page Skeleton
 const ProfilePageSkeleton = () => (
-  <div className="max-w-4xl mx-auto sm:p-6 animate-pulse">
+  <div className="max-w-4xl mx-auto px-4 lg:px-6 py-6 animate-pulse">
     <div className="h-8 w-48 bg-gray-200 rounded mb-8" />
     {/* Profile Image Skeleton */}
-    <div className="mb-6 pl-1 flex items-center">
+    <div className="mb-6 flex items-center">
       <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-gray-200 border-2 border-gray-300 mr-6" />
       <div className="h-8 w-32 bg-gray-200 rounded" />
     </div>
@@ -491,16 +491,16 @@ export default function ProfilePage() {
 
   // Render Component
   return (
-    <div className="max-w-4xl mx-auto sm:p-6">
+    <div className="max-w-4xl mx-auto px-4 lg:px-6 py-6">
       {/* Toast Container */}
       <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
       
-      <h1 className="text-2xl font-bold mb-6 pl-1">
+      <h1 className="text-2xl font-bold mb-6">
         Profile Settings
       </h1>
 
       {/* Profile Image Section */}
-      <div className="mb-6 pl-1">
+      <div className="mb-6">
         <div className="relative inline-block">
           <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full overflow-hidden bg-gray-200 border-2 border-gray-300">
             {imagePreview && !imgError ? (
@@ -568,7 +568,7 @@ export default function ProfilePage() {
 
       {/* Contact Information Section */}
       <div className="mb-6 border-b pb-4">
-        <h2 className="text-lg sm:text-xl font-semibold mb-3 pl-1">Address</h2>
+        <h2 className="text-lg sm:text-xl font-semibold mb-3">Address</h2>
         
         <form onSubmit={handleSubmit((data) => updateProfile(data, 'contact'))} className="mt-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-4">
@@ -621,7 +621,7 @@ export default function ProfilePage() {
       {/* Location Information Section */}
       <div className="mb-6">
         <div className="flex justify-between items-center mb-3">
-          <h2 className="text-lg sm:text-xl font-semibold pl-1">Location Information</h2>
+          <h2 className="text-lg sm:text-xl font-semibold">Location Information</h2>
           
           {!isEditingLocation && (
             <button

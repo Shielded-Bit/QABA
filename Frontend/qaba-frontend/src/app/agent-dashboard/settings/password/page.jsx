@@ -111,7 +111,7 @@ export default function PasswordPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="max-w-4xl mx-auto p-6 bg-white">
+      <div className="max-w-4xl mx-auto px-4 lg:px-6 py-6 bg-white">
         <ToastContainer position="top-right" autoClose={5000} />
         <div className="text-center py-8">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
@@ -124,7 +124,7 @@ export default function PasswordPage() {
 
   if (emailSent) {
     return (
-      <div className="max-w-4xl mx-auto p-6 bg-white">
+      <div className="max-w-4xl mx-auto px-4 lg:px-6 py-6 bg-white">
         <ToastContainer position="top-right" autoClose={5000} />
         <div className="text-center py-8">
           <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
@@ -162,7 +162,7 @@ export default function PasswordPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-3 bg-white">
+    <div className="max-w-4xl mx-auto px-4 lg:px-6 py-6 bg-white">
       <ToastContainer position="top-right" autoClose={5000} />
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Change Password</h1>

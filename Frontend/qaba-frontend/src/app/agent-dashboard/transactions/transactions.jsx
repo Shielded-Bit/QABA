@@ -109,7 +109,7 @@ const TransactionTable = () => {
           </div>
           <div className="relative">
             <button
-              className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm flex items-center gap-2 px-4 py-2.5 transition-colors"
+              className="bg-gradient-to-r from-[#014d98] to-[#3ab7b1] hover:from-[#3ab7b1] hover:to-[#014d98] text-white rounded-lg shadow-sm flex items-center gap-2 px-4 py-2.5 transition-all duration-300"
               onClick={() => setFilterOpen(!filterOpen)}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -117,7 +117,7 @@ const TransactionTable = () => {
               </svg>
               <span className="font-medium">Filters</span>
               {(filterStatus !== "All" || filterPaymentMethod !== "All" || filterPropertyType !== "All") && (
-                <span className="w-5 h-5 flex items-center justify-center bg-white text-blue-600 rounded-full text-xs font-bold">
+                <span className="w-5 h-5 flex items-center justify-center bg-white text-[#014d98] rounded-full text-xs font-bold">
                   {(filterStatus !== "All" ? 1 : 0) + (filterPaymentMethod !== "All" ? 1 : 0) + (filterPropertyType !== "All" ? 1 : 0)}
                 </span>
               )}

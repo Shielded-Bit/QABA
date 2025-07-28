@@ -286,7 +286,7 @@ export default function PropertyDetail() {
   const hasVideo = property.video && property.video.video_url;
 
   return (
-    <div className="w-full mx-auto p-0 lg:p-8 pl-14">
+    <div className="w-full mx-auto px-4 lg:px-6 py-6">
       {/* Toast Container for notifications */}
       <ToastContainer position="top-right" autoClose={3000} />
       
