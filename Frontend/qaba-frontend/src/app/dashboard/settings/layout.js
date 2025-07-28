@@ -23,10 +23,10 @@ export default function SettingsLayout({ children }) {
 
   return (
     <ProfileProvider>
-      <div className="min-h-screen bg-gray-50 w-full pl-12 md:pl-4 sm:pl-12 rounded-md">
+      <div className="min-h-screen bg-gray-50 w-full rounded-md">
         {/* Header with Navigation */}
         <header className="">
-          <div className="w-full mx-auto px-4 sm:px-6 lg:px-8">
+                      <div className="w-full mx-auto px-4 lg:px-6">
             <div className="flex justify-between items-center h-16"> 
               {/* Title */}
               <div className="flex-shrink-0">
@@ -81,7 +81,7 @@ export default function SettingsLayout({ children }) {
             <div className="md:hidden border-t border-gray-200 bg-white">
               <div className="px-2 pt-2 pb-3 space-y-1">
                 <button
-                  onClick={() => navigateTo('/agent-dashboard/settings/profile')}
+                  onClick={() => navigateTo('/dashboard/settings/profile')}
                   className={`block w-full text-left px-3 py-2 rounded-md text-base font-medium ${
                     isProfileActive
                       ? 'bg-blue-50 text-blue-700'
@@ -112,8 +112,8 @@ export default function SettingsLayout({ children }) {
         </header>
 
         {/* Main Content Area */}
-        <main className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="bg-white rounded-lg shadow p-6">
+        <main className="w-full mx-auto px-4 lg:px-6 py-6">
+          <div className="bg-white rounded-lg shadow">
             {children}
           </div>
         </main>

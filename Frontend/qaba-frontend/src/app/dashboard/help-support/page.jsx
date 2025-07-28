@@ -5,11 +5,8 @@ import Help from './help';
 
 export default function FavouritesPage() {
   return (
-    <>
-      
-      <div className="space-y-4 ml-14 lg:ml-5 mt-5">
-        < Help/>
-      </div>
-    </>
+    <div className="px-4 lg:px-6 py-6">
+      < Help/>
+    </div>
   );
 }

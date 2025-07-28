@@ -1,16 +1,21 @@
 "use client";
-import Header2 from '../components/header2';
 import Transactions from './transactions';
 
-export default function FavouritesPage() {
+export default function TransactionsPage() {
   return (
-    <>
-      <div className="dashboard-header lg:ml-4 ml-3">
-        <Header2 />
+    <div className="px-4 lg:px-6 py-6">
+      {/* Transactions Header */}
+      <div className="mb-6">
+        <div className="bg-gray-100 px-4 py-2 rounded-lg">
+          <h1 className="text-xl sm:text-2xl lg:text-2xl font-normal bg-clip-text text-transparent bg-gradient-to-r from-[#014d98] to-[#3ab7b1]">
+            Transactions
+          </h1>
+        </div>
       </div>
-      <div className="space-y-4 ml-14 lg:ml-5 mt-5">
-        < Transactions/>
+      
+      <div className="space-y-4">
+        <Transactions/>
       </div>
-    </>
+    </div>
   );
 }
