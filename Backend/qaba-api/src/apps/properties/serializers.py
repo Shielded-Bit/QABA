@@ -123,6 +123,7 @@ class PropertyListSerializer(serializers.ModelSerializer):
             "thumbnail",
             "is_favorited",
             "amenities",
+            "is_verified",
         ]
 
     @extend_schema_field(serializers.URLField(allow_null=True))
