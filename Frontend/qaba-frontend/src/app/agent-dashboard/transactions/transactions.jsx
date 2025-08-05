@@ -1,339 +1,430 @@
 // app/components/TransactionTable.js
 "use client";
 
-import React, { useState } from "react";
-
-const transactions = [
-  {
-    name: "Naomi Michaels",
-    id: "#1122345",
-    date: "2025-01-12",
-    type: "Flat",
-    property: "The Dream Family Home",
-    status: "Bought",
-    price: "\u20A6 1,000,000",
-  },
-  {
-    name: "Naomi Michaels",
-    id: "#1122345",
-    date: "2025-01-12",
-    type: "Self Con",
-    property: "The Royal Villa",
-    status: "Bought",
-    price: "\u20A6 1,200,000",
-  },
-  {
-    name: "Naomi Michaels",
-    id: "#1122345",
-    date: "2025-01-12",
-    type: "Duplex",
-    property: "Prince & Princess Estate",
-    status: "Rented",
-    price: "\u20A6 1,000,000",
-  },
-  {
-    name: "John Doe",
-    id: "#1122346",
-    date: "2025-02-15",
-    type: "Single Room",
-    property: "Cozy Studio Apartment",
-    status: "Rented",
-    price: "\u20A6 500,000",
-  },
-  {
-    name: "Jane Smith",
-    id: "#1122347",
-    date: "2025-03-20",
-    type: "Duplex",
-    property: "Luxury Duplex Suite",
-    status: "Bought",
-    price: "\u20A6 2,000,000",
-  },
-  {
-    name: "Michael Johnson",
-    id: "#1122348",
-    date: "2025-04-10",
-    type: "Flat",
-    property: "Modern City Flat",
-    status: "Rented",
-    price: "\u20A6 800,000",
-  },
-  {
-    name: "Emily Davis",
-    id: "#1122349",
-    date: "2025-05-05",
-    type: "Self Con",
-    property: "Private Bungalow",
-    status: "Bought",
-    price: "\u20A6 5,000,000",
-  },
-  {
-    name: "Daniel Wilson",
-    id: "#1122350",
-    date: "2025-06-18",
-    type: "Single Room",
-    property: "Affordable Single Room",
-    status: "Rented",
-    price: "\u20A6 300,000",
-  },
-  {
-    name: "Olivia Brown",
-    id: "#1122351",
-    date: "2025-07-22",
-    type: "Duplex",
-    property: "Elegant Duplex Home",
-    status: "Bought",
-    price: "\u20A6 9,000,000",
-  },
-  {
-    name: "William Taylor",
-    id: "#1122352",
-    date: "2025-08-30",
-    type: "Flat",
-    property: "Spacious Family Flat",
-    status: "Rented",
-    price: "\u20A6 1,200,000",
-  },
-  {
-    name: "Sophia Martinez",
-    id: "#1122353",
-    date: "2025-09-12",
-    type: "Self Con",
-    property: "Exclusive Villa",
-    status: "Bought",
-    price: "\u20A6 1,050,000",
-  },
-  {
-    name: "James Anderson",
-    id: "#1122354",
-    date: "2025-10-25",
-    type: "Single Room",
-    property: "Budget-Friendly Room",
-    status: "Rented",
-    price: "\u20A6 250,000",
-  },
-  {
-    name: "Emma Thomas",
-    id: "#1122355",
-    date: "2025-11-14",
-    type: "Duplex",
-    property: "Grand Duplex Residence",
-    status: "Bought",
-    price: "\u20A6 8,000,000",
-  },
-  {
-    name: "Alexander Hernandez",
-    id: "#1122356",
-    date: "2025-12-05",
-    type: "Flat",
-    property: "City Center Flat",
-    status: "Rented",
-    price: "\u20A6 900,000",
-  },
-  {
-    name: "Mia Moore",
-    id: "#1122357",
-    date: "2026-01-18",
-    type: "Self Con",
-    property: "Luxury Bungalow",
-    status: "Bought",
-    price: "\u20A6 5,000,000",
-  },
-  {
-    name: "Ethan Jackson",
-    id: "#1122358",
-    date: "2026-02-22",
-    type: "Single Room",
-    property: "Compact Single Room",
-    status: "Rented",
-    price: "\u20A6 200,000",
-  },
-  {
-    name: "Charlotte Lee",
-    id: "#1122359",
-    date: "2026-03-30",
-    type: "Duplex",
-    property: "Modern Duplex Apartment",
-    status: "Bought",
-    price: "\u20A6 6,000,000",
-  },
-  {
-    name: "Liam Perez",
-    id: "#1122360",
-    date: "2026-04-15",
-    type: "Flat",
-    property: "Affordable Family Flat",
-    status: "Rented",
-    price: "\u20A6 750,000",
-  },
-  {
-    name: "Amelia White",
-    id: "#1122361",
-    date: "2026-05-20",
-    type: "Self Con",
-    property: "Private Villa",
-    status: "Bought",
-    price: "\u20A6 7,000,000",
-  },
-  {
-    name: "Noah Harris",
-    id: "#1122362",
-    date: "2026-06-10",
-    type: "Single Room",
-    property: "Cozy Single Room",
-    status: "Rented",
-    price: "\u20A6 350,000",
-  },
-  {
-    name: "Ava Clark",
-    id: "#1122363",
-    date: "2026-07-25",
-    type: "Duplex",
-    property: "Elegant Duplex House",
-    status: "Bought",
-    price: "\u20A6 2,000,000",
-  },
-  {
-    name: "Lucas Lewis",
-    id: "#1122364",
-    date: "2026-08-12",
-    type: "Flat",
-    property: "Modern Flat",
-    status: "Rented",
-    price: "\u20A6 1,100,000",
-  },
-  {
-    name: "Isabella Walker",
-    id: "#1122365",
-    date: "2026-09-18",
-    type: "Self Con",
-    property: "Luxury Villa",
-    status: "Bought",
-    price: "\u20A6 5,000,000",
-  },
-  {
-    name: "Mason Hall",
-    id: "#1122366",
-    date: "2026-10-30",
-    type: "Single Room",
-    property: "Affordable Room",
-    status: "Rented",
-    price: "\u20A6 400,000",
-  },
-];
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import TransactionTableSkeleton from "../../dashboard/transactions/TransactionTableSkeleton";
 
 const TransactionTable = () => {
+  const [transactions, setTransactions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [filterStatus, setFilterStatus] = useState("All");
-  const [filterType, setFilterType] = useState("All");
+  const [filterPaymentMethod, setFilterPaymentMethod] = useState("All");
+  const [filterPropertyType, setFilterPropertyType] = useState("All");
   const [filterOpen, setFilterOpen] = useState(false);
+
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      try {
+        setIsLoading(true);
+        const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+        if (!token) {
+          throw new Error("Authentication token not found");
+        }
+        const response = await axios.get(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/history/`,
+          {
+            headers: {
+              'accept': '*/*',
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+        if (response.data.success) {
+          setTransactions(response.data.data);
+        } else {
+          throw new Error(response.data.message || "Failed to fetch transactions");
+        }
+      } catch (err) {
+        setError(err.message || "Failed to load transaction history");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchTransactions();
+  }, []);
 
   const handleResetFilters = () => {
     setFilterStatus("All");
-    setFilterType("All");
+    setFilterPaymentMethod("All");
+    setFilterPropertyType("All");
   };
 
+  const formatCurrency = (amount, currency = "NGN") => {
+    const currencySymbols = { NGN: "₦", USD: "$", EUR: "€", GBP: "£" };
+    const symbol = currencySymbols[currency] || currency;
+    return `${symbol} ${Number(amount).toLocaleString()}`;
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  // Helper function to get status badge styling
+  const getStatusBadgeClass = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'successful':
+      case 'completed':
+      case 'success':
+        return "bg-green-50 text-green-700 border border-green-200";
+      case 'pending':
+        return "bg-yellow-50 text-yellow-700 border border-yellow-200";
+      case 'failed':
+      case 'cancelled':
+        return "bg-red-50 text-red-700 border border-red-200";
+      default:
+        return "bg-gray-50 text-gray-700 border border-gray-200";
+    }
+  };
+
+  // Apply filters to transactions
   const filteredTransactions = transactions.filter((t) => {
-    const isStatusMatch = filterStatus === "All" || t.status === filterStatus;
-    const isTypeMatch = filterType === "All" || t.type === filterType;
-    return isStatusMatch && isTypeMatch;
+    const statusMatch = filterStatus === "All" || (t.status_display || t.status) === filterStatus;
+    const paymentMethodMatch = filterPaymentMethod === "All" || (t.payment_method_display || t.payment_method) === filterPaymentMethod;
+    const propertyTypeMatch = filterPropertyType === "All" || t.property_type_display === filterPropertyType;
+    
+    return statusMatch && paymentMethodMatch && propertyTypeMatch;
   });
 
+  // Get unique values for filter options
+  const uniqueStatuses = [...new Set(transactions.map(t => t.status_display || t.status))].filter(Boolean);
+  const uniquePaymentMethods = [...new Set(transactions.map(t => t.payment_method_display || t.payment_method))].filter(Boolean);
+  const uniquePropertyTypes = [...new Set(transactions.map(t => t.property_type_display))].filter(Boolean);
+
   return (
-    <div className="p-4  max-w-[1200px]  mx-auto shadow-sm rounded-lg overflow-x-auto relative">
-      <div className="flex justify-between items-center pb-3">
-        <h2 className="lg:text-xl text-[17px]  font-bold text-gray-700">Recent Transaction History</h2>
-        <div className="relative">
-          <button
-            className="px-4 py-2 bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white rounded-lg shadow-sm flex items-center gap-2 hover:bg-blue-700 transition"
-            onClick={() => setFilterOpen(!filterOpen)}
-          >
-            <span className="font-medium">Filters</span>
-            <span className="w-5 h-5 flex items-center justify-center bg-white text-blue-600 rounded-full text-xs">{filterStatus !== "All" || filterType !== "All" ? 1 : 0}</span>
-          </button>
-          {filterOpen && (
-            <div className="absolute right-0 mt-2 w-72 bg-white shadow-lg border border-gray-200 rounded-lg z-10 p-4">
-              <div className="flex flex-col gap-4">
-                <div>
-                  <label className="text-sm font-medium">Status</label>
-                  <select
-                    className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
-                    value={filterStatus}
-                    onChange={(e) => setFilterStatus(e.target.value)}
-                  >
-                    <option value="All">All Status</option>
-                    <option value="Bought">Bought</option>
-                    <option value="Rented">Rented</option>
-                  </select>
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 max-w-6xl mx-auto">
+      {/* Simple Header */}
+      <div className="px-6 py-5 border-b border-gray-100">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">Agent Transaction History</h2>
+            <p className="text-sm text-gray-500 mt-1">Monitor and track all your property transaction activities</p>
+          </div>
+          <div className="relative">
+            <button
+              className="bg-gradient-to-r from-[#014d98] to-[#3ab7b1] hover:from-[#3ab7b1] hover:to-[#014d98] text-white rounded-lg shadow-sm flex items-center gap-2 px-4 py-2.5 transition-all duration-300"
+              onClick={() => setFilterOpen(!filterOpen)}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+              <span className="font-medium">Filters</span>
+              {(filterStatus !== "All" || filterPaymentMethod !== "All" || filterPropertyType !== "All") && (
+                <span className="w-5 h-5 flex items-center justify-center bg-white text-[#014d98] rounded-full text-xs font-bold">
+                  {(filterStatus !== "All" ? 1 : 0) + (filterPaymentMethod !== "All" ? 1 : 0) + (filterPropertyType !== "All" ? 1 : 0)}
+                </span>
+              )}
+            </button>
+            {filterOpen && (
+              <div className="absolute right-0 mt-3 w-80 bg-white shadow-xl border border-gray-200 rounded-lg z-20">
+                <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 rounded-t-lg">
+                  <h3 className="text-sm font-semibold text-gray-800">Filter Transactions</h3>
                 </div>
+                <div className="p-4 space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 mb-2 block">Status</label>
+                    <select
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                      value={filterStatus}
+                      onChange={(e) => setFilterStatus(e.target.value)}
+                    >
+                      <option value="All">All Status</option>
+                      {uniqueStatuses.map(status => (
+                        <option key={status} value={status}>{status}</option>
+                      ))}
+                    </select>
+                  </div>
 
-                <div>
-                  <label className="text-sm font-medium">Property Type</label>
-                  <select
-                    className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
-                    value={filterType}
-                    onChange={(e) => setFilterType(e.target.value)}
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 mb-2 block">Payment Method</label>
+                    <select
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                      value={filterPaymentMethod}
+                      onChange={(e) => setFilterPaymentMethod(e.target.value)}
+                    >
+                      <option value="All">All Payment Methods</option>
+                      {uniquePaymentMethods.map(method => (
+                        <option key={method} value={method}>{method}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 mb-2 block">Property Type</label>
+                    <select
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                      value={filterPropertyType}
+                      onChange={(e) => setFilterPropertyType(e.target.value)}
+                    >
+                      <option value="All">All Property Types</option>
+                      {uniquePropertyTypes.map(type => (
+                        <option key={type} value={type}>{type}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <button
+                    className="w-full bg-gray-600 hover:bg-gray-700 text-white py-2.5 rounded-lg text-sm font-medium transition-colors"
+                    onClick={handleResetFilters}
                   >
-                    <option value="All">All Types</option>
-                    <option value="Flat">Flat</option>
-                    <option value="Self Con">Self Con</option>
-                    <option value="Duplex">Duplex</option>
-                    <option value="Single Room">Single Room</option>
-                  </select>
+                    Reset All Filters
+                  </button>
                 </div>
-
-                <button
-                  className="w-full bg-gray-600 text-white py-2 rounded-md text-sm hover:bg-gray-700 transition"
-                  onClick={handleResetFilters}
-                >
-                  Reset Filters
-                </button>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="overflow-x-auto w-full relative">
-        <table className="min-w-[700px] w-full text-left">
-          <thead>
-            <tr className="border-b">
-              <th className="p-2 text-xs text-gray-500">Orders</th>
-              <th className="p-2 text-xs text-gray-500">Date</th>
-              <th className="p-2 text-xs text-gray-500">Property Type</th>
-              <th className="p-2 text-xs text-gray-500">Property Name</th>
-              <th className="p-2 text-xs text-gray-500">Status</th>
-              <th className="p-2 text-xs text-gray-500">Price</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredTransactions.map((transaction, index) => (
-              <tr key={index} className="border-b hover:bg-gray-50 transition-colors">
-                <td className="p-2 flex items-center gap-2">
-                  <img
-                    src="https://res.cloudinary.com/ddzaww11y/image/upload/v1740505215/profile_mmaj88.png"
-                    alt="avatar"
-                    className="w-9 h-9 rounded"
-                  />
-                  <div>
-                    <p className="text-sm font-medium">{transaction.name}</p>
-                    <p className="text-xs text-gray-500">{transaction.id}</p>
-                  </div>
-                </td>
-                <td className="p-2 text-sm text-gray-600">{transaction.date}</td>
-                <td className="p-2 text-sm text-gray-600">{transaction.type}</td>
-                <td className="p-2 text-sm text-gray-600">{transaction.property}</td>
-                <td
-                  className={`p-2 text-sm font-medium ${
-                    transaction.status === "Bought" ? "text-blue-600" : "text-green-600"
-                  }`}
-                >
-                  {transaction.status}
-                </td>
-                <td className="p-2 text-sm text-gray-600">{transaction.price}</td>
-              </tr>
+      {/* Content Section */}
+      <div className="p-6">
+        {isLoading ? (
+          <div className="space-y-4">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="flex items-start space-x-4 p-4 border border-gray-100 rounded-lg">
+                <div className="h-12 w-12 bg-gray-200 rounded-lg animate-pulse"></div>
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+                  <div className="h-3 bg-gray-100 rounded w-1/2 animate-pulse"></div>
+                  <div className="h-3 bg-gray-100 rounded w-2/3 animate-pulse"></div>
+                </div>
+                <div className="text-right space-y-2">
+                  <div className="h-5 bg-gray-200 rounded w-24 animate-pulse"></div>
+                  <div className="h-6 bg-gray-100 rounded w-20 animate-pulse"></div>
+                </div>
+              </div>
             ))}
-          </tbody>
-        </table>
+          </div>
+        ) : error ? (
+          <div className="bg-red-50 border border-red-200 text-red-700 p-6 rounded-lg" role="alert">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <svg className="h-6 w-6 text-red-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-semibold">Error Loading Transactions</h3>
+                <p className="text-sm mt-1">{error}</p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            {filteredTransactions.length === 0 ? (
+              <div className="text-center py-16 px-4">
+                <div className="w-20 h-20 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
+                  <svg className="w-10 h-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">No transactions found</h3>
+                <p className="text-gray-600 max-w-md mx-auto">No transaction history matches your current filters. Try adjusting your search criteria.</p>
+                <button
+                  onClick={handleResetFilters}
+                  className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
+                >
+                  Clear Filters
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {filteredTransactions.map((transaction, index) => (
+                  <div key={transaction.id} className="border border-gray-100 rounded-lg hover:border-gray-200 hover:shadow-md transition-all duration-200">
+                    {/* Desktop Layout - Hidden on Mobile */}
+                    <div className="hidden md:flex items-start space-x-4 p-5">
+                      {/* Transaction Icon */}
+                      <div className="flex-shrink-0">
+                        <div className="w-12 h-12 bg-gradient-to-r from-[#014d98] to-[#3ab7b1] rounded-lg flex items-center justify-center shadow-sm">
+                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v2a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                      </div>
+
+                      {/* Transaction Details */}
+                      <div className="flex-1 min-w-0">
+                        <div className="mb-3">
+                          <h3 className="text-base font-semibold text-gray-900 mb-1">
+                            {transaction.description}
+                          </h3>
+                          <p className="text-sm text-gray-500">
+                            {formatDate(transaction.created_at)}
+                          </p>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-3 mb-4">
+                          {/* Property Type */}
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                            {transaction.property_type_display || 'N/A'}
+                          </span>
+
+                          {/* Payment Method */}
+                          <div className="flex items-center space-x-1.5">
+                            {transaction.is_offline_payment ? (
+                              <>
+                                <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
+                                <span className="text-sm text-gray-600">{transaction.payment_method_display || 'Offline Payment'}</span>
+                              </>
+                            ) : (
+                              <>
+                                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                                <span className="text-sm text-gray-600">{transaction.payment_method_display || 'Online Payment'}</span>
+                              </>
+                            )}
+                          </div>
+
+                          {/* Verification Badge */}
+                          {transaction.needs_verification && (
+                            <span className="text-xs bg-yellow-50 text-yellow-700 px-2.5 py-1 rounded-full border border-yellow-200">
+                              Verification Needed
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Property Info */}
+                        <div className="mb-3">
+                          <p className="text-sm font-medium text-gray-700 mb-1">
+                            {transaction.property_name || 'N/A'}
+                          </p>
+                          {transaction.property_address && (
+                            <p className="text-sm text-gray-500 flex items-center">
+                              <svg className="w-4 h-4 text-gray-400 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 616 0z" />
+                              </svg>
+                              {transaction.property_address}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Reference */}
+                        <p className="text-xs text-gray-400 font-mono">
+                          Ref: {transaction.reference}
+                        </p>
+                      </div>
+
+                      {/* Amount and Status */}
+                      <div className="text-right flex-shrink-0">
+                        <div className="text-xl font-bold text-gray-900 mb-3">
+                          {formatCurrency(transaction.amount, transaction.currency)}
+                        </div>
+                        <span className={`inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-full ${getStatusBadgeClass(transaction.status)}`}>
+                          {transaction.status_display || transaction.status}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Mobile Layout - Only Visible on Mobile */}
+                    <div className="md:hidden p-3 space-y-3">
+                      {/* Header Section with Icon, Title and Amount */}
+                      <div className="flex items-start space-x-2">
+                        <div className="flex-shrink-0">
+                          <div className="w-8 h-8 bg-gradient-to-r from-[#014d98] to-[#3ab7b1] rounded-lg flex items-center justify-center shadow-sm">
+                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v2a2 2 0 002 2z" />
+                            </svg>
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0 pr-2">
+                          <h3 className="text-xs font-semibold text-gray-900 mb-1 leading-tight">
+                            {transaction.description}
+                          </h3>
+                          <p className="text-xs text-gray-500">
+                            {formatDate(transaction.created_at)}
+                          </p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <div className="text-sm font-bold text-gray-900">
+                            {formatCurrency(transaction.amount, transaction.currency)}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Status Badge - Full Width */}
+                      <div>
+                        <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${getStatusBadgeClass(transaction.status)}`}>
+                          {transaction.status_display || transaction.status}
+                        </span>
+                      </div>
+
+                      {/* Property Type and Payment Method - Two Column */}
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <span className="text-gray-500 block mb-1">Type</span>
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                            {transaction.property_type_display || 'N/A'}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500 block mb-1">Payment</span>
+                          <div className="flex items-center space-x-1">
+                            {transaction.is_offline_payment ? (
+                              <>
+                                <div className="w-2 h-2 bg-orange-400 rounded-full flex-shrink-0"></div>
+                                <span className="text-xs text-gray-600 truncate">
+                                  {transaction.payment_method_display?.replace('Payment', '') || 'Offline'}
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <div className="w-2 h-2 bg-green-400 rounded-full flex-shrink-0"></div>
+                                <span className="text-xs text-gray-600 truncate">
+                                  {transaction.payment_method_display?.replace('Payment', '') || 'Online'}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Verification Badge - If Needed */}
+                      {transaction.needs_verification && (
+                        <div>
+                          <span className="text-xs bg-yellow-50 text-yellow-700 px-2 py-1 rounded-full border border-yellow-200">
+                            ⚠️ Verification Needed
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Property Info - Compact */}
+                      <div className="bg-gray-50 p-2 rounded-md">
+                        <p className="text-xs font-medium text-gray-700 mb-1 truncate">
+                          {transaction.property_name || 'Property name not available'}
+                        </p>
+                        {transaction.property_address && (
+                          <p className="text-xs text-gray-500 flex items-start">
+                            <svg className="w-3 h-3 text-gray-400 mr-1 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 616 0z" />
+                            </svg>
+                            <span className="line-clamp-2 leading-tight">
+                              {transaction.property_address}
+                            </span>
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Reference - Compact */}
+                      <div className="pt-2 border-t border-gray-100">
+                        <p className="text-xs text-gray-400 font-mono truncate">
+                          {transaction.reference}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );

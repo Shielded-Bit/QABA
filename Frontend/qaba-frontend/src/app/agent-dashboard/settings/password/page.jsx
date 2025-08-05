@@ -1,166 +1,201 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { Mail, CheckCircle2, AlertCircle, Shield, Key } from 'lucide-react';
+import Cookies from 'js-cookie';
+import useLogout from "../../../hooks/useLogout";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function PasswordPage() {
-  const [formData, setFormData] = useState({
-    oldPassword: '',
-    newPassword: '',
-    confirmPassword: '',
-  });
-  const [errors, setErrors] = useState({});
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
+  const [isRequestingReset, setIsRequestingReset] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
-  // Password validation rules
-  const validatePassword = (password) => {
-    const minLength = 8;
-    const hasUpperCase = /[A-Z]/.test(password);
-    const hasLowerCase = /[a-z]/.test(password);
-    const hasNumber = /\d/.test(password);
-    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+  const { logout } = useLogout();
 
-    return (
-      password.length >= minLength &&
-      hasUpperCase &&
-      hasLowerCase &&
-      hasNumber &&
-      hasSpecialChar
-    );
+  const getAuthToken = () => {
+    return Cookies.get('access_token') || localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
   };
 
-  // Handle input changes
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+  useEffect(() => {
+    const fetchUserEmail = async () => {
+      const token = getAuthToken();
+      setIsAuthenticated(!!token);
 
-    // Real-time validation for new password
-    if (name === 'newPassword') {
-      if (!validatePassword(value)) {
-        setErrors((prev) => ({
-          ...prev,
-          newPassword:
-            'Password must be at least 8 characters long, contain uppercase, lowercase, numbers, and special characters',
-        }));
-      } else {
-        setErrors((prev) => ({ ...prev, newPassword: '' }));
+      if (!token) {
+        toast.error('You must be logged in to change your password');
+        return;
       }
-    }
 
-    // Real-time validation for confirm password
-    if (name === 'confirmPassword') {
-      if (value !== formData.newPassword) {
-        setErrors((prev) => ({
-          ...prev,
-          confirmPassword: 'Passwords do not match',
-        }));
-      } else {
-        setErrors((prev) => ({ ...prev, confirmPassword: '' }));
+      try {
+        const storedEmail = localStorage.getItem('user_email') || sessionStorage.getItem('user_email');
+        if (storedEmail) {
+          setUserEmail(storedEmail);
+          return;
+        }
+
+        const response = await fetch(`${API_BASE_URL}/api/v1/auth/user/profile/`, {
+          headers: {
+            'Authorization': 'Bearer ' + token,
+          },
+        });
+
+        if (response.ok) {
+          const userData = await response.json();
+          const email = userData.email;
+          setUserEmail(email);
+          localStorage.setItem('user_email', email);
+        }
+      } catch (error) {
+        console.error('Error fetching user email:', error);
       }
-    }
-  };
+    };
 
-  // Handle form submission
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const newErrors = {};
+    fetchUserEmail();
+  }, []);
 
-    // Validate old password
-    if (!formData.oldPassword.trim()) {
-      newErrors.oldPassword = 'Old password is required';
-    }
-
-    // Validate new password
-    if (!formData.newPassword.trim()) {
-      newErrors.newPassword = 'New password is required';
-    } else if (!validatePassword(formData.newPassword)) {
-      newErrors.newPassword =
-        'Password must be at least 8 characters long, contain uppercase, lowercase, numbers, and special characters';
-    }
-
-    // Validate confirm password
-    if (!formData.confirmPassword.trim()) {
-      newErrors.confirmPassword = 'Confirm password is required';
-    } else if (formData.newPassword !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
-    }
-
-    // If there are errors, set them and stop submission
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
+  const sendPasswordResetEmail = async () => {
+    const email = userEmail;
+    if (!email) {
+      toast.error('Unable to get your email address. Please try logging in again.');
       return;
     }
 
-    // Submit form data (e.g., send to an API)
-    console.log('Form submitted:', formData);
-    alert('Password changed successfully!');
+    setIsRequestingReset(true);
+    try {
+      console.log('Attempting to send password reset email to:', email);
+      const url = `${API_BASE_URL}/api/v1/auth/password-reset/`;
+      console.log('API URL:', url);
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getAuthToken()}`,
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      console.log('Response status:', response.status);
+      
+      try {
+        const responseData = await response.json();
+        console.log('Response data:', responseData);
+
+        if (response.ok) {
+          setEmailSent(true);
+          toast.success('Password reset email sent successfully!');
+          await logout();
+        } else {
+          toast.error(responseData.message || 'Failed to send password reset email');
+        }
+      } catch (jsonError) {
+        console.error('Error parsing response:', jsonError);
+        toast.error('Failed to process server response');
+      }
+    } catch (error) {
+      console.error('Detailed error:', error);
+      toast.error('Failed to send password reset email. Please try again.');
+    } finally {
+      setIsRequestingReset(false);
+    }
   };
 
+  const resendPasswordResetEmail = async () => {
+    setEmailSent(false);
+    await sendPasswordResetEmail();
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 lg:px-6 py-6 bg-white">
+        <ToastContainer position="top-right" autoClose={5000} />
+        <div className="text-center py-8">
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-medium text-gray-700">Authentication Required</h2>
+          <p className="mt-2 text-gray-500">Please log in to change your password.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (emailSent) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 lg:px-6 py-6 bg-white">
+        <ToastContainer position="top-right" autoClose={5000} />
+        <div className="text-center py-8">
+          <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Password Reset Email Sent!</h2>
+          <div className="mb-6">
+            <Mail className="w-12 h-12 text-blue-500 mx-auto mb-2" />
+            <p className="text-gray-600 max-w-md mx-auto">
+              We&apos;ve sent a password reset link to <strong>{userEmail}</strong>. Click the link in your email to reset your password securely.
+            </p>
+          </div>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 max-w-md mx-auto">
+            <div className="flex items-center">
+              <Shield className="w-5 h-5 text-blue-500 mr-2" />
+              <p className="text-sm text-blue-700">For security, the reset link will expire in 1 hour.</p>
+            </div>
+          </div>
+          <div className="space-y-4">
+            <button
+              onClick={resendPasswordResetEmail}
+              disabled={isRequestingReset}
+              className="px-6 py-3 bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white rounded-lg font-medium hover:from-[#3ab7b1] hover:to-[#014d98] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#014d98] transition-all duration-300 disabled:opacity-50"
+            >
+              {isRequestingReset ? 'Sending...' : 'Resend Email'}
+            </button>
+            <button
+              onClick={() => setEmailSent(false)}
+              className="block mx-auto px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+            >
+              Back to Password Settings
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Change Password</h1>
-
-      <form onSubmit={handleSubmit}>
-        <div className="grid grid-cols-1 gap-6">
-          {/* Old Password */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Old Password</label>
-            <input
-              type="password"
-              name="oldPassword"
-              value={formData.oldPassword}
-              onChange={handleChange}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
-            />
-            {errors.oldPassword && (
-              <p className="text-red-500 text-sm mt-1">{errors.oldPassword}</p>
-            )}
-          </div>
-
-          {/* New Password */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">New Password</label>
-            <input
-              type="password"
-              name="newPassword"
-              value={formData.newPassword}
-              onChange={handleChange}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
-            />
-            {errors.newPassword && (
-              <p className="text-red-500 text-sm mt-1">{errors.newPassword}</p>
-            )}
-          </div>
-
-          {/* Confirm Password */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Confirm Password</label>
-            <input
-              type="password"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
-            />
-            {errors.confirmPassword && (
-              <p className="text-red-600 text-sm mt-1">{errors.confirmPassword}</p>
-            )}
+    <div className="max-w-4xl mx-auto px-4 lg:px-6 py-6 bg-white">
+      <ToastContainer position="top-right" autoClose={5000} />
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">Change Password</h1>
+        <p className="text-gray-600">Update your password to keep your account secure</p>
+      </div>
+      <div className="max-w-lg">
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center">
+            <Mail className="w-5 h-5 text-gray-500 mr-3" />
+            <div>
+              <p className="text-sm font-medium text-gray-700">Account Email</p>
+              <p className="text-sm text-gray-600">{userEmail || 'Loading...'}</p>
+            </div>
           </div>
         </div>
-
-        {/* Save and Cancel Buttons */}
-        <div className="mt-8 flex justify-end">
-          <button
-            type="button"
-            className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="ml-2 bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white px-4 py-2 rounded-md transition-all duration-300 hover:from-[#3ab7b1] hover:to-[#014d98]"
-          >
-            Save Changes
-          </button>
-        </div>
-      </form>
+        <button
+          onClick={sendPasswordResetEmail}
+          disabled={isRequestingReset || !userEmail}
+          className="w-full px-6 py-4 bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white rounded-lg font-medium hover:from-[#3ab7b1] hover:to-[#014d98] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#014d98] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isRequestingReset ? (
+            <div className="flex items-center justify-center">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+              Sending Reset Email...
+            </div>
+          ) : (
+            <div className="flex items-center justify-center">
+              <Key size={20} className="mr-3" />
+              Send Password Reset Email
+            </div>
+          )}
+        </button>
+      </div>
     </div>
   );
 }
