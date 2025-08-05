@@ -21,7 +21,7 @@ const VerifyEmailContent = () => {
     const verifyEmail = async () => {
       try {
         const response = await axios.get(
-          `https://qaba.onrender.com/api/v1/auth/verify-email/?token=${token}`
+          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/verify-email/?token=${token}`
         );
         console.log("Verify Email Response:", response.status, response.data); // Debugging
 

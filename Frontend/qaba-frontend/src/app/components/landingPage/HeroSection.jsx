@@ -12,13 +12,14 @@ export default function Page() {
         }}
       >
         {/* Main Heading */}
-        <h1 className="text-[1.9rem] md:text-[3.3rem] font-semibold text-transparent bg-clip-text bg-gradient-to-r from-[#014d98] to-[#3ab7b1] mt-2 md:mt-4 text-left md:text-center">
-          Discover the best <span className="text-[#3ab7b1]">Properties</span>
+        <h1 className="text-[1.9rem] md:text-[3.0rem] font-semibold text-transparent bg-clip-text bg-gradient-to-r from-[#014d98] to-[#3ab7b1] mt-2 md:mt-4 text-left md:text-center">
+          Discover the best <span className="text-[#3ab7b1]">Properties in Nigeria</span>
         </h1>
 
         {/* Sub Heading */}
-        <p className="text-base md:text-lg mb-5 text-black mt-1 text-left md:text-center">
-          Find homes to buy and rent with us at your convenience
+        <p className="text-base md:text-lg mb-5 mt-1 text-left md:text-center">
+          <span className="text-black">Find verifiable homes to buy or rent at your convenience and </span>
+          <span className="text-[#014d98]">request to list your properties too.</span>
         </p>
 
         {/* Search Input */}

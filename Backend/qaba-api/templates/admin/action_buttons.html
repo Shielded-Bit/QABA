@@ -1,0 +1,117 @@
+<div class="property-action-buttons">
+    <a href="{{ approve_url }}" 
+       class="btn btn-approve"
+       onclick="return confirm('Are you sure you want to approve this property?')">
+        ✓ Approve Property
+    </a>
+    <a href="{{ decline_url }}" 
+       class="btn btn-decline"
+       onclick="return confirm('Are you sure you want to decline this property?')">
+        ✗ Decline Property
+    </a>
+    <a href="{{ view_url }}" 
+       class="btn btn-view"
+       target="_blank">
+        👁 View in Property Admin
+    </a>
+</div>
+
+<style>
+    .property-action-buttons {
+        margin: 15px 0 10px 0;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        padding: 10px;
+        background: var(--darkened-bg, #f8f9fa);
+        border-radius: 5px;
+        border: 1px solid var(--border-color, #dee2e6);
+    }
+
+    .btn {
+        padding: 10px 16px;
+        text-decoration: none;
+        border-radius: 5px;
+        font-weight: 500;
+        font-size: 0.9em;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        border: none;
+        cursor: pointer;
+        text-align: center;
+        min-width: 140px;
+        justify-content: center;
+    }
+
+    .btn-approve {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+    }
+
+    .btn-approve:hover {
+        background: linear-gradient(135deg, #218838, #1ea080);
+        color: white;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(40, 167, 69, 0.4);
+    }
+
+    .btn-decline {
+        background: linear-gradient(135deg, #dc3545, #e74c3c);
+        color: white;
+        box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
+    }
+
+    .btn-decline:hover {
+        background: linear-gradient(135deg, #c82333, #c0392b);
+        color: white;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(220, 53, 69, 0.4);
+    }
+
+    .btn-view {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        color: white;
+        box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
+    }
+
+    .btn-view:hover {
+        background: linear-gradient(135deg, #0056b3, #004085);
+        color: white;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0, 123, 255, 0.4);
+    }
+
+    .btn:active {
+        transform: translateY(0);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+
+    /* Dark mode styles */
+    @media (prefers-color-scheme: dark) {
+        .property-action-buttons {
+            background: #333 !important;
+            border-color: #555 !important;
+        }
+    }
+
+    [data-theme="dark"] .property-action-buttons,
+    .theme-dark .property-action-buttons {
+        background: #333 !important;
+        border-color: #555 !important;
+    }
+
+    /* Responsive design */
+    @media (max-width: 768px) {
+        .property-action-buttons {
+            flex-direction: column;
+        }
+        
+        .btn {
+            width: 100%;
+            min-width: auto;
+        }
+    }
+</style>

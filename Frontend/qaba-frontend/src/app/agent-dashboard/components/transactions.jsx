@@ -1,155 +1,327 @@
 // app/components/TransactionTable.js
 "use client";
 
-import Image from "next/image";
-import React, { useState } from "react";
-
-const transactions = [
-  {
-    name: "Naomi Michaels",
-    id: "#1122345",
-    date: "2025-01-12",
-    type: "Flat",
-    property: "The Dream Family Home",
-    status: "Paid",
-    price: "\u20A6 10,000,000",
-  },
-  {
-    name: "Naomi Michaels",
-    id: "#1122345",
-    date: "2025-01-12",
-    type: "Self Con",
-    property: "The Royal Villa",
-    status: "Cancelled",
-    price: "\u20A6 15,200,000",
-  },
-  {
-    name: "Naomi Michaels",
-    id: "#1122345",
-    date: "2025-01-12",
-    type: "Duplex",
-    property: "Prince & Princess Estate",
-    status: "Paid",
-    price: "\u20A6 1,000,000",
-  }
-];
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import Link from "next/link";
 
 const TransactionTable = () => {
-  const [filterStatus, setFilterStatus] = useState("All");
-  const [filterType, setFilterType] = useState("All");
-  const [filterOpen, setFilterOpen] = useState(false);
+  const [transactions, setTransactions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const handleResetFilters = () => {
-    setFilterStatus("All");
-    setFilterType("All");
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      try {
+        setIsLoading(true);
+        const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+        if (!token) {
+          throw new Error("Authentication token not found");
+        }
+        // Always fetch only the 3 most recent transactions for dashboard preview
+        const response = await axios.get(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/history/?page=1&limit=3`,
+          {
+            headers: {
+              'accept': '*/*',
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+        if (response.data.success) {
+          // Only show the 3 most recent transactions
+          setTransactions(response.data.data.slice(0, 3));
+        } else {
+          throw new Error(response.data.message || "Failed to fetch transactions");
+        }
+      } catch (err) {
+        setError(err.message || "Failed to load transaction history");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchTransactions();
+  }, []);
+
+  const formatCurrency = (amount, currency = "NGN") => {
+    const currencySymbols = { NGN: "₦", USD: "$", EUR: "€", GBP: "£" };
+    const symbol = currencySymbols[currency] || currency;
+    return `${symbol} ${Number(amount).toLocaleString()}`;
   };
 
-  const filteredTransactions = transactions.filter((t) => {
-    const isStatusMatch = filterStatus === "All" || t.status === filterStatus;
-    const isTypeMatch = filterType === "All" || t.type === filterType;
-    return isStatusMatch && isTypeMatch;
-  });
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  // Helper function to get status badge styling
+  const getStatusBadgeClass = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'successful':
+      case 'completed':
+      case 'success':
+        return "bg-green-50 text-green-700 border border-green-200";
+      case 'pending':
+        return "bg-yellow-50 text-yellow-700 border border-yellow-200";
+      case 'failed':
+      case 'cancelled':
+        return "bg-red-50 text-red-700 border border-red-200";
+      default:
+        return "bg-gray-50 text-gray-700 border border-gray-200";
+    }
+  };
 
   return (
-    <div className="p-4 w-full bg-white shadow-sm rounded-lg overflow-x-auto  z-30">
-      <div className="flex justify-between items-center pb-3">
-        <h2 className="text-md font-semibold text-gray-400">Transaction History</h2>
-        <div className="">
-          <button
-            className="px-4 py-2 bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white rounded-lg shadow-sm flex items-center gap-2 hover:bg-blue-700 transition"
-            onClick={() => setFilterOpen(!filterOpen)}
+    <div className="bg-white shadow-md rounded-lg text-gray-600">
+      {/* Simple Header */}
+      <div className="px-6 py-4 border-b border-gray-100">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Transaction History</h2>
+            <p className="text-sm text-gray-500 mt-1">Recent payment activities</p>
+          </div>
+          <Link 
+            href="/agent-dashboard/transactions" 
+            className="text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors"
           >
-            <span className="font-medium">Filters</span>
-            <span className="w-5 h-5 flex items-center justify-center bg-white text-blue-600 rounded-full text-xs">{filterStatus !== "All" || filterType !== "All" ? 1 : 0}</span>
-          </button>
-          {filterOpen && (
-            <div className="absolute right-0 mt-2 w-72 bg-white shadow-lg border border-gray-200 rounded-lg z-10 p-4">
-              <div className="flex flex-col gap-4">
-                <div>
-                  <label className="text-sm font-medium">Status</label>
-                  <select
-                    className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
-                    value={filterStatus}
-                    onChange={(e) => setFilterStatus(e.target.value)}
-                  >
-                    <option value="All">All Status</option>
-                    <option value="Paid">Paid</option>
-                    <option value="Cancelled">Cancelled</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium">Property Type</label>
-                  <select
-                    className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
-                    value={filterType}
-                    onChange={(e) => setFilterType(e.target.value)}
-                  >
-                    <option value="All">All Types</option>
-                    <option value="Flat">Flat</option>
-                    <option value="Self Con">Self Con</option>
-                    <option value="Duplex">Duplex</option>
-                    <option value="Single Room">Single Room</option>
-                  </select>
-                </div>
-
-                <button
-                  className="w-full bg-gray-600 text-white py-2 rounded-md text-sm hover:bg-gray-700 transition"
-                  onClick={handleResetFilters}
-                >
-                  Reset Filters
-                </button>
-              </div>
-            </div>
-          )}
+            View More →
+          </Link>
         </div>
       </div>
 
-      <div className="overflow-x-auto w-full relative">
-        <table className="min-w-[700px] w-full text-left">
-          <thead>
-            <tr className="border-b">
-              <th className="p-2 text-xs text-gray-500">Orders</th>
-              <th className="p-2 text-xs text-gray-500">Date</th>
-              <th className="p-2 text-xs text-gray-500">Property Type</th>
-              <th className="p-2 text-xs text-gray-500">Property Name</th>
-              <th className="p-2 text-xs text-gray-500">Status</th>
-              <th className="p-2 text-xs text-gray-500">Price</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredTransactions.map((transaction, index) => (
-              <tr key={index} className="border-b hover:bg-gray-50 transition-colors">
-                <td className="p-2 flex items-center gap-2">
-                <Image
-  src="https://res.cloudinary.com/ddzaww11y/image/upload/v1740505215/profile_mmaj88.png"
-  alt="avatar"
-  width={36}  // Equivalent to w-9 (9 * 4 = 36px)
-  height={36} // Equivalent to h-9
-  className="rounded"
-/>
-
-                  <div>
-                    <p className="text-sm font-medium">{transaction.name}</p>
-                    <p className="text-xs text-gray-500">{transaction.id}</p>
+        {/* Content Section */}
+        <div className="p-6">
+          {isLoading ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-start space-x-4 p-4 border border-gray-100 rounded-lg">
+                  <div className="h-12 w-12 bg-gray-200 rounded-lg animate-pulse"></div>
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+                    <div className="h-3 bg-gray-100 rounded w-1/2 animate-pulse"></div>
+                    <div className="h-3 bg-gray-100 rounded w-1/3 animate-pulse"></div>
                   </div>
-                </td>
-                <td className="p-2 text-sm text-gray-600">{transaction.date}</td>
-                <td className="p-2 text-sm text-gray-600">{transaction.type}</td>
-                <td className="p-2 text-sm text-gray-600">{transaction.property}</td>
-                <td
-                  className={`p-2 text-sm font-medium ${
-                    transaction.status === "Paid" ? "text-blue-600" : transaction.status === "Cancelled" ? "text-red-600" : "text-gray-600"
-                  }`}
-                >
-                  {transaction.status}
-                </td>
-                <td className="p-2 text-sm text-gray-600">{transaction.price}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                  <div className="text-right space-y-2">
+                    <div className="h-4 bg-gray-200 rounded w-20 animate-pulse"></div>
+                    <div className="h-6 bg-gray-100 rounded w-16 animate-pulse"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : error ? (
+            <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg" role="alert">
+              <div className="flex items-center">
+                <svg className="h-5 w-5 text-red-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p className="text-sm font-medium">{error}</p>
+              </div>
+            </div>
+          ) : transactions.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No transactions yet</h3>
+              <p className="text-gray-600">Your transaction history will appear here.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {transactions.map((transaction, index) => (
+                <div key={transaction.id || index} className="border border-gray-100 rounded-lg hover:border-gray-200 hover:shadow-sm transition-all duration-200">
+                  {/* Desktop Layout - Hidden on Mobile */}
+                  <div className="hidden md:flex items-start space-x-4 p-4">
+                    {/* Transaction Icon */}
+                    <div className="flex-shrink-0">
+                      <div className="w-12 h-12 bg-gradient-to-r from-[#014d98] to-[#3ab7b1] rounded-lg flex items-center justify-center shadow-sm">
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v2a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                    </div>
+
+                    {/* Transaction Details */}
+                    <div className="flex-1 min-w-0">
+                      <div className="mb-3">
+                        <h3 className="text-sm font-semibold text-gray-900 mb-1">
+                          {transaction.description}
+                        </h3>
+                        <p className="text-xs text-gray-500">
+                          {formatDate(transaction.created_at)}
+                        </p>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-3 mb-3">
+                        {/* Property Type */}
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                          {transaction.property_type_display || 'N/A'}
+                        </span>
+
+                        {/* Payment Method */}
+                        <div className="flex items-center space-x-1.5">
+                          {transaction.is_offline_payment ? (
+                            <>
+                              <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
+                              <span className="text-xs text-gray-600">{transaction.payment_method_display || 'Offline'}</span>
+                            </>
+                          ) : (
+                            <>
+                              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                              <span className="text-xs text-gray-600">{transaction.payment_method_display || 'Online'}</span>
+                            </>
+                          )}
+                        </div>
+
+                        {/* Verification Badge */}
+                        {transaction.needs_verification && (
+                          <span className="text-xs bg-yellow-50 text-yellow-700 px-2 py-1 rounded-full border border-yellow-200">
+                            Verification
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Property Info */}
+                      <div className="mb-2">
+                        <p className="text-sm font-medium text-gray-700 mb-1">
+                          {transaction.property_name || 'N/A'}
+                        </p>
+                        {transaction.property_address && (
+                          <p className="text-xs text-gray-500 flex items-center">
+                            <svg className="w-3 h-3 text-gray-400 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 616 0z" />
+                            </svg>
+                            {transaction.property_address}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Reference */}
+                      <p className="text-xs text-gray-400 font-mono">
+                        Ref: {transaction.reference}
+                      </p>
+                    </div>
+
+                    {/* Amount and Status */}
+                    <div className="text-right flex-shrink-0">
+                      <div className="text-lg font-bold text-gray-900 mb-2">
+                        {formatCurrency(transaction.amount, transaction.currency)}
+                      </div>
+                      <span className={`inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full ${getStatusBadgeClass(transaction.status)}`}>
+                        {transaction.status_display || transaction.status}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Mobile Layout - Only Visible on Mobile */}
+                  <div className="md:hidden p-3 space-y-3">
+                    {/* Header Section with Icon, Title and Amount */}
+                    <div className="flex items-start space-x-2">
+                      <div className="flex-shrink-0">
+                        <div className="w-8 h-8 bg-gradient-to-r from-[#014d98] to-[#3ab7b1] rounded-lg flex items-center justify-center shadow-sm">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v2a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0 pr-2">
+                        <h3 className="text-xs font-semibold text-gray-900 mb-1 leading-tight">
+                          {transaction.description}
+                        </h3>
+                        <p className="text-xs text-gray-500">
+                          {formatDate(transaction.created_at)}
+                        </p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <div className="text-sm font-bold text-gray-900">
+                          {formatCurrency(transaction.amount, transaction.currency)}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Status Badge - Full Width */}
+                    <div>
+                      <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${getStatusBadgeClass(transaction.status)}`}>
+                        {transaction.status_display || transaction.status}
+                      </span>
+                    </div>
+
+                    {/* Property Type and Payment Method - Two Column */}
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <span className="text-gray-500 block mb-1">Type</span>
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                          {transaction.property_type_display || 'N/A'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500 block mb-1">Payment</span>
+                        <div className="flex items-center space-x-1">
+                          {transaction.is_offline_payment ? (
+                            <>
+                              <div className="w-2 h-2 bg-orange-400 rounded-full flex-shrink-0"></div>
+                              <span className="text-xs text-gray-600 truncate">
+                                {transaction.payment_method_display?.replace('Payment', '') || 'Offline'}
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <div className="w-2 h-2 bg-green-400 rounded-full flex-shrink-0"></div>
+                              <span className="text-xs text-gray-600 truncate">
+                                {transaction.payment_method_display?.replace('Payment', '') || 'Online'}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Verification Badge - If Needed */}
+                    {transaction.needs_verification && (
+                      <div>
+                        <span className="text-xs bg-yellow-50 text-yellow-700 px-2 py-1 rounded-full border border-yellow-200">
+                          ⚠️ Verification
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Property Info - Compact */}
+                    <div className="bg-gray-50 p-2 rounded-md">
+                      <p className="text-xs font-medium text-gray-700 mb-1 truncate">
+                        {transaction.property_name || 'Property name not available'}
+                      </p>
+                      {transaction.property_address && (
+                        <p className="text-xs text-gray-500 flex items-start">
+                          <svg className="w-3 h-3 text-gray-400 mr-1 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 616 0z" />
+                          </svg>
+                          <span className="line-clamp-2 leading-tight">
+                            {transaction.property_address}
+                          </span>
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Reference - Compact */}
+                    <div className="pt-2 border-t border-gray-100">
+                      <p className="text-xs text-gray-400 font-mono truncate">
+                        {transaction.reference}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
     </div>
   );
 };

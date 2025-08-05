@@ -1,6 +1,4 @@
-
 "use client";
-import Header1 from './components/header1';
 import Header2 from './components/header2';
 import PropertiesNumber from './components/propertiesnumber';
 import Cards from './components/cards';
@@ -8,40 +6,28 @@ import Transactions from './components/transactions';
 
 export default function DashboardPage() {
   return (
-    <div className="bg-gray-100">
-      
+    <div className="min-h-screen">
+      {/* Consistent Header Wrapper */}
+      <div className="px-4 lg:px-6 pt-4">
+        <Header2 />
+      </div>
 
-      <div className=''>
-        {/* Header Wrapper */}
-        <div className="dashboard-header lg:ml-4 ml-3 ">
-          <Header1 />
-          <Header2 />
-        </div>
+      {/* Main Content with Consistent Spacing */}
+      <div className="px-4 lg:px-6 py-6 space-y-6">
+        {/* Properties Number Section */}
+        <section>
+          <PropertiesNumber />
+        </section>
 
-        <main className="p-1 lg:p-4 overflow-auto ml-14 lg:ml-2 " role="main">
-          {/* Top Numbers Row Wrapper */}
-          <div className="dashboard-numbers">
-            <section className="ml-2 lg:ml-0">
-              <PropertiesNumber />
-            </section>
-          </div>
+        {/* Cards Section */}
+        <section>
+          <Cards />
+        </section>
 
-          {/* Middle Section Wrapper */}
-          <div className="dashboard-cards mt-5">
-            <section>
-              <div className="ml-2 lg:ml-0 ">
-                <Cards />
-              </div>
-            </section>
-          </div>
-
-          {/* Transaction History Wrapper */}
-          <div className="dashboard-transactions mt-4 ">
-            <section>
-              <Transactions />
-            </section>
-          </div>
-        </main>
+        {/* Transactions Section */}
+        <section>
+          <Transactions />
+        </section>
       </div>
     </div>
   );
