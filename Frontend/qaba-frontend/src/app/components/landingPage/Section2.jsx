@@ -25,7 +25,7 @@ const Section2 = () => {
         logo: 'https://res.cloudinary.com/dqbbm0guw/image/upload/v1734095785/Group_6_zm9e8e.png',
         title: 'Property Verification',
         description:
-          'We ensure that listed properties are genuine and meet all necessary requirements, giving you confidence and peace of mind when making your choice.',
+          'We ensure that verified properties are genuine and meet all necessary requirements, giving you confidence and peace of mind when making your choice.',
         logoWidth: 32,
         logoHeight: 32,
       },
@@ -46,19 +46,12 @@ const Section2 = () => {
 
   // Navigation handler
   const handleCardClick = (cardTitle) => {
-    // You can customize the navigation based on the card type
-    // For now, all cards navigate to add-listing page
-    router.push('/add-listing');
-  };
-
-  // Alternative: Navigate to different pages based on card type
-  const handleSpecificCardClick = (cardTitle) => {
     switch (cardTitle) {
       case 'Buying and Renting of Homes':
-        router.push('/properties'); // Or wherever you want to redirect
+        router.push('/properties');
         break;
       case 'Property Verification':
-        router.push('/verification'); // Or wherever you want to redirect
+        router.push('/properties');
         break;
       case 'Listing Properties':
         router.push('/add-listing');
