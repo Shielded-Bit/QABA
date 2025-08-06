@@ -4,7 +4,21 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-load_dotenv()
+# Load environment variables from .env file
+# Look for .env file in multiple locations
+env_paths = [
+    Path(__file__).resolve().parent.parent.parent.parent / ".env",  # Project root
+    Path(__file__).resolve().parent.parent.parent / ".env",  # qaba-api root
+    Path.cwd() / ".env",  # Current directory
+]
+
+for env_path in env_paths:
+    if env_path.exists():
+        load_dotenv(env_path)
+        print(f"Loaded environment variables from: {env_path}")
+        break
+else:
+    load_dotenv()  # Load from default locations
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
