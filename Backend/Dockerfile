@@ -39,3 +39,5 @@ EXPOSE 8000
 ENV DJANGO_SETTINGS_MODULE=core.settings.production
 
 RUN python manage.py collectstatic --noinput || true
+
+CMD ["/start_docker.sh"]
