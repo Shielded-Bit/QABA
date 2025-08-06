@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { getPropertyLocationSuggestions, getAllPropertyLocations } from "../../utils/propertyLocationIndex";
 
 const SearchInput = ({ onSearch, placeholder = "e.g Abakiliki" }) => {
-  const [activeTab, setActiveTab] = useState("buy");
+  const [activeTab, setActiveTab] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -22,13 +22,15 @@ const SearchInput = ({ onSearch, placeholder = "e.g Abakiliki" }) => {
     const fetchAvailableLocations = async () => {
       try {
         setLoading(true);
-        const listingType = activeTab === "buy" ? "SALE" : "RENT";
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/properties/?listing_status=APPROVED&listing_type=${listingType}`,
-          {
-            headers: { 'accept': 'application/json' }
-          }
-        );
+        // If no active tab is selected, fetch all properties
+        const listingType = activeTab === "buy" ? "SALE" : activeTab === "rent" ? "RENT" : "";
+        const apiUrl = listingType 
+          ? `${process.env.NEXT_PUBLIC_API_URL}/api/v1/properties/?listing_status=APPROVED&listing_type=${listingType}`
+          : `${process.env.NEXT_PUBLIC_API_URL}/api/v1/properties/?listing_status=APPROVED`;
+        
+        const response = await fetch(apiUrl, {
+          headers: { 'accept': 'application/json' }
+        });
 
         if (response.ok) {
           const data = await response.json();
@@ -149,7 +151,11 @@ const SearchInput = ({ onSearch, placeholder = "e.g Abakiliki" }) => {
     setShowSuggestions(false);
     setSelectedIndex(-1);
     // Trigger search immediately
-    router.push(`/${activeTab}?q=${encodeURIComponent(suggestion)}`);
+    if (activeTab) {
+      router.push(`/${activeTab}?q=${encodeURIComponent(suggestion)}`);
+    } else {
+      router.push(`/properties?q=${encodeURIComponent(suggestion)}`);
+    }
   };
 
   const handleKeyDown = (e) => {
@@ -183,9 +189,21 @@ const SearchInput = ({ onSearch, placeholder = "e.g Abakiliki" }) => {
   };
 
   const handleSearch = () => {
-    if (!searchTerm.trim()) return;
     setShowSuggestions(false);
-    router.push(`/${activeTab}?q=${encodeURIComponent(searchTerm.trim())}`);
+    if (activeTab) {
+      if (searchTerm.trim()) {
+        router.push(`/${activeTab}?q=${encodeURIComponent(searchTerm.trim())}`);
+      } else {
+        router.push(`/${activeTab}`);
+      }
+    } else {
+      // When no tab is selected, always go to all properties page
+      if (searchTerm.trim()) {
+        router.push(`/properties?q=${encodeURIComponent(searchTerm.trim())}`);
+      } else {
+        router.push(`/properties`);
+      }
+    }
   };
 
   const handleInputFocus = () => {
@@ -209,20 +227,20 @@ const SearchInput = ({ onSearch, placeholder = "e.g Abakiliki" }) => {
       {/* Tabs Section */}
       <div className="flex justify-center mb-4">
         <button
-          className={`px-4 sm:px-6 py-2 text-sm sm:text-lg font-medium ${
+          className={`px-4 sm:px-6 py-2 text-sm sm:text-lg font-medium transition-all duration-200 ${
             activeTab === "buy"
               ? "text-black border-b-2 border-blue-500"
-              : "text-gray-500"
+              : "text-gray-500 hover:text-black hover:border-b-2 hover:border-blue-500"
           }`}
           onClick={() => handleTabClick("buy")}
         >
           Buy
         </button>
         <button
-          className={`px-4 sm:px-6 py-2 text-sm sm:text-lg font-medium ${
+          className={`px-4 sm:px-6 py-2 text-sm sm:text-lg font-medium transition-all duration-200 ${
             activeTab === "rent"
               ? "text-black border-b-2 border-blue-500"
-              : "text-gray-500"
+              : "text-gray-500 hover:text-black hover:border-b-2 hover:border-blue-500"
           }`}
           onClick={() => handleTabClick("rent")}
         >
@@ -289,7 +307,7 @@ const SearchInput = ({ onSearch, placeholder = "e.g Abakiliki" }) => {
             {!loading && suggestions.length > 0 && (
               <>
                 <div className="px-4 py-2 text-xs text-gray-500 border-b bg-gray-50 font-medium">
-                  Properties for {activeTab} available in:
+                  {activeTab ? `Properties for ${activeTab} available in:` : 'All properties available in:'}
                 </div>
                                   {suggestions.map((suggestion, index) => {
                     const isFromAPI = availableLocations.includes(suggestion);
