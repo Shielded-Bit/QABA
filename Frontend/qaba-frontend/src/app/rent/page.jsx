@@ -1,11 +1,12 @@
 
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, Suspense, useRef } from 'react';
 import ListingCard from '../components/listingCard/ListingCard';
 import Button from '../components/shared/Button';
-import { IoMdArrowDropdown } from "react-icons/io";
+import { IoMdArrowDropdown, IoMdArrowDropup } from "react-icons/io";
 import { VscClearAll } from "react-icons/vsc";
+import { FiX } from "react-icons/fi";
 import { PropertyCardSkeleton } from '../agent-dashboard/favourites/components/LoadingSkeletons';
 import { useSearchParams } from 'next/navigation';
 import { propertyLocationIndex } from "../utils/propertyLocationIndex";
@@ -68,13 +69,27 @@ function RentContent() {
           apiUrl += `&property_type=${filters.property_type}`;
         }
         
-        // Add price range parameters
+        if (filters.property_status) {
+          apiUrl += `&property_status=${filters.property_status}`;
+        }
+        
+        if (filters.lister_type) {
+          apiUrl += `&lister_type=${filters.lister_type}`;
+        }
+        
+        // Add price range parameters - using correct API parameter names
         if (filters.price_range) {
-          const [min, max] = filters.price_range.split('-').map(Number);
           if (filters.price_range.endsWith('+')) {
-            apiUrl += `&min_price=${min}`;
+            const min = filters.price_range.replace('+', '');
+            apiUrl += `&min_rent=${min}`;
           } else {
-            apiUrl += `&min_price=${min}&max_price=${max}`;
+            const [min, max] = filters.price_range.split('-').map(Number);
+            if (!isNaN(min)) {
+              apiUrl += `&min_rent=${min}`;
+            }
+            if (!isNaN(max)) {
+              apiUrl += `&max_rent=${max}`;
+            }
           }
         }
 
@@ -137,39 +152,111 @@ function RentContent() {
   // Load more properties
   const handleLoadMore = () => setVisibleListings((prev) => prev + 6);
 
-  // Dropdown filter component with client-side hydration handling
-  const FilterDropdown = ({ label, options, onChange, value }) => {
+  // Custom Dropdown Component
+  const CustomDropdown = ({ label, options, onChange, value, placeholder }) => {
+    const [isOpen, setIsOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
-    
+    const dropdownRef = useRef(null);
+
     useEffect(() => {
       setMounted(true);
     }, []);
 
+    useEffect(() => {
+      const handleClickOutside = (event) => {
+        if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+          setIsOpen(false);
+        }
+      };
+
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }, []);
+
     if (!mounted) {
       return (
-        <div className="relative">
-          <div className="border border-gray-300 rounded-md p-1 md:p-2 text-xs md:text-sm bg-white min-w-[70px] md:min-w-[120px] h-[28px] md:h-[38px]"></div>
+        <div className="relative min-w-[100px] sm:min-w-[120px]">
+          <div className="h-10 sm:h-11 bg-white border border-gray-200 rounded-xl animate-pulse"></div>
         </div>
       );
     }
 
+    const selectedOption = options.find(option => (option.value || option) === value);
+    const displayText = selectedOption ? (selectedOption.label || selectedOption) : placeholder || label;
+
     return (
-      <div className="relative">
-        <select
-          value={value}
-          className="border border-gray-300 rounded-md p-1 md:p-2 appearance-none pr-4 md:pr-8 text-xs md:text-sm bg-white hover:border-gray-400 focus:border-[#014d98] focus:outline-none min-w-[70px] md:min-w-[120px] cursor-pointer h-[28px] md:h-[38px]"
-          onChange={(e) => onChange(e.target.value)}
+      <div className="relative min-w-[100px] sm:min-w-[120px]" ref={dropdownRef}>
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          className={`w-full h-10 sm:h-11 px-3 sm:px-4 py-2 sm:py-2.5 bg-white border-2 rounded-xl text-left text-xs sm:text-sm font-medium transition-all duration-200 flex items-center justify-between
+            ${isOpen 
+              ? 'border-[#014d98] shadow-lg shadow-blue-100' 
+              : value 
+                ? 'border-[#3ab7b1] bg-gradient-to-r from-blue-50 to-teal-50' 
+                : 'border-gray-200 hover:border-gray-300'
+            }
+            hover:shadow-md focus:outline-none focus:border-[#014d98] focus:shadow-lg focus:shadow-blue-100`}
         >
-          <option value="">{label}</option>
-          {options.map((option) => (
-            <option key={option.value || option} value={option.value || option}>
-              {option.label || option}
-            </option>
-          ))}
-        </select>
-        <div className="absolute right-1 md:right-2 top-1/2 transform -translate-y-1/2 pointer-events-none bg-white">
-          <IoMdArrowDropdown className="text-gray-500 text-sm md:text-xl" />
-        </div>
+          <span className={`truncate ${value ? 'text-[#014d98] font-semibold' : 'text-gray-600'}`}>
+            {displayText}
+          </span>
+          <div className="flex items-center ml-2">
+            {value && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onChange('');
+                }}
+                className="mr-1 p-0.5 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <FiX className="w-3 h-3 text-gray-400 hover:text-gray-600" />
+              </button>
+            )}
+            {isOpen ? (
+              <IoMdArrowDropup className="w-4 h-4 sm:w-5 sm:h-5 text-[#014d98]" />
+            ) : (
+              <IoMdArrowDropdown className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
+            )}
+          </div>
+        </button>
+
+        {isOpen && (
+          <div className="absolute top-full left-0 right-0 mt-2 bg-white border-2 border-[#014d98] rounded-xl shadow-xl z-50 max-h-64 overflow-y-auto">
+            <div className="py-2">
+              {!value && (
+                <div className="px-4 py-2 text-xs sm:text-sm text-gray-400 bg-gray-50 border-b border-gray-100">
+                  Select {label}
+                </div>
+              )}
+              {options.map((option, index) => {
+                const optionValue = option.value || option;
+                const optionLabel = option.label || option;
+                const isSelected = optionValue === value;
+                
+                return (
+                  <button
+                    key={index}
+                    type="button"
+                    onClick={() => {
+                      onChange(optionValue);
+                      setIsOpen(false);
+                    }}
+                    className={`w-full px-4 py-2.5 text-left text-xs sm:text-sm transition-all duration-150 hover:bg-gradient-to-r hover:from-blue-50 hover:to-teal-50
+                      ${isSelected 
+                        ? 'bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white font-semibold' 
+                        : 'text-gray-700 hover:text-[#014d98]'
+                      }`}
+                  >
+                    {optionLabel}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -200,6 +287,8 @@ function RentContent() {
     { value: '1000000-2000000', label: '₦1M - ₦2M' },
     { value: '2000000+', label: 'Above ₦2M' }
   ];
+
+
 
   // Filter properties only by search query as other filters are handled by the backend
   const filteredProperties = properties.filter((property) => {
@@ -246,59 +335,85 @@ function RentContent() {
     }
   }
 
+  // Count active filters
+  const activeFiltersCount = Object.values(filters).filter(value => value).length;
+
   return (
-    <div className="px-2 sm:px-14 py-4">
+    <div className="px-4 sm:px-6 lg:px-14 py-4">
       <div className="pt-6">
-        {/* Filters */}
-        <div className="flex flex-wrap items-center gap-1 md:gap-3 mb-4 md:mb-6 overflow-x-auto">
-          <FilterDropdown
-            label="City"
-            options={uniqueCities}
-            value={filters.city}
-            onChange={(value) => setFilters({ ...filters, city: value })}
-          />
-          <FilterDropdown
-            label="Type"
-            options={propertyTypes}
-            value={filters.property_type}
-            onChange={(value) => setFilters({ ...filters, property_type: value })}
-          />
-          <FilterDropdown
-            label="Price"
-            options={priceRanges}
-            value={filters.price_range}
-            onChange={(value) => setFilters({ ...filters, price_range: value })}
-          />
-          <FilterDropdown
-            label="Status"
-            options={propertyStatusOptions}
-            value={filters.property_status}
-            onChange={(value) => setFilters({ ...filters, property_status: value })}
-          />
-          <FilterDropdown
-            label="By"
-            options={listerTypeOptions}
-            value={filters.lister_type}
-            onChange={(value) => setFilters({ ...filters, lister_type: value })}
-          />
-          <button
-            onClick={handleResetFilters}
-            className={`flex items-center gap-1 md:gap-2 transition-colors duration-200 ml-1 md:ml-0 ${
-              Object.values(filters).some(value => value) 
-                ? 'text-[#014d98] hover:text-[#3ab7b1]' 
-                : 'text-gray-400 cursor-not-allowed'
-            }`}
-            disabled={!Object.values(filters).some(value => value)}
-            title="Reset filters"
-          >
-            <VscClearAll className="transform rotate-90" size={14} />
-            <span className="text-xs md:text-sm">Reset</span>
-          </button>
+        {/* Enhanced Filters Section */}
+        <div className="bg-gradient-to-r from-gray-50 via-blue-50 to-teal-50 rounded-2xl p-4 sm:p-6 mb-8 border border-gray-100 shadow-sm">
+          {/* Filters Section */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm sm:text-base font-semibold text-[#014d98] flex items-center gap-2">
+                <span>Filters</span>
+                {activeFiltersCount > 0 && (
+                  <span className="bg-[#3ab7b1] text-white text-xs px-2 py-1 rounded-full">
+                    {activeFiltersCount}
+                  </span>
+                )}
+              </h3>
+              
+              <button
+                onClick={handleResetFilters}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                  activeFiltersCount > 0
+                    ? 'bg-red-50 text-red-600 hover:bg-red-100 border-2 border-red-200' 
+                    : 'bg-gray-100 text-gray-400 cursor-not-allowed border-2 border-gray-200'
+                }`}
+                disabled={activeFiltersCount === 0}
+                title="Reset all filters"
+              >
+                <VscClearAll className="w-4 h-4" />
+                <span className="hidden sm:inline">Reset All</span>
+                <span className="sm:hidden">Reset</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+              <CustomDropdown
+                label="City"
+                placeholder="Select City"
+                options={uniqueCities}
+                value={filters.city}
+                onChange={(value) => setFilters({ ...filters, city: value })}
+              />
+              <CustomDropdown
+                label="Type"
+                placeholder="Property Type"
+                options={propertyTypes}
+                value={filters.property_type}
+                onChange={(value) => setFilters({ ...filters, property_type: value })}
+              />
+              <CustomDropdown
+                label="Price"
+                placeholder="Price Range"
+                options={priceRanges}
+                value={filters.price_range}
+                onChange={(value) => setFilters({ ...filters, price_range: value })}
+              />
+              <CustomDropdown
+                label="Status"
+                placeholder="Availability"
+                options={propertyStatusOptions}
+                value={filters.property_status}
+                onChange={(value) => setFilters({ ...filters, property_status: value })}
+              />
+              <CustomDropdown
+                label="By"
+                placeholder="Lister Type"
+                options={listerTypeOptions}
+                value={filters.lister_type}
+                onChange={(value) => setFilters({ ...filters, lister_type: value })}
+              />
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Heading */}
-      <h1 className="text-3xl font-light mb-4 md:mb-6 ">
+      <h1 className="text-xl sm:text-2xl md:text-3xl font-light mb-4 md:mb-6 ">
         <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#014d98] to-[#014d98]">
           Properties
         </span>{' '}

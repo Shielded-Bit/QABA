@@ -63,15 +63,10 @@ const PropertyDetails = ({ params }) => {
         setLoading(true);
         setError(null);
         
-        // Fetch property details directly
-        const accessToken = localStorage.getItem('access_token');
+        // Fetch property details without authorization
         const headers = {
           'Content-Type': 'application/json',
         };
-        
-        if (accessToken) {
-          headers['Authorization'] = `Bearer ${accessToken}`;
-        }
         
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/properties/${unwrappedParams.id}/`, {
           method: 'GET',
