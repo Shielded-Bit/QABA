@@ -3,7 +3,7 @@ name: CI/CD - Deploy to VM
 on:
   push:
     branches:
-      - staging_dev
+      - main
   workflow_dispatch:
 
 concurrency:
