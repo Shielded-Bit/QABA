@@ -50,10 +50,6 @@ jobs:
             set -euo pipefail
             mkdir -p "$PROJECT_DIR"
             cd "$PROJECT_DIR"
-            # Write .env from secret if provided
-            if [ -n "${ENV_FILE:-}" ]; then
-              echo "$ENV_FILE" > .env
-            fi
             # Bring up the stack
             docker compose -f docker-compose.yml up -d --build
             # Optional cleanup of dangling resources
