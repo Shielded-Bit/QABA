@@ -157,9 +157,11 @@ SPECTACULAR_SETTINGS = {
 # JWT Settings
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(
-        minutes=int(getenv("ACCESS_TOKEN_LIFETIME"), 15)
+        minutes=int(getenv("ACCESS_TOKEN_LIFETIME", "15"))
     ),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=int(getenv("REFRESH_TOKEN_LIFETIME"), 30)),
+    "REFRESH_TOKEN_LIFETIME": timedelta(
+        days=int(getenv("REFRESH_TOKEN_LIFETIME", "30"))
+    ),
     "ROTATE_REFRESH_TOKENS": False,
     "BLACKLIST_AFTER_ROTATION": True,
     "AUTH_HEADER_TYPES": ("Bearer",),
@@ -173,9 +175,9 @@ AUTHENTICATION_BACKENDS = [
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = getenv("EMAIL_HOST", "smtp.gmail.com")
-EMAIL_PORT = getenv("EMAIL_PORT", 465)
-EMAIL_USE_TLS = getenv("EMAIL_USE_TLS", False)
-EMAIL_USE_SSL = getenv("EMAIL_USE_SSL", True)
+EMAIL_PORT = int(getenv("EMAIL_PORT", "465"))
+EMAIL_USE_TLS = getenv("EMAIL_USE_TLS", "False") == "True"
+EMAIL_USE_SSL = getenv("EMAIL_USE_SSL", "True") == "True"
 EMAIL_HOST_USER = getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = getenv("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = getenv("DEFAULT_FROM_EMAIL")

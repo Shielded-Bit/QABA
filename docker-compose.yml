@@ -5,10 +5,8 @@ services:
   db:
     image: postgres:15-alpine
     container_name: qaba_db
-    environment:
-      POSTGRES_DB: ${DB_NAME:-qaba_db}
-      POSTGRES_USER: ${DB_USER:-qaba_user}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-qaba_password}
+    env_file:
+      - .env
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -22,48 +20,8 @@ services:
       context: ./Backend
       dockerfile: Dockerfile
     container_name: qaba_backend
-    environment:
-      # Django Settings
-      DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-core.settings.development}
-      SECRET_KEY: ${SECRET_KEY:-your-very-secret-key-change-in-production}
-      DEBUG: ${DEBUG:-True}
-      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,backend}
-
-      # Database Configuration
-      DB_ENGINE: ${DB_ENGINE:-django.db.backends.postgresql}
-      DB_NAME: ${DB_NAME:-qaba_db}
-      DB_USER: ${DB_USER:-qaba_user}
-      DB_PASSWORD: ${DB_PASSWORD:-qaba_password}
-      DB_HOST: ${DB_HOST:-db}
-      DB_PORT: ${DB_PORT:-5432}
-
-      # URLs
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
-      BACKEND_URL: ${BACKEND_URL:-http://localhost:8000}
-
-      # Email Configuration
-      EMAIL_HOST: ${EMAIL_HOST:-smtp.gmail.com}
-      EMAIL_PORT: ${EMAIL_PORT:-465}
-      EMAIL_USE_TLS: ${EMAIL_USE_TLS:-False}
-      EMAIL_USE_SSL: ${EMAIL_USE_SSL:-True}
-      EMAIL_HOST_USER: ${EMAIL_HOST_USER}
-      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD}
-      DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL}
-
-      # Cloudinary Configuration
-      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
-      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
-      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
-
-      # JWT Token Settings
-      ACCESS_TOKEN_LIFETIME: ${ACCESS_TOKEN_LIFETIME:-15}
-      REFRESH_TOKEN_LIFETIME: ${REFRESH_TOKEN_LIFETIME:-30}
-      PASSWORD_RESET_TIMEOUT: ${PASSWORD_RESET_TIMEOUT:-3600}
-
-      # Payment Configuration
-      FLW_SECRET_KEY: ${FLW_SECRET_KEY}
-      PAYMENT_REDIRECT_URL: ${PAYMENT_REDIRECT_URL:-http://localhost:3000}
-      FLUTTERWAVE_SECRET_HASH: ${FLUTTERWAVE_SECRET_HASH}
+    env_file:
+      - .env
     depends_on:
       - db
     ports:
@@ -82,19 +40,33 @@ services:
       context: ./Frontend
       dockerfile: Dockerfile
     container_name: qaba_frontend
-    environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
-      NEXT_PUBLIC_FRONTEND_URL: ${NEXT_PUBLIC_FRONTEND_URL:-http://localhost:3000}
+    env_file:
+      - .env
     depends_on:
       - backend
     ports:
       - "3000:3000"
-    volumes:
-      - ./Frontend/qaba-frontend:/app
-      - /app/node_modules
-      - /app/.next
+    volumes: []
     networks:
       - qaba_network
+
+  # Nginx Proxy Manager for reverse proxy and SSL management
+  nginx-proxy-manager:
+    image: jc21/nginx-proxy-manager:latest
+    container_name: nginx_proxy_manager
+    restart: unless-stopped
+    ports:
+      - "80:80" # Public HTTP Port
+      - "81:81" # Admin Web Port
+      - "443:443" # Public HTTPS Port
+    volumes:
+      - npm_data:/data
+      - npm_letsencrypt:/etc/letsencrypt
+    networks:
+      - qaba_network
+    depends_on:
+      - backend
+      - frontend
 
 networks:
   qaba_network:
@@ -103,3 +75,5 @@ networks:
 volumes:
   postgres_data:
   backend_media:
+  npm_data:
+  npm_letsencrypt:
