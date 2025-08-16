@@ -6,7 +6,7 @@ services:
     image: postgres:15-alpine
     container_name: qaba_db
     env_file:
-      - ./.env
+      - .env
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -21,7 +21,7 @@ services:
       dockerfile: Dockerfile
     container_name: qaba_backend
     env_file:
-      - ./.env
+      - .env
     depends_on:
       - db
     ports:
@@ -41,7 +41,7 @@ services:
       dockerfile: Dockerfile
     container_name: qaba_frontend
     env_file:
-      - ./.env
+      - .env
     depends_on:
       - backend
     ports:
