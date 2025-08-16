@@ -26,7 +26,7 @@ jobs:
           host: ${{ secrets.VM_HOST }}
           username: ${{ secrets.VM_USER }}
           key: ${{ secrets.VM_SSH_KEY }}
-          port: ${{ secrets.VM_SSH_PORT}}
+          port: ${{ secrets.VM_SSH_PORT || 22 }}
           source: .
           target: ${{ secrets.VM_PROJECT_DIR }}
           overwrite: true
@@ -41,6 +41,7 @@ jobs:
         uses: appleboy/ssh-action@v1.2.0
         env:
           PROJECT_DIR: ${{ secrets.VM_PROJECT_DIR }}
+          ENV_FILE: ${{ secrets.ENV_FILE }}
         with:
           host: ${{ secrets.VM_HOST }}
           username: ${{ secrets.VM_USER }}
@@ -50,6 +51,10 @@ jobs:
             set -euo pipefail
             mkdir -p "$PROJECT_DIR"
             cd "$PROJECT_DIR"
+            # Write .env from secret if provided
+            if [ -n "${ENV_FILE:-}" ]; then
+              echo "$ENV_FILE" > .env
+            fi
             # Bring up the stack
             docker compose -f docker-compose.yml up -d --build
             # Optional cleanup of dangling resources
