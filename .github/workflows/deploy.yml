@@ -1,0 +1,60 @@
+name: CI/CD - Deploy to VM
+
+on:
+  push:
+    branches:
+      - staging_dev
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify Docker Compose file
+        run: docker compose -f docker-compose.yml config -q
+
+      - name: Copy project to VM
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          port: ${{ secrets.VM_SSH_PORT}}
+          source: .
+          target: ${{ secrets.VM_PROJECT_DIR }}
+          overwrite: true
+          strip_components: 0
+          exclude: |
+            .git/**
+            **/node_modules/**
+            **/.next/**
+            Backend/qaba-api/media/**
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          PROJECT_DIR: ${{ secrets.VM_PROJECT_DIR }}
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          port: ${{ secrets.VM_SSH_PORT || 22 }}
+          script: |
+            set -euo pipefail
+            mkdir -p "$PROJECT_DIR"
+            cd "$PROJECT_DIR"
+            # Write .env from secret if provided
+            if [ -n "${ENV_FILE:-}" ]; then
+              echo "$ENV_FILE" > .env
+            fi
+            # Bring up the stack
+            docker compose -f docker-compose.yml up -d --build
+            # Optional cleanup of dangling resources
+            docker system prune -f || true

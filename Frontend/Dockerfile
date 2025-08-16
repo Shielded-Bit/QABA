@@ -1,26 +1,22 @@
-# Use Node.js 24 alpine image
-FROM node:24-alpine
-
-# Set working directory
+# Stage 1: Build the frontend
+FROM node:24-alpine AS build
 WORKDIR /app
 
-# Copy package files
+# Copy and install dependencies
 COPY qaba-frontend/package*.json ./
-
-# Install dependencies (including devDependencies for build)
 RUN npm ci
 
-# Copy source code
+# Copy source and build
 COPY qaba-frontend/ .
-
-# Build the application
 RUN npm run build
 
-# Remove devDependencies after build to reduce image size
-RUN npm prune --production
+# Stage 2: Serve with Nginx
+FROM nginx:alpine
+# Copy built files to Nginx html folder
+COPY --from=build /app/dist /usr/share/nginx/html
 
-# Expose port
-EXPOSE 3000
+# Expose port 80
+EXPOSE 80
 
-# Start the application
-CMD ["npm", "start"]
+# Start Nginx
+CMD ["nginx", "-g", "daemon off;"]

@@ -5,6 +5,10 @@ from .base import *
 # Production settings
 DEBUG = getenv("DEBUG", "False") == "True"
 
+# Hosts and CORS/CSRF
+ALLOWED_HOSTS = [h for h in getenv("ALLOWED_HOSTS", "").split(",") if h]
+CSRF_TRUSTED_ORIGINS = [o for o in getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if o]
+
 # Database configuration
 DATABASES = {
     "default": {
@@ -19,7 +23,7 @@ DATABASES = {
 
 # CORS Settings
 CORS_ALLOW_ALL_ORIGINS = False
-CORS_ALLOWED_ORIGINS = getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+CORS_ALLOWED_ORIGINS = [o for o in getenv("CORS_ALLOWED_ORIGINS", "").split(",") if o]
 CORS_ALLOWED_ORIGIN_REGEXES = []
 
 # Security settings
@@ -29,19 +33,10 @@ SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 
+# Respect X-Forwarded-Proto when behind a reverse proxy (e.g., Nginx Proxy Manager)
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
 # Additional security headers
 SECURE_HSTS_SECONDS = 31536000  # 1 year
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
-X_FRAME_OPTIONS = "DENY"
-
-# # WhiteNoise configuration for production
-# STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
-
-# # Enable GZip compression
-# WHITENOISE_MIDDLEWARE = {
-#     "enable_gzip_compression": True,
-# }
-
-# # Cache control for static files (1 year)
-# WHITENOISE_MAX_AGE = 31536000
