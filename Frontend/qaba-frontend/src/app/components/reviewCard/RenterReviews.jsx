@@ -146,18 +146,10 @@ const RenterReviews = ({ property }) => {
       if (!property?.id) return;
       
       try {
-        const token = localStorage.getItem('access_token');
-        if (!token) {
-          console.log('No auth token found');
-          setLoading(false);
-          return;
-        }
-
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/api/v1/reviews/property/${property.id}/`,
           {
             headers: {
-              'Authorization': `Bearer ${token}`,
               'Accept': 'application/json'
             }
           }

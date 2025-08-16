@@ -173,6 +173,7 @@ const Navbar = () => {
         {/* Desktop Navigation Links */}
         <ul className="hidden md:flex space-x-6 text-gray-800">
           {[
+            { name: "All Properties", path: "/properties" },
             { name: "Buy", path: "/buy" },
             { name: "Rent", path: "/rent" },
             { name: "Add Listing", path: "/add-listing" },
@@ -273,6 +274,7 @@ const Navbar = () => {
         {/* Navigation Links in Two-Column Grid */}
         <div className="grid grid-cols-2 gap-3 p-4 text-gray-800">
           {[
+            { name: "All Properties", path: "/properties", icon: Home },
             { name: "Buy", path: "/buy", icon: Search },
             { name: "Rent", path: "/rent", icon: Home },
             { name: "Add Listing", path: "/add-listing", icon: PlusCircle },
