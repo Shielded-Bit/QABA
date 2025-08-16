@@ -46,10 +46,7 @@ services:
       - backend
     ports:
       - "3000:3000"
-    volumes:
-      - ./Frontend/qaba-frontend:/app
-      - /app/node_modules
-      - /app/.next
+    volumes: []
     networks:
       - qaba_network
 

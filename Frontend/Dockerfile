@@ -1,4 +1,4 @@
-# Stage 1: Build the frontend
+# Stage 1: Install dependencies and build Next.js
 FROM node:24-alpine AS build
 WORKDIR /app
 
@@ -8,15 +8,22 @@ RUN npm ci
 
 # Copy source and build
 COPY qaba-frontend/ .
+ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
-# Stage 2: Serve with Nginx
-FROM nginx:alpine
-# Copy built files to Nginx html folder
-COPY --from=build /app/dist /usr/share/nginx/html
+# Stage 2: Production runner using Next.js standalone
+FROM node:24-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
-# Expose port 80
-EXPOSE 80
+# Copy standalone server and minimal assets
+COPY --from=build /app/.next/standalone ./
+COPY --from=build /app/.next/static ./.next/static
+COPY --from=build /app/public ./public
 
-# Start Nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Expose Next.js default port
+EXPOSE 3000
+
+# Run standalone server
+CMD ["node", "server.js"]
