@@ -39,6 +39,7 @@ jobs:
           strip_components: 0
           exclude: |
             .git/**
+            **/.git/**
             **/node_modules/**
             **/.next/**
             Backend/qaba-api/media/**
@@ -57,13 +58,20 @@ jobs:
           script: |
             set -euo pipefail
             : "${PROJECT_DIR:?VM_PROJECT_DIR secret is required}"
-            mkdir -p "$PROJECT_DIR"
+
+            # Ensure the directory exists and is writable by the deploy user
+            sudo mkdir -p "$PROJECT_DIR"
+            sudo chown -R "$USER":"$USER" "$PROJECT_DIR"
+
             cd "$PROJECT_DIR"
+
             # Write .env from secret if provided
             if [ -n "${ENV_FILE:-}" ]; then
-              echo "$ENV_FILE" > .env
+              printf "%s" "$ENV_FILE" > .env
             fi
+
             # Bring up the stack
             docker compose -f docker-compose.yml up -d --build
+
             # Optional cleanup of dangling resources
             docker system prune -f || true
