@@ -61,21 +61,13 @@ jobs:
           envs: PROJECT_DIR,ENV_FILE
           script: |
             set -euo pipefail
-            : "${PROJECT_DIR:?VM_PROJECT_DIR secret is required}"
-
-            # Ensure the directory exists and is writable by the deploy user
-            sudo mkdir -p "$PROJECT_DIR"
-            sudo chown -R "$USER":"$USER" "$PROJECT_DIR"
-
+            mkdir -p "$PROJECT_DIR"
             cd "$PROJECT_DIR"
 
-            # Write .env from secret if provided
             if [ -n "${ENV_FILE:-}" ]; then
-              printf "%s" "$ENV_FILE" > .env
+                printf "%s" "$ENV_FILE" > .env
             fi
 
-            # Bring up the stack
             docker compose -f docker-compose.yml up -d --build
-
-            # Optional cleanup of dangling resources
             docker system prune -f || true
+
