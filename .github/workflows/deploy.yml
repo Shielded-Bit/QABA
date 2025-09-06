@@ -63,6 +63,7 @@ jobs:
             set -euo pipefail
             mkdir -p "$PROJECT_DIR"
             cd "$PROJECT_DIR"
+            ls -al
 
             if [ -n "${ENV_FILE:-}" ]; then
                 printf "%s" "$ENV_FILE" > .env
