@@ -33,6 +33,7 @@ jobs:
           username: ${{ secrets.VM_USER }}
           key: ${{ secrets.VM_SSH_KEY }}
           port: ${{ secrets.VM_SSH_PORT || 22 }}
+          # Make sure VM_PROJECT_DIR is something like: /home/youruser/app
           source: .
           target: ${{ secrets.VM_PROJECT_DIR }}
           overwrite: true
@@ -47,7 +48,7 @@ jobs:
             .next
             .next/**
             Backend/qaba-api/media/**
-      
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.0
         env:
@@ -61,14 +62,21 @@ jobs:
           envs: PROJECT_DIR,ENV_FILE
           script: |
             set -euo pipefail
+
+            # Ensure project dir exists
             mkdir -p "$PROJECT_DIR"
             cd "$PROJECT_DIR"
+
+            echo "Listing project files after deploy:"
             ls -al
 
+            # Write .env if secret provided
             if [ -n "${ENV_FILE:-}" ]; then
                 printf "%s" "$ENV_FILE" > .env
             fi
 
+            # Run Docker Compose
             docker compose -f docker-compose.yml up -d --build
-            docker system prune -f || true
 
+            # Cleanup old resources
+            docker system prune -f || true
