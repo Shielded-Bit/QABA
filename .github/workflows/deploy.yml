@@ -38,12 +38,16 @@ jobs:
           overwrite: true
           strip_components: 0
           exclude: |
+            .git
             .git/**
             **/.git/**
+            node_modules
+            node_modules/**
             **/node_modules/**
-            **/.next/**
+            .next
+            .next/**
             Backend/qaba-api/media/**
-
+      
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.0
         env:
