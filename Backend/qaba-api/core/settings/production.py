@@ -49,3 +49,5 @@ EMAIL_USE_SSL = getenv("EMAIL_USE_SSL", "True") == "True"
 EMAIL_HOST_USER = getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = getenv("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = getenv("DEFAULT_FROM_EMAIL")
+
+STATICFILES_STORAGE = "cloudinary_storage.storage.StaticHashedCloudinaryStorage"
