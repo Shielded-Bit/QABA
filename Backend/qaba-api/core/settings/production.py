@@ -40,3 +40,12 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SECURE_HSTS_SECONDS = 31536000  # 1 year
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
+
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = getenv("EMAIL_HOST", "smtp.gmail.com")
+EMAIL_PORT = int(getenv("EMAIL_PORT", "465"))
+EMAIL_USE_TLS = getenv("EMAIL_USE_TLS", "False") == "True"
+EMAIL_USE_SSL = getenv("EMAIL_USE_SSL", "True") == "True"
+EMAIL_HOST_USER = getenv("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = getenv("EMAIL_HOST_PASSWORD")
+DEFAULT_FROM_EMAIL = getenv("DEFAULT_FROM_EMAIL")
