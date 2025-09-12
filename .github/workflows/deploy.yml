@@ -17,12 +17,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Prepare env for compose validation
-        run: |
-          if [ -f env.example ] && [ ! -f .env ]; then
-            cp env.example .env
-          fi
-
       - name: Verify Docker Compose file
         run: docker compose -f docker-compose.yml config -q
 
@@ -53,7 +47,6 @@ jobs:
         uses: appleboy/ssh-action@v1.2.0
         env:
           PROJECT_DIR: ${{ secrets.VM_PROJECT_DIR }}
-          ENV_FILE: ${{ secrets.ENV_FILE }}
         with:
           host: ${{ secrets.VM_HOST }}
           username: ${{ secrets.VM_USER }}
@@ -69,11 +62,6 @@ jobs:
 
             echo "Listing project files after deploy:"
             ls -al
-
-            # Write .env if secret provided
-            if [ -n "${ENV_FILE:-}" ]; then
-                printf "%s" "$ENV_FILE" > .env
-            fi
 
             # Run Docker Compose
             docker compose -f docker-compose.yml up -d --build
