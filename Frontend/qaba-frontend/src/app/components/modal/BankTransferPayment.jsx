@@ -5,7 +5,8 @@ import { Copy, ChevronLeft, Upload, Check, X } from 'lucide-react';
 import Link from 'next/link';
 
 const BankTransferPayment = ({ propertyId, propertyType, amount, onBack }) => {
-  const [copied, setCopied] = useState(false);
+  const [copiedAccount, setCopiedAccount] = useState(false);
+  const [copiedSwift, setCopiedSwift] = useState(false);
   const [uploadedFile, setUploadedFile] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null); // 'success' | 'error' | null
@@ -15,19 +16,29 @@ const BankTransferPayment = ({ propertyId, propertyType, amount, onBack }) => {
 
   // Bank account details (you can move this to environment variables or API)
   const bankDetails = {
-    bankName: "Guaranty Trust Bank",
-    accountNumber: "0123456789",
-    accountName: "QABA PROPERTIES LIMITED",
-    swiftCode: "GTBINGLA",
+    bankName: "Fidelity Bank",
+    accountNumber: "5280000840",
+    accountName: "SHIELDEDBIT LTD",
+    swiftCode: "FIDTNGLA",
   };
 
   const handleCopyAccountNumber = async () => {
     try {
       await navigator.clipboard.writeText(bankDetails.accountNumber);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setCopiedAccount(true);
+      setTimeout(() => setCopiedAccount(false), 2000);
     } catch (err) {
-      console.error('Failed to copy:', err);
+      console.error('Failed to copy account number:', err);
+    }
+  };
+
+  const handleCopySwiftCode = async () => {
+    try {
+      await navigator.clipboard.writeText(bankDetails.swiftCode);
+      setCopiedSwift(true);
+      setTimeout(() => setCopiedSwift(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy swift code:', err);
     }
   };
 
@@ -122,51 +133,58 @@ const BankTransferPayment = ({ propertyId, propertyType, amount, onBack }) => {
       </button>
 
       {/* Bank Details Section */}
-      <div className="bg-gray-50 p-6 rounded-xl space-y-4">
-        <h3 className="text-lg font-semibold text-gray-800">Bank Account Details</h3>
+      <div className="bg-gray-50 p-3 sm:p-4 lg:p-6 rounded-xl space-y-3 sm:space-y-4">
+        <h3 className="text-base sm:text-lg font-semibold text-gray-800">Bank Account Details</h3>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <div>
-            <p className="text-sm text-gray-500">Bank Name</p>
-            <p className="font-medium">{bankDetails.bankName}</p>
+            <p className="text-xs sm:text-sm text-gray-500">Bank Name</p>
+            <p className="font-medium text-sm sm:text-base">{bankDetails.bankName}</p>
           </div>
           
           <div>
-            <p className="text-sm text-gray-500">Account Name</p>
-            <p className="font-medium">{bankDetails.accountName}</p>
+            <p className="text-xs sm:text-sm text-gray-500">Account Name</p>
+            <p className="font-medium text-sm sm:text-base">{bankDetails.accountName}</p>
           </div>
           
           <div>
-            <p className="text-sm text-gray-500">Account Number</p>
+            <p className="text-xs sm:text-sm text-gray-500">Account Number</p>
             <div className="flex items-center space-x-2">
-              <p className="font-medium">{bankDetails.accountNumber}</p>
+              <p className="font-medium text-sm sm:text-base">{bankDetails.accountNumber}</p>
               <button
                 onClick={handleCopyAccountNumber}
-                className="text-blue-600 hover:text-blue-700"
+                className="text-blue-600 hover:text-blue-700 p-1"
                 title="Copy account number"
               >
-                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                {copiedAccount ? <Check className="h-3 w-3 sm:h-4 sm:w-4" /> : <Copy className="h-3 w-3 sm:h-4 sm:w-4" />}
               </button>
             </div>
           </div>
           
           <div>
-            <p className="text-sm text-gray-500">Swift Code</p>
-            <p className="font-medium">{bankDetails.swiftCode}</p>
+            <p className="text-xs sm:text-sm text-gray-500">Swift Code</p>
+            <div className="flex items-center space-x-2">
+              <p className="font-medium text-sm sm:text-base">{bankDetails.swiftCode}</p>
+              <button
+                onClick={handleCopySwiftCode}
+                className="text-blue-600 hover:text-blue-700 p-1"
+                title="Copy swift code"
+              >
+                {copiedSwift ? <Check className="h-3 w-3 sm:h-4 sm:w-4" /> : <Copy className="h-3 w-3 sm:h-4 sm:w-4" />}
+              </button>
+            </div>
           </div>
         </div>
-
-
       </div>
 
       {/* Upload Section */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-gray-800">Upload Payment Receipt</h3>
+      <div className="space-y-3 sm:space-y-4">
+        <h3 className="text-base sm:text-lg font-semibold text-gray-800">Upload Payment Receipt</h3>
         
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
+        <div className="border-2 border-dashed border-gray-300 rounded-lg p-3 sm:p-4 lg:p-6">
           <div className="flex flex-col items-center">
-            <Upload className="h-8 w-8 text-gray-400 mb-2" />
-            <p className="text-sm text-gray-600 text-center mb-4">
+            <Upload className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 mb-2" />
+            <p className="text-xs sm:text-sm text-gray-600 text-center mb-3 sm:mb-4">
               Drag and drop your receipt here, or click to select file
             </p>
             <input
@@ -178,19 +196,19 @@ const BankTransferPayment = ({ propertyId, propertyType, amount, onBack }) => {
             />
             <label
               htmlFor="receipt-upload"
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 cursor-pointer"
+              className="bg-blue-600 text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg hover:bg-blue-700 cursor-pointer text-sm sm:text-base"
             >
               Select File
             </label>
           </div>
           {uploadedFile && (
-            <div className="mt-4 p-3 bg-gray-50 rounded flex items-center justify-between">
-              <span className="text-sm text-gray-600">{uploadedFile.name}</span>
+            <div className="mt-3 sm:mt-4 p-2 sm:p-3 bg-gray-50 rounded flex items-center justify-between">
+              <span className="text-xs sm:text-sm text-gray-600 truncate flex-1 mr-2">{uploadedFile.name}</span>
               <button
                 onClick={() => setUploadedFile(null)}
-                className="text-red-500 hover:text-red-600"
+                className="text-red-500 hover:text-red-600 p-1"
               >
-                <X className="h-4 w-4" />
+                <X className="h-3 w-3 sm:h-4 sm:w-4" />
               </button>
             </div>
           )}
@@ -200,7 +218,7 @@ const BankTransferPayment = ({ propertyId, propertyType, amount, onBack }) => {
         <button
           onClick={handleSubmit}
           disabled={!uploadedFile || isSubmitting}
-          className={`w-full py-3 px-4 rounded-lg font-medium ${
+          className={`w-full py-2 sm:py-3 px-3 sm:px-4 rounded-lg font-medium text-sm sm:text-base ${
             !uploadedFile || isSubmitting
               ? 'bg-gray-300 cursor-not-allowed'
               : 'bg-blue-600 hover:bg-blue-700 text-white'

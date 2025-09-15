@@ -1,5 +1,6 @@
 "use client";
 import Link from 'next/link';
+import Image from 'next/image';
 import { useState, useEffect } from "react";
 import {
   Menu,
@@ -24,6 +25,7 @@ export default function Sidebar() {
   const [isAddPropertyOpen, setIsAddPropertyOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
   const pathname = usePathname();
 
   // Effect to set dropdown states based on current path
@@ -45,9 +47,19 @@ export default function Sidebar() {
 
   useEffect(() => {
     const handleResize = () => {
-      const isMobileSize = window.innerWidth < 1023;
+      const width = window.innerWidth;
+      const isMobileSize = width < 768; // Mobile: < 768px
+      const isTabletSize = width >= 768 && width < 1024; // Tablet: 768px - 1023px
+      const isDesktopSize = width >= 1024; // Desktop: >= 1024px
+      
       setIsMobile(isMobileSize);
-      if (isMobileSize) {
+      setIsTablet(isTabletSize);
+
+      // Auto-collapse logic:
+      // - Mobile: Always collapsed by default, can be toggled
+      // - Tablet: Collapsed by default, can be toggled  
+      // - Desktop: Always expanded
+      if (isMobileSize || isTabletSize) {
         setIsSidebarCollapsed(true);
       } else {
         setIsSidebarCollapsed(false);
@@ -65,15 +77,36 @@ export default function Sidebar() {
         isSidebarCollapsed ? "w-16" : "w-64"
       }`}
     >
-      <div className="flex items-center justify-between border-b px-3 md:px-10 py-6">
-        <div className={`text-xl font-bold ${isSidebarCollapsed ? "hidden" : "block"}`}>
-          <Link href="/" className="text-gradient hover:opacity-80 transition-opacity">
-            QARBA
-          </Link>
-        </div>
-        {isMobile && (
-          <button onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} className="px-0 hover:bg-gray-100 rounded">
-            {isSidebarCollapsed ? <Menu /> : <X />}
+      <div className="flex items-center justify-between border-b px-3 py-6">
+        {/* Logo - always shown on desktop, only shown when expanded on mobile/tablet */}
+        {(!isMobile && !isTablet) || ((isMobile || isTablet) && !isSidebarCollapsed) ? (
+          <div className="flex items-center">
+            <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
+              <Image 
+                 src="/qarbaLogo.png" 
+                 alt="QARBA Logo" 
+                 width={130} 
+                 height={42} 
+                 className="h-10 w-auto"
+               />
+            </Link>
+          </div>
+        ) : null}
+        
+        {/* Show toggle button on mobile and tablet screens */}
+        {(isMobile || isTablet) && (
+          <button 
+            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} 
+            className={`p-2 hover:bg-gray-100 rounded-lg transition-colors ${
+              isSidebarCollapsed ? 'mx-auto' : ''
+            }`}
+            aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {isSidebarCollapsed ? (
+              <Menu size={20} className="text-gray-600" />
+            ) : (
+              <X size={20} className="text-gray-600" />
+            )}
           </button>
         )}
       </div>

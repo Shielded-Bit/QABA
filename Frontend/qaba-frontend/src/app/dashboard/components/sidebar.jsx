@@ -17,11 +17,13 @@ import {
 import { usePathname } from 'next/navigation';
 import { LogoutButton } from '../logout';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function Sidebar() {
   const [isPropertiesOpen, setIsPropertiesOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
   const pathname = usePathname();
   
   // Check if we're on a dashboard page
@@ -35,14 +37,21 @@ export default function Sidebar() {
 
   useEffect(() => {
     const handleResize = () => {
-      const isMobileSize = window.innerWidth <= 1023;
+      const width = window.innerWidth;
+      const isMobileSize = width < 768; // Mobile: < 768px
+      const isTabletSize = width >= 768 && width < 1024; // Tablet: 768px - 1023px
+      const isDesktopSize = width >= 1024; // Desktop: >= 1024px
+      
       setIsMobile(isMobileSize);
+      setIsTablet(isTabletSize);
 
-      // Only auto-collapse on mobile screens
-      if (isMobileSize) {
+      // Auto-collapse logic:
+      // - Mobile: Always collapsed by default, can be toggled
+      // - Tablet: Collapsed by default, can be toggled  
+      // - Desktop: Always expanded
+      if (isMobileSize || isTabletSize) {
         setIsSidebarCollapsed(true);
       } else {
-        // Always expanded on large screens
         setIsSidebarCollapsed(false);
       }
     };
@@ -52,12 +61,12 @@ export default function Sidebar() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Define the toggle function - only works on mobile screens
+  // Define the toggle function - works on mobile and tablet screens
   const toggleSidebar = () => {
-    if (isMobile) {
+    if (isMobile || isTablet) {
       setIsSidebarCollapsed(!isSidebarCollapsed);
     }
-    // On large screens, do nothing (sidebar should always be expanded)
+    // On desktop, do nothing (sidebar should always be expanded)
   };
   
   // Hide sidebar completely if we're not on a dashboard page
@@ -71,26 +80,39 @@ export default function Sidebar() {
         isSidebarCollapsed ? 'w-16' : 'w-64'
       }`}
     >
-      <div className="flex items-center justify-between border-b px-3 md:px-10 py-6">
-        {/* Logo - always shown on large screens, only shown when expanded on mobile */}
-        {(!isMobile || (isMobile && !isSidebarCollapsed)) && (
+      <div className="flex items-center justify-between border-b px-3 py-6">
+        {/* Logo - always shown on desktop, only shown when expanded on mobile/tablet */}
+        {(!isMobile && !isTablet) || ((isMobile || isTablet) && !isSidebarCollapsed) ? (
           <div className="flex items-center justify-start">
             <Link 
               href="/" 
-              className="font-bold text-xl transition-all duration-300 bg-gradient-to-r from-[#014d98] to-[#3ab7b1] bg-clip-text text-transparent hover:opacity-80"
+              className="flex items-center transition-all duration-300 hover:opacity-80"
             >
-              QARBA
+              <Image 
+                 src="/qarbaLogo.png" 
+                 alt="QARBA Logo" 
+                 width={130} 
+                 height={42} 
+                 className="h-10 w-auto"
+               />
             </Link>
           </div>
-        )}
+        ) : null}
         
-        {/* Only show toggle button on mobile screens */}
-        {isMobile && (
+        {/* Show toggle button on mobile and tablet screens */}
+        {(isMobile || isTablet) && (
           <button 
             onClick={toggleSidebar} 
-            className={`p-1 hover:bg-gray-100 rounded-full ${isSidebarCollapsed ? 'mx-auto' : ''}`}
+            className={`p-2 hover:bg-gray-100 rounded-lg transition-colors ${
+              isSidebarCollapsed ? 'mx-auto' : ''
+            }`}
+            aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
-            {isSidebarCollapsed ? <Menu size={20} /> : <X size={20} />}
+            {isSidebarCollapsed ? (
+              <Menu size={20} className="text-gray-600" />
+            ) : (
+              <X size={20} className="text-gray-600" />
+            )}
           </button>
         )}
       </div>
@@ -109,7 +131,7 @@ export default function Sidebar() {
               <div className="relative">
                 <Building2 className={getIconClass(isSidebarCollapsed)} />
                 {isSidebarCollapsed && (
-                  <div className="absolute left-full z-50 ml-2 bg-black text-white text-xs px-2 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                  <div className="absolute left-full z-50 ml-2 bg-black text-white text-xs px-2 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none whitespace-nowrap">
                     Properties
                   </div>
                 )}
@@ -184,7 +206,7 @@ function renderLink(href, label, pathname, Icon, isCollapsed) {
       <div className="relative">
         <Icon className={getIconClass(isCollapsed)} size={isCollapsed ? 20 : 18} />
         {isCollapsed && (
-          <div className="absolute left-full z-50 ml-2 bg-black text-white text-xs px-2 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+          <div className="absolute left-full z-50 ml-2 bg-black text-white text-xs px-2 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none whitespace-nowrap">
             {label}
           </div>
         )}
@@ -206,7 +228,7 @@ function renderSubLink(href, label, pathname, Icon, isCollapsed) {
       <div className="relative">
         <Icon className={getIconClass(isCollapsed)} size={16} />
         {isCollapsed && (
-          <div className="absolute left-full z-50 ml-2 bg-black text-white text-xs px-2 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+          <div className="absolute left-full z-50 ml-2 bg-black text-white text-xs px-2 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none whitespace-nowrap">
             {label}
           </div>
         )}

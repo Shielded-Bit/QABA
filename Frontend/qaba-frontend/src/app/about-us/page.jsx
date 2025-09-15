@@ -214,7 +214,7 @@ const AboutPage = () => {
 
   return (
     <div className="min-h-screen bg-white overflow-x-hidden">
-      <div className="max-w-7xl mx-auto px-4 md:px-8">
+      <div className="px-4 sm:px-6 lg:px-14">
       {/* Hero Banner Section */}
       <motion.div 
         ref={heroRef}
@@ -236,7 +236,7 @@ const AboutPage = () => {
             backgroundSize: '60px 60px',
           }} />
         </motion.div>
-        <div className="w-full mx-auto px-4 md:px-16 max-w-7xl relative">
+        <div className="w-full relative">
           <div className="grid md:grid-cols-2 gap-8 items-center">
             {/* Left Content */}
             <motion.div variants={fadeInUp}>
@@ -312,7 +312,7 @@ const AboutPage = () => {
         viewport={{ once: true }}
         variants={staggerChildren}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="px-4 sm:px-6 lg:px-14">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {Object.entries({
               'Listed Properties': [counters.properties, 'K+'],
@@ -342,7 +342,7 @@ const AboutPage = () => {
         </div>
       </motion.div>
 
-      <div className="max-w-7xl mx-auto px-4 md:px-8 py-16">
+      <div className="px-4 sm:px-6 lg:px-14 py-16">
         {/* Core Values Section */}
         <motion.div 
           className="text-center mb-20"
@@ -557,7 +557,7 @@ const AboutPage = () => {
   variants={staggerChildren}
 >
   <motion.div 
-    className="text-center mb-8 px-2"
+    className="text-center mb-8"
     variants={fadeInUp}
   >
     <motion.h2 
@@ -602,7 +602,7 @@ const AboutPage = () => {
     {/* Scrollable Container */}
     <div 
       ref={teamCarouselRef}
-      className="flex gap-6 overflow-x-auto scrollbar-hide px-12 py-4"
+      className="flex gap-6 overflow-x-auto scrollbar-hide py-4"
       style={{ 
         scrollbarWidth: 'none',
         msOverflowStyle: 'none',

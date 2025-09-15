@@ -3,10 +3,10 @@ import React from "react";
 
 const PropertyDetailsSkeleton = () => (
   <div className="bg-slate-50 min-h-screen animate-pulse">
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <div className="px-4 sm:px-6 lg:px-14 py-4">
       <div className="h-8 w-64 bg-gray-200 rounded mb-6"></div>
     </div>
-    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <main className="px-4 sm:px-6 lg:px-14 py-8">
       {/* Title & Location */}
       <div className="mb-8">
         <div className="h-10 w-2/3 bg-gray-200 rounded mb-2"></div>
