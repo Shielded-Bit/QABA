@@ -18,6 +18,8 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Verify Docker Compose file
+        env:
+          ENV_FILE: env.example
         run: docker compose -f docker-compose.yml config -q
 
       - name: Copy project to VM
@@ -36,6 +38,7 @@ jobs:
             .git
             .git/**
             **/.git/**
+            .env
             node_modules
             node_modules/**
             **/node_modules/**
