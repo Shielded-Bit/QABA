@@ -8,7 +8,7 @@ import { VscClearAll } from "react-icons/vsc";
 import { FiSearch, FiX } from "react-icons/fi";
 import { PropertyCardSkeleton } from '../agent-dashboard/favourites/components/LoadingSkeletons';
 import { useSearchParams } from 'next/navigation';
-import { propertyLocationIndex } from "../utils/propertyLocationIndex";
+
 
 function PropertiesContent() {
   const [properties, setProperties] = useState([]);
@@ -59,6 +59,8 @@ function PropertiesContent() {
         setLoading(true);
         setError(null);
         
+        console.log('Current filters state:', filters);
+        
         // Build API URL with filters
         let apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/properties/?listing_status=APPROVED`;
         
@@ -98,6 +100,8 @@ function PropertiesContent() {
         if (filters.bathrooms) {
           apiUrl += `&bathrooms=${filters.bathrooms}`;
         }
+        
+        console.log('API URL with filters:', apiUrl);
         
         // Add price range parameters - using correct API parameter names
         if (filters.price_range) {
@@ -185,7 +189,7 @@ function PropertiesContent() {
     };
 
     fetchProperties();
-  }, [filters.price_range, filters.city, filters.property_type, filters.property_status, filters.lister_type, filters.listing_type, searchTerm]);
+  }, [filters.price_range, filters.city, filters.property_type, filters.property_status, filters.lister_type, filters.listing_type, filters.bedrooms, filters.bathrooms, searchTerm]);
 
   // Get unique cities for filters - fetch all cities separately
   const [allCities, setAllCities] = useState([]);
@@ -227,6 +231,7 @@ function PropertiesContent() {
 
   // Reset filters
   const handleResetFilters = () => {
+    console.log('Resetting all filters');
     setFilters({
       city: '',
       state: '',
@@ -234,7 +239,9 @@ function PropertiesContent() {
       price_range: '',
       property_status: '',
       lister_type: '',
-      listing_type: ''
+      listing_type: '',
+      bedrooms: '',
+      bathrooms: ''
     });
     setSearchTerm(''); // Reset search term
     setVisibleListings(6);
@@ -296,15 +303,15 @@ function PropertiesContent() {
           </span>
           <div className="flex items-center ml-2">
             {value && (
-              <button
+              <div
                 onClick={(e) => {
                   e.stopPropagation();
                   onChange('');
                 }}
-                className="mr-1 p-0.5 hover:bg-gray-100 rounded-full transition-colors"
+                className="mr-1 p-0.5 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
               >
                 <FiX className="w-3 h-3 text-gray-400 hover:text-gray-600" />
-              </button>
+              </div>
             )}
             {isOpen ? (
               <IoMdArrowDropup className="w-4 h-4 sm:w-5 sm:h-5 text-[#014d98]" />
@@ -527,14 +534,20 @@ function PropertiesContent() {
                 placeholder="Bedrooms"
                 options={bedroomOptions}
                 value={filters.bedrooms}
-                onChange={(value) => setFilters({ ...filters, bedrooms: value })}
+                onChange={(value) => {
+                  console.log('Bedroom filter changed to:', value);
+                  setFilters({ ...filters, bedrooms: value });
+                }}
               />
               <CustomDropdown
                 label="Bathrooms"
                 placeholder="Bathrooms"
                 options={bathroomOptions}
                 value={filters.bathrooms}
-                onChange={(value) => setFilters({ ...filters, bathrooms: value })}
+                onChange={(value) => {
+                  console.log('Bathroom filter changed to:', value);
+                  setFilters({ ...filters, bathrooms: value });
+                }}
               />
             </div>
 
