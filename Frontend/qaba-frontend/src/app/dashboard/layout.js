@@ -10,13 +10,11 @@ export default function DashboardLayout({ children }) {
     <ProtectedRoute allowedRoles={["CLIENT"]}>
       <NotificationProvider>
         <div className="flex h-screen">
-          {/* Sidebar - Static and Persistent */}
-          <aside className="lg:w-60 shadow-md">
-            <Sidebar />
-          </aside>
+          {/* Sidebar - Fixed positioning for all screen sizes */}
+          <Sidebar />
 
-          {/* Main Content */}
-          <div className="flex-1 flex flex-col overflow-hidden ml-16 lg:ml-0">
+          {/* Main Content - Adjust margin based on sidebar state */}
+          <div className="flex-1 flex flex-col overflow-hidden ml-16 lg:ml-64">
             {/* Header - Global */}
             <header className="shadow-md">
               <Header1 />

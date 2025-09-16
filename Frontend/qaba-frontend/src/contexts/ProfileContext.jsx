@@ -23,7 +23,7 @@ export function ProfileProvider({ children }) {
   
   const getUserType = useCallback(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('user_type');``
+      return localStorage.getItem('user_type');
     }
     return null;
   }, []);
@@ -42,8 +42,8 @@ export function ProfileProvider({ children }) {
     return response;
   };
 
-  // Fetch user basic info (including name)
-  const fetchUserInfo = useCallback(async () => {
+  // Fetch user data from /me endpoint (includes profile image)
+  const fetchUserData = useCallback(async () => {
     if (typeof window === 'undefined') return null;
     
     try {
@@ -51,16 +51,19 @@ export function ProfileProvider({ children }) {
       if (!headers) return null;
 
       const response = await fetch(`${API_BASE_URL}/api/v1/users/me/`, { headers });
-      const userData = await handleApiError(response).json();
+      const result = await handleApiError(response).json();
       
-      return userData.data; // Extract the data object that contains user info
+      if (result.success && result.data) {
+        return result.data; // This contains user info + profile image
+      }
+      return null;
     } catch (err) {
-      console.error("User info fetch error:", err);
+      console.error("User data fetch error:", err);
       return null;
     }
   }, [API_BASE_URL, getJsonHeaders]);
 
-  // Fetch profile data (including profile image)
+  // Fetch profile data (for additional profile fields if needed)
   const fetchProfileData = useCallback(async () => {
     if (typeof window === 'undefined') return null;
     
@@ -84,7 +87,7 @@ export function ProfileProvider({ children }) {
     }
   }, [API_BASE_URL, getJsonHeaders, getUserType]);
 
-  // Fetch both user info and profile data
+  // Fetch user data and optionally merge with profile data
   const fetchProfile = useCallback(async () => {
     if (typeof window === 'undefined') return;
     
@@ -103,39 +106,27 @@ export function ProfileProvider({ children }) {
     try {
       setProfileData(prev => ({ ...prev, isLoading: true }));
       
-      // Fetch both user info and profile data in parallel
-      const [userInfo, profileInfo] = await Promise.all([
-        fetchUserInfo(),
-        fetchProfileData()
-      ]);
+      // Fetch user data from /me endpoint (this includes profile image)
+      const userData = await fetchUserData();
       
-      // If both requests failed, try to use cached data
-      if (!userInfo && !profileInfo) {
+      if (!userData) {
         throw new Error("Failed to fetch user data");
       }
       
-      // Merge data from both endpoints
-      const mergedData = {
-        ...userInfo,
-        ...profileInfo,
-      };
+      // Extract profile image from user data
+      const profilePhotoUrl = userData.profile?.profile_photo_url;
       
       // Save to localStorage
-      localStorage.setItem('user_data', JSON.stringify(mergedData));
-      if (mergedData.email) localStorage.setItem('user_email', mergedData.email);
-
-      // Get profile photo URL
-      const profilePhotoUrl = profileInfo?.profile_photo_url || 
-                             profileInfo?.agent_profile?.profile_photo_url || 
-                             profileInfo?.landlord_profile?.profile_photo_url || 
-                             profileInfo?.client_profile?.profile_photo_url;
+      localStorage.setItem('user_data', JSON.stringify(userData));
+      if (userData.email) localStorage.setItem('user_email', userData.email);
+      if (userData.user_type) localStorage.setItem('user_type', userData.user_type);
 
       if (profilePhotoUrl) {
         localStorage.setItem('profile_photo_url', profilePhotoUrl);
       }
 
       setProfileData({
-        userData: mergedData,
+        userData: userData,
         profileImage: profilePhotoUrl ? `${profilePhotoUrl}?t=${new Date().getTime()}` : null,
         isLoading: false,
         error: null,
@@ -167,7 +158,7 @@ export function ProfileProvider({ children }) {
         }
       }
     }
-  }, [fetchUserInfo, fetchProfileData, getToken]);
+  }, [fetchUserData, getToken]);
 
   // Update profile data correctly
   const updateProfileData = useCallback((newData) => {

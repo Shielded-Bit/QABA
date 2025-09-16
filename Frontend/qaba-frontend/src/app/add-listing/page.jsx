@@ -33,7 +33,7 @@ const AddListingPage = () => {
       </div>
       
       {/* Registration Required Message */}
-      <div className="max-w-6xl mx-auto px-4 md:px-8 py-12">
+      <div className="px-4 sm:px-6 lg:px-14 py-12">
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           <div className="md:flex">
             {/* Left Column - Icon/Image */}
