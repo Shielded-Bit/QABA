@@ -18,14 +18,18 @@ const bgpict = [
 const SignIn = () => {
   const [email, setEmail] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
     try {
       await resetPassword(email);
       setShowModal(true);
     } catch (error) {
       console.error('Failed to reset password:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -71,9 +75,17 @@ const SignIn = () => {
 
               <button
                 type="submit"
-                className="mt-10 w-full rounded-md bg-gradient-to-r from-[#014d98] to-[#3ab7b1] px-4 py-2 text-white transition-all duration-300 hover:from-[#3ab7b1] hover:to-[#014d98]"
+                className="mt-10 w-full rounded-md bg-gradient-to-r from-[#014d98] to-[#3ab7b1] px-4 py-2 text-white transition-all duration-300 hover:from-[#3ab7b1] hover:to-[#014d98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                disabled={loading}
               >
-                Reset password
+                {loading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Sending Reset Link...
+                  </>
+                ) : (
+                  'Reset password'
+                )}
               </button>
             </form>
             <div className="mt-5 text-left">
@@ -128,9 +140,17 @@ const SignIn = () => {
 
               <button
                 type="submit"
-                className="mt-6 w-full py-2 px-4 bg-gradient-to-r from-blue-600 to-teal-500 text-white rounded-md hover:opacity-90"
+                className="mt-6 w-full py-2 px-4 bg-gradient-to-r from-blue-600 to-teal-500 text-white rounded-md hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                disabled={loading}
               >
-                Reset password
+                {loading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Sending Reset Link...
+                  </>
+                ) : (
+                  'Reset password'
+                )}
               </button>
             </form>
 
