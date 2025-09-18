@@ -42,14 +42,4 @@ SECURE_BROWSER_XSS_FILTER = True
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
 
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = getenv("EMAIL_HOST")
-EMAIL_PORT = int(getenv("EMAIL_PORT", "587"))
-EMAIL_USE_TLS = str(getenv("EMAIL_USE_TLS", "False")).lower() == "true"
-EMAIL_USE_SSL = str(getenv("EMAIL_USE_SSL", "False")).lower() == "true"
-EMAIL_TIMEOUT = int(getenv("EMAIL_TIMEOUT", "30"))
-EMAIL_HOST_USER = getenv("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = getenv("EMAIL_HOST_PASSWORD")
-DEFAULT_FROM_EMAIL = getenv("DEFAULT_FROM_EMAIL")
-
 STATICFILES_STORAGE = "cloudinary_storage.storage.StaticHashedCloudinaryStorage"

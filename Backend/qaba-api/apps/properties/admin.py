@@ -1,13 +1,13 @@
 from datetime import timezone
 
 from apps.users.models import Notification
+from core.utils.send_email import send_email
 from django.contrib import admin
 from django.http import HttpResponseRedirect
-from django.template.loader import render_to_string
 from django.urls import reverse
 
 # Register your models here.
-from django.utils.html import format_html, strip_tags
+from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from requests import request
 
@@ -326,29 +326,19 @@ class PropertyAdmin(admin.ModelAdmin):
                 message_title = "Property listing requires attention"
                 message_body = f"Your property '{property_instance.property_name}' needs some adjustments before it can go live."
 
-            html_message = render_to_string(
-                "email/owner_property_review_notification.html",
-                {
-                    "decision": decision.lower(),
-                    "decision_title": message_title,
-                    "message_body": message_body,
-                    "property_name": property_instance.property_name,
-                    "location": property_instance.location,
-                    "owner_name": owner.get_full_name(),
-                },
-            )
-            plain_message = strip_tags(html_message)
-
             try:
-                from django.conf import settings
-                from django.core.mail import send_mail
-
-                send_mail(
+                send_email(
                     subject=subject,
-                    message=plain_message,
-                    html_message=html_message,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[owner.email],
+                    recipients=[owner.email],
+                    template_name="owner_property_review_notification",
+                    context={
+                        "decision": decision.lower(),
+                        "decision_title": message_title,
+                        "message_body": message_body,
+                        "property_name": property_instance.property_name,
+                        "location": property_instance.location,
+                        "owner_name": owner.get_full_name(),
+                    },
                 )
             except Exception as e:
                 self.message_user(request, f"Error sending email: {e}", level="WARNING")
