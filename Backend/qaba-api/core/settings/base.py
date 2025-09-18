@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     "apps.properties",  # Properties app
     "apps.transactions",  # Transactions app
     "apps.blogs",
+    "apps.jobs",
 ]
 
 MIDDLEWARE = [
