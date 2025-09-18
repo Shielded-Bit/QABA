@@ -17,6 +17,7 @@ import {
   InfoIcon,
   Newspaper,
   Settings,
+  Briefcase,
 } from "lucide-react";
 
 const Navbar = () => {
@@ -197,7 +198,7 @@ const Navbar = () => {
             { name: "Rent", path: "/rent" },
             { name: "Add Listing", path: "/add-listing" },
             { name: "Blog", path: "/blog" },
-            { name: "Contact Us", path: "/contact" },
+            { name: "Careers", path: "/careers" },
           ].map(({ name, path }) => (
             <li key={path}>
               <Link
@@ -224,7 +225,7 @@ const Navbar = () => {
             { name: "Manage", path: "/manage" },
             { name: "About Us", path: "/about-us" },
             { name: "Blog", path: "/blog" },
-            { name: "Contact Us", path: "/contact" },
+            { name: "Careers", path: "/careers" },
           ].map(({ name, path }) => (
             <li key={path}>
               <Link
@@ -332,7 +333,7 @@ const Navbar = () => {
             { name: "Manage", path: "/manage", icon: Settings },
             { name: "About Us", path: "/about-us", icon: InfoIcon },
             { name: "Blog", path: "/blog", icon: Newspaper },
-            { name: "Contact Us", path: "/contact", icon: Settings },
+            { name: "Careers", path: "/careers", icon: Briefcase },
           ].map(({ name, path, icon: Icon }) => (
             <Link
               key={path}
