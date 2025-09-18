@@ -66,9 +66,8 @@ const Navbar = () => {
         setCachedShortName(firstName || displayName.split(' ')[0] || "User");
         setCachedInitial((firstName || displayName)[0].toUpperCase());
 
-        // Get profile photo URL directly from the correct profile
-        const profileUrl = parsedUserData.agentprofile?.profile_photo_url ||
-                         parsedUserData.clientprofile?.profile_photo_url;
+        // Get profile photo URL from the new structure (from /me endpoint)
+        const profileUrl = parsedUserData.profile?.profile_photo_url;
         if (profileUrl) {
           setCachedProfileImage(profileUrl);
           localStorage.setItem('profile_photo_url', profileUrl);
@@ -148,7 +147,7 @@ const Navbar = () => {
   
   // Get dashboard URL based on user type
   const getDashboardUrl = () => {
-    const type = cachedUserType || userType;
+    const type = cachedUserType || userType || cachedUserData?.user_type;
     return (type === "AGENT" || type === "LANDLORD") ? "/agent-dashboard" : "/dashboard";
   };
 
@@ -162,16 +161,61 @@ const Navbar = () => {
     setShowSignOutModal(false);
   };
 
+  // Close mobile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuOpen && !event.target.closest('.mobile-menu-container')) {
+        setMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [menuOpen]);
+
   return (
-    <nav className="sticky top-0 left-0 right-0 w-full z-50 bg-[rgb(246,246,246)]">
-      <div className="max-w-[95%] mx-auto flex justify-between items-center py-4 px-2 sm:px-6">
+    <nav className="sticky top-0 left-0 right-0 w-full z-50 bg-[rgb(246,246,246)] shadow-sm">
+      <div className="w-full flex justify-between items-center py-3 px-4 sm:px-6 lg:px-14">
         {/* Logo */}
-        <div className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#014d98] to-[#3ab7b1]">
-          <Link href="/">QARBA</Link>
+        <div className="flex items-center">
+          <Link href="/" className="flex items-center">
+            <Image 
+              src="/qarbaLogo.png" 
+              alt="QARBA Logo" 
+              width={150} 
+              height={50} 
+              className="h-12 w-auto"
+            />
+          </Link>
         </div>
 
+        {/* Tablet Navigation Links - Visible on md screens (768px+) but hidden on lg+ */}
+        <ul className="hidden md:flex lg:hidden space-x-6 text-gray-800">
+          {[
+            { name: "All Properties", path: "/properties" },
+            { name: "Buy", path: "/buy" },
+            { name: "Rent", path: "/rent" },
+            { name: "Add Listing", path: "/add-listing" },
+            { name: "Blog", path: "/blog" },
+            { name: "Contact Us", path: "/contact" },
+          ].map(({ name, path }) => (
+            <li key={path}>
+              <Link
+                href={path}
+                className={`${
+                  isActive(path)
+                    ? "text-transparent bg-clip-text bg-gradient-to-r from-[#014d98] to-[#3ab7b1]"
+                    : "hover:text-transparent hover:bg-clip-text hover:bg-gradient-to-r hover:from-[#014d98] hover:to-[#3ab7b1]"
+                } transition-all duration-300 text-sm font-medium`}
+              >
+                {name}
+              </Link>
+            </li>
+          ))}
+        </ul>
+
         {/* Desktop Navigation Links */}
-        <ul className="hidden md:flex space-x-6 text-gray-800">
+        <ul className="hidden lg:flex space-x-8 text-gray-800">
           {[
             { name: "All Properties", path: "/properties" },
             { name: "Buy", path: "/buy" },
@@ -189,7 +233,7 @@ const Navbar = () => {
                   isActive(path)
                     ? "text-transparent bg-clip-text bg-gradient-to-r from-[#014d98] to-[#3ab7b1]"
                     : "hover:text-transparent hover:bg-clip-text hover:bg-gradient-to-r hover:from-[#014d98] hover:to-[#3ab7b1]"
-                } transition-all duration-300`}
+                } transition-all duration-300 text-sm font-medium`}
               >
                 {name}
               </Link>
@@ -202,7 +246,7 @@ const Navbar = () => {
           {isSignedIn ? (
             <div className="relative">
               <div 
-                className="flex items-center gap-2 cursor-pointer"
+                className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 rounded-lg p-2 transition-colors"
                 onClick={() => setProfileMenuOpen(!profileMenuOpen)}
               >
                 <div className="w-10 h-10 relative rounded-full overflow-hidden border border-gray-300 shadow-sm">
@@ -224,7 +268,7 @@ const Navbar = () => {
                     </div>
                   )}
                 </div>
-                <div className="flex flex-col">
+                <div className="hidden lg:flex flex-col">
                   <span className="text-sm font-medium text-gray-800">{cachedDisplayName}</span>
                   <span className="text-xs text-gray-500">{cachedRole}</span>
                 </div>
@@ -232,18 +276,21 @@ const Navbar = () => {
               
               {/* Profile Dropdown Menu */}
               {profileMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
-                  <Link href={getDashboardUrl()} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg py-2 z-10 border border-gray-200">
+                  <Link href={getDashboardUrl()} className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                    <Home size={16} className="mr-3 text-gray-400" />
                     Dashboard
                   </Link>
-                  <Link href={`${getDashboardUrl()}/settings`} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                  <Link href={`${getDashboardUrl()}/settings`} className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                    <Settings size={16} className="mr-3 text-gray-400" />
                     Settings
                   </Link>
+                  <div className="border-t border-gray-100 my-1"></div>
                   <button 
                     onClick={handleSignOutClick}
-                    className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    className="flex items-center w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
                   >
-                    <LogOut size={16} className="mr-2" />
+                    <LogOut size={16} className="mr-3" />
                     Sign Out
                   </button>
                 </div>
@@ -257,7 +304,11 @@ const Navbar = () => {
 
         {/* Mobile Menu Icon */}
         <div className="md:hidden">
-          <button onClick={() => setMenuOpen(!menuOpen)}>
+          <button 
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            aria-label="Toggle mobile menu"
+          >
             {menuOpen ? (
               <AiOutlineClose className="text-2xl text-gray-800" />
             ) : (
@@ -268,27 +319,27 @@ const Navbar = () => {
       </div>
 
       {/* Mobile Dropdown Menu */}
-      <div className={`md:hidden bg-gradient-to-b from-[rgb(246,246,246)] to-[rgb(203,228,221)] transform transition-all duration-500 ${
-        menuOpen ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
+      <div className={`lg:hidden mobile-menu-container bg-white border-t border-gray-200 transform transition-all duration-300 ease-in-out ${
+        menuOpen ? "max-h-screen opacity-100" : "max-h-0 opacity-0"
       } overflow-hidden`}>
-        {/* Navigation Links in Two-Column Grid */}
-        <div className="grid grid-cols-2 gap-3 p-4 text-gray-800">
+        {/* Navigation Links in Responsive Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4 text-gray-800">
           {[
             { name: "All Properties", path: "/properties", icon: Home },
             { name: "Buy", path: "/buy", icon: Search },
             { name: "Rent", path: "/rent", icon: Home },
             { name: "Add Listing", path: "/add-listing", icon: PlusCircle },
-            { name: "Manage", path: "/manage",icon: PlusCircle  },
-            { name: "About Us", path: "/about-us", icon: InfoIcon }, // Fixed icon name
+            { name: "Manage", path: "/manage", icon: Settings },
+            { name: "About Us", path: "/about-us", icon: InfoIcon },
             { name: "Blog", path: "/blog", icon: Newspaper },
-            { name: "Contact Us", path: "/contact", icon: Settings }, // Fixed icon name
+            { name: "Contact Us", path: "/contact", icon: Settings },
           ].map(({ name, path, icon: Icon }) => (
             <Link
               key={path}
               href={path}
               className={`
-                flex items-center justify-center
-                px-3 py-3 rounded-xl 
+                flex flex-col items-center justify-center
+                px-3 py-4 rounded-xl 
                 group 
                 transition-all duration-300 
                 hover:shadow-md 
@@ -296,63 +347,63 @@ const Navbar = () => {
                 active:scale-95
                 ${
                   isActive(path)
-                    ? "bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white"
-                    : "bg-white border border-gray-200 text-gray-700 hover:border-[#014d98]/30"
+                    ? "bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white shadow-lg"
+                    : "bg-gray-50 border border-gray-200 text-gray-700 hover:border-[#014d98]/30 hover:bg-white"
                 }
               `}
               onClick={() => setMenuOpen(false)}
             >
               <Icon 
                 className={`
-                  mr-2 
+                  mb-2
                   ${
                     isActive(path)
                       ? "text-white" 
                       : "text-[#014d98] group-hover:text-[#3ab7b1] transition-colors"
                   }
                 `} 
-                size={20} 
+                size={24} 
               />
-              <span className="text-xs font-medium">{name}</span>
+              <span className="text-xs font-medium text-center leading-tight">{name}</span>
             </Link>
           ))}
         </div>
 
         {/* Mobile Profile Section */}
-        <div className="border-t border-gray-300 p-4">
+        <div className="border-t border-gray-200 p-4 bg-gray-50">
           {isSignedIn ? (
             <div className="space-y-4">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 relative rounded-full overflow-hidden border border-gray-300">
+                <div className="w-12 h-12 relative rounded-full overflow-hidden border-2 border-white shadow-md">
                   {cachedProfileImage ? (
                     <Image
                       src={cachedProfileImage}
                       alt={`${cachedDisplayName} Profile`}
-                      width={40}
-                      height={40}
+                      width={48}
+                      height={48}
                       className="rounded-full object-cover"
                       priority
                       unoptimized={cachedProfileImage.startsWith('data:')}
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                      <span className="text-sm font-medium text-gray-500">
+                      <span className="text-lg font-medium text-gray-500">
                         {cachedInitial}
                       </span>
                     </div>
                   )}
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-800">{cachedShortName}</p>
+                  <p className="font-semibold text-gray-800 text-sm">{cachedDisplayName}</p>
                   <p className="text-xs text-gray-500">{cachedRole}</p>
                 </div>
               </div>
 
               {/* Dashboard, Settings, Logout buttons */}
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-3">
                 <Link
                   href={getDashboardUrl()}
-                  className="flex flex-col items-center justify-center bg-white border border-gray-200 rounded-xl p-2 text-xs text-gray-700 hover:bg-gray-100 hover:shadow-sm transition-all"
+                  className="flex flex-col items-center justify-center bg-white border border-gray-200 rounded-xl p-3 text-xs text-gray-700 hover:bg-gray-50 hover:shadow-sm transition-all hover:border-[#014d98]/30"
                   onClick={() => setMenuOpen(false)}
                 >
                   <Home size={20} className="mb-1 text-[#014d98]" />
@@ -360,14 +411,14 @@ const Navbar = () => {
                 </Link>
                 <Link
                   href={`${getDashboardUrl()}/settings`}
-                  className="flex flex-col items-center justify-center bg-white border border-gray-200 rounded-xl p-2 text-xs text-gray-700 hover:bg-gray-100 hover:shadow-sm transition-all"
+                  className="flex flex-col items-center justify-center bg-white border border-gray-200 rounded-xl p-3 text-xs text-gray-700 hover:bg-gray-50 hover:shadow-sm transition-all hover:border-[#014d98]/30"
                   onClick={() => setMenuOpen(false)}
                 >
-                  <Settings size={20} className="mb-1 text-[#014d98]" /> {/* Fixed icon name */}
+                  <Settings size={20} className="mb-1 text-[#014d98]" />
                   Settings
                 </Link>
                 <button
-                  className="flex flex-col items-center justify-center bg-white border border-red-200 text-red-600 rounded-xl p-2 text-xs hover:bg-red-50 hover:shadow-sm transition-all"
+                  className="flex flex-col items-center justify-center bg-white border border-red-200 text-red-600 rounded-xl p-3 text-xs hover:bg-red-50 hover:shadow-sm transition-all hover:border-red-300"
                   onClick={() => {
                     setMenuOpen(false);
                     setShowSignOutModal(true);
@@ -381,7 +432,7 @@ const Navbar = () => {
           ) : (
             <Link
               href="/signin"
-              className="w-full block text-center bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white py-3 rounded-lg hover:opacity-90"
+              className="w-full block text-center bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white py-4 rounded-xl hover:opacity-90 transition-opacity font-medium shadow-lg"
               onClick={() => setMenuOpen(false)}
             >
               Sign In
@@ -400,7 +451,7 @@ const Navbar = () => {
 
       {/* Improved Sign Out Confirmation Modal */}
       {showSignOutModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50">
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
           {/* Modal Overlay */}
           <div 
             className="absolute inset-0 bg-black bg-opacity-50"
@@ -408,11 +459,11 @@ const Navbar = () => {
           ></div>
           
           {/* Modal Content */}
-          <div className="bg-white rounded-lg p-6 shadow-xl max-w-sm mx-4 relative z-10">
+          <div className="bg-white rounded-xl p-6 shadow-xl max-w-sm mx-4 relative z-10 w-full">
             {/* Close Button */}
             <button
               onClick={() => setShowSignOutModal(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
               aria-label="Close modal"
             >
               <XCircle size={24} />
@@ -426,16 +477,16 @@ const Navbar = () => {
             <h3 className="text-xl font-bold text-gray-900 text-center mb-2">Are you sure you want to log out?</h3>
             <p className="text-gray-500 text-sm text-center mb-6">You can log back in anytime to continue.</p>
             
-            <div className="flex justify-center space-x-4">
+            <div className="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4">
               <button
                 onClick={() => setShowSignOutModal(false)}
-                className="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-100"
+                className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirmSignOut}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
               >
                 Log Out
               </button>

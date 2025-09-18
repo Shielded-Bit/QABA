@@ -231,7 +231,7 @@ const PropertyDetails = ({ params }) => {
       )}
 
       {/* Header Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div className="px-4 sm:px-6 lg:px-14 py-4">
         <button 
           onClick={handleBack} 
           className="inline-flex items-center gap-2 px-3 py-1.5 text-gray-600 hover:text-gray-900 transition-colors"
@@ -240,7 +240,7 @@ const PropertyDetails = ({ params }) => {
         </button>
       </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+      <main className="px-4 sm:px-6 lg:px-14 py-3">
         {/* Property Title and Location */}
         <div className="mb-3">
           <h1 className="text-xl sm:text-2xl lg:text-4xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-900 to-green-600">
