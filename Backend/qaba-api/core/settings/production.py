@@ -42,6 +42,4 @@ SECURE_BROWSER_XSS_FILTER = True
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
 
-DEFAULT_FROM_EMAIL = getenv("DEFAULT_FROM_EMAIL", "")
-
 STATICFILES_STORAGE = "cloudinary_storage.storage.StaticHashedCloudinaryStorage"

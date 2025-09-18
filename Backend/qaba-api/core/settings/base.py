@@ -167,6 +167,7 @@ MICROSOFT_SENDER_EMAIL = getenv("MICROSOFT_SENDER_EMAIL", getenv("DEFAULT_FROM_E
 MICROSOFT_GRAPH_SCOPE = getenv(
     "MICROSOFT_GRAPH_SCOPE", "https://graph.microsoft.com/.default"
 )
+DEFAULT_FROM_EMAIL = getenv("DEFAULT_FROM_EMAIL", "")
 
 CORS_ALLOW_CREDENTIALS = True
 # Security Headers
