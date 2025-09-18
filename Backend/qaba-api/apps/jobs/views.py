@@ -6,7 +6,16 @@ from rest_framework.parsers import FormParser, MultiPartParser
 from core.utils.response import APIResponse
 
 from .models import Job
-from .serializers import JobFormSerializer
+from .serializers import JobFormSerializer, JobSerializer
+
+
+@extend_schema(tags=["Jobs"])
+class JobListView(generics.ListAPIView):
+    serializer_class = JobSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        return Job.objects.filter(status=Job.Status.ACTIVE)
 
 
 @extend_schema(tags=["Jobs"])
