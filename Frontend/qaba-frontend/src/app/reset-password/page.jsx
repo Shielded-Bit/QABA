@@ -110,10 +110,17 @@ const NewPasswordForm = () => {
             </div>
             <button
               type="submit"
-              className="mt-10 w-full rounded-md bg-gradient-to-r from-[#014d98] to-[#3ab7b1] px-4 py-2 text-white hover:from-[#3ab7b1] hover:to-[#014d98] disabled:opacity-50"
+              className="mt-10 w-full rounded-md bg-gradient-to-r from-[#014d98] to-[#3ab7b1] px-4 py-2 text-white hover:from-[#3ab7b1] hover:to-[#014d98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               disabled={loading}
             >
-              {loading ? 'Updating...' : 'Done'}
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Resetting Password...
+                </>
+              ) : (
+                'Done'
+              )}
             </button>
           </form>
         </div>

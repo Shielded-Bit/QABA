@@ -1,8 +1,49 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
-import Image from 'next/image';
-import { Upload, FileText, User, Mail, Phone, MapPin, Briefcase, GraduationCap, Users, MessageCircle, X, Clock, DollarSign, Building, ChevronDown } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Upload, FileText, User, Mail, Phone, MapPin, Briefcase, Users, MessageCircle, X, Clock, DollarSign, Building, ChevronDown } from 'lucide-react';
+
+// Job Card Skeleton Component
+const JobCardSkeleton = () => (
+  <div className="bg-white rounded-xl shadow-lg animate-pulse">
+    <div className="p-6">
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex-1">
+          <div className="h-6 bg-gray-200 rounded w-3/4 mb-2"></div>
+          <div className="flex items-center mb-2">
+            <div className="h-4 w-4 bg-gray-200 rounded mr-2"></div>
+            <div className="h-4 bg-gray-200 rounded w-20"></div>
+          </div>
+          <div className="flex items-center mb-2">
+            <div className="h-4 w-4 bg-gray-200 rounded mr-2"></div>
+            <div className="h-4 bg-gray-200 rounded w-16"></div>
+          </div>
+        </div>
+        <div className="h-6 bg-gray-200 rounded w-16"></div>
+      </div>
+      
+      <div className="space-y-2 mb-4">
+        <div className="flex items-center">
+          <div className="h-4 w-4 bg-gray-200 rounded mr-2"></div>
+          <div className="h-4 bg-gray-200 rounded w-24"></div>
+        </div>
+        <div className="flex items-center">
+          <div className="h-4 w-4 bg-gray-200 rounded mr-2"></div>
+          <div className="h-4 bg-gray-200 rounded w-32"></div>
+        </div>
+        <div className="h-4 bg-gray-200 rounded w-20"></div>
+      </div>
+
+      <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
+      <div className="h-4 bg-gray-200 rounded w-2/3 mb-4"></div>
+
+      <div className="flex items-center justify-between">
+        <div className="h-4 bg-gray-200 rounded w-24"></div>
+        <div className="h-8 bg-gray-200 rounded w-20"></div>
+      </div>
+    </div>
+  </div>
+);
 
 // Custom Dropdown Component
 const CustomDropdown = ({ 
@@ -88,23 +129,58 @@ const Careers = () => {
   const [selectedJob, setSelectedJob] = useState(null);
   const [formData, setFormData] = useState({
     email: '',
-    firstName: '',
-    lastName: '',
-    linkedinUrl: '',
-    phoneNumber: '',
-    yearsExperience: '',
+    first_name: '',
+    last_name: '',
+    phone_number: '',
+    year_of_exp: '',
     degree: 'BSc',
     bio: '',
-    cvFile: null,
-    gender: '',
-    location: '',
-    state: '',
-    country: '',
-    referredBy: ''
+    cv: null
   });
 
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [jobs, setJobs] = useState([]);
+  const [loadingJobs, setLoadingJobs] = useState(true);
+  const [jobsError, setJobsError] = useState(null);
+  const formRef = useRef(null);
+  const [showModal, setShowModal] = useState(false);
+  const [modalType, setModalType] = useState('success'); // 'success' or 'error'
+  const [modalMessage, setModalMessage] = useState('');
+
+  // Fetch jobs from API
+  const fetchJobs = useCallback(async () => {
+    try {
+      setLoadingJobs(true);
+      setJobsError(null);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/jobs/`);
+      if (response.ok) {
+        const jobsData = await response.json();
+        // Add UI-specific fields to each job
+        const jobsWithUI = jobsData.map(job => ({
+          ...job,
+          type: "Full-time", // Default type
+          experience: "2-4 years", // Default experience
+          postedDate: "Recently" // Default posted date
+        }));
+        setJobs(jobsWithUI);
+      } else {
+        const errorText = await response.text();
+        setJobsError(`Failed to load jobs: ${response.status} ${response.statusText}`);
+        setJobs([]);
+      }
+    } catch (error) {
+      setJobsError(`Network error: ${error.message}`);
+      setJobs([]);
+    } finally {
+      setLoadingJobs(false);
+    }
+  }, []);
+
+  // Fetch jobs on component mount
+  useEffect(() => {
+    fetchJobs();
+  }, [fetchJobs]);
 
   // Dropdown options
   const experienceOptions = [
@@ -126,123 +202,7 @@ const Careers = () => {
     { value: 'Other', label: 'Other' }
   ];
 
-  const genderOptions = [
-    { value: '', label: 'Select Gender' },
-    { value: 'female', label: 'Female' },
-    { value: 'male', label: 'Male' }
-  ];
 
-  // Available job positions
-  const availableJobs = [
-    {
-      id: 1,
-      title: "Frontend Developer",
-      department: "Engineering",
-      location: "Lagos, Nigeria",
-      type: "Full-time",
-      experience: "2-4 years",
-      salary: "₦400,000 - ₦600,000",
-      description: "We're looking for a skilled Frontend Developer to join our engineering team. You'll work on building responsive web applications using React, Next.js, and modern web technologies.",
-      requirements: [
-        "2+ years of experience with React and Next.js",
-        "Proficiency in JavaScript, TypeScript, and CSS",
-        "Experience with state management libraries (Redux, Zustand)",
-        "Knowledge of responsive design principles",
-        "Experience with version control (Git)"
-      ],
-      postedDate: "2 days ago"
-    },
-    {
-      id: 2,
-      title: "Backend Developer",
-      department: "Engineering",
-      location: "Lagos, Nigeria",
-      type: "Full-time",
-      experience: "3-5 years",
-      salary: "₦500,000 - ₦800,000",
-      description: "Join our backend team to build scalable APIs and microservices. You'll work with Node.js, Python, and cloud technologies to power our real estate platform.",
-      requirements: [
-        "3+ years of backend development experience",
-        "Proficiency in Node.js, Python, or similar",
-        "Experience with databases (PostgreSQL, MongoDB)",
-        "Knowledge of RESTful APIs and GraphQL",
-        "Experience with cloud platforms (AWS, Azure)"
-      ],
-      postedDate: "1 week ago"
-    },
-    {
-      id: 3,
-      title: "Product Manager",
-      department: "Product",
-      location: "Lagos, Nigeria",
-      type: "Full-time",
-      experience: "4-6 years",
-      salary: "₦600,000 - ₦900,000",
-      description: "Lead product strategy and development for our real estate platform. Work closely with engineering, design, and business teams to deliver exceptional user experiences.",
-      requirements: [
-        "4+ years of product management experience",
-        "Experience in B2C or marketplace products",
-        "Strong analytical and problem-solving skills",
-        "Experience with user research and data analysis",
-        "Excellent communication and leadership skills"
-      ],
-      postedDate: "3 days ago"
-    },
-    {
-      id: 4,
-      title: "UX/UI Designer",
-      department: "Design",
-      location: "Lagos, Nigeria",
-      type: "Full-time",
-      experience: "2-4 years",
-      salary: "₦350,000 - ₦550,000",
-      description: "Create beautiful and intuitive user experiences for our real estate platform. Work on user research, wireframing, prototyping, and visual design.",
-      requirements: [
-        "2+ years of UX/UI design experience",
-        "Proficiency in Figma, Sketch, or Adobe Creative Suite",
-        "Experience with user research and usability testing",
-        "Strong portfolio showcasing design skills",
-        "Knowledge of design systems and accessibility"
-      ],
-      postedDate: "5 days ago"
-    },
-    {
-      id: 5,
-      title: "Sales Representative",
-      department: "Sales",
-      location: "Lagos, Nigeria",
-      type: "Full-time",
-      experience: "1-3 years",
-      salary: "₦250,000 - ₦400,000 + Commission",
-      description: "Help grow our business by connecting with real estate agents and property developers. Build relationships and drive sales for our platform.",
-      requirements: [
-        "1+ years of sales experience",
-        "Excellent communication and interpersonal skills",
-        "Experience in real estate or B2B sales preferred",
-        "Self-motivated and target-driven",
-        "Proficiency in CRM systems"
-      ],
-      postedDate: "1 week ago"
-    },
-    {
-      id: 6,
-      title: "Customer Success Manager",
-      department: "Customer Success",
-      location: "Lagos, Nigeria",
-      type: "Full-time",
-      experience: "2-4 years",
-      salary: "₦300,000 - ₦500,000",
-      description: "Ensure our customers have a great experience using our platform. Help onboard new users and provide ongoing support and training.",
-      requirements: [
-        "2+ years of customer success experience",
-        "Excellent problem-solving and communication skills",
-        "Experience with customer support tools",
-        "Knowledge of real estate industry preferred",
-        "Strong empathy and customer focus"
-      ],
-      postedDate: "4 days ago"
-    }
-  ];
 
   const handleJobApply = (job) => {
     setSelectedJob(job);
@@ -250,19 +210,37 @@ const Careers = () => {
     // Reset form when opening modal
     setFormData({
       email: '',
-      firstName: '',
-      lastName: '',
-      linkedinUrl: '',
-      phoneNumber: '',
-      yearsExperience: '',
+      first_name: '',
+      last_name: '',
+      phone_number: '',
+      year_of_exp: '',
       degree: 'BSc',
       bio: '',
-      cvFile: null,
-      gender: '',
-      location: '',
-      state: '',
-      country: '',
-      referredBy: ''
+      cv: null
+    });
+    setErrors({});
+    
+    // On mobile, scroll to the form section
+    if (window.innerWidth < 768 && formRef.current) {
+      setTimeout(() => {
+        formRef.current.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start' 
+        });
+      }, 100);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      email: '',
+      first_name: '',
+      last_name: '',
+      phone_number: '',
+      year_of_exp: '',
+      degree: 'BSc',
+      bio: '',
+      cv: null
     });
     setErrors({});
   };
@@ -270,12 +248,26 @@ const Careers = () => {
   const handleCloseModal = () => {
     setShowApplicationModal(false);
     setSelectedJob(null);
+    resetForm();
+  };
+
+  const showFeedbackModal = (type, message) => {
+    setModalType(type);
+    setModalMessage(message);
+    setShowModal(true);
+  };
+
+  const closeFeedbackModal = () => {
+    setShowModal(false);
+    if (modalType === 'success') {
+      handleCloseModal();
+    }
   };
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
     
-    if (name === 'cvFile') {
+    if (name === 'cv') {
       setFormData(prev => ({
         ...prev,
         [name]: files[0] || null
@@ -300,16 +292,14 @@ const Careers = () => {
     const newErrors = {};
 
     if (!formData.email.trim()) newErrors.email = 'Email is required';
-    if (!formData.firstName.trim()) newErrors.firstName = 'First name is required';
-    if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required';
-    if (!formData.phoneNumber.trim()) newErrors.phoneNumber = 'Phone number is required';
-    if (!formData.yearsExperience) newErrors.yearsExperience = 'Years of experience is required';
+    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email is invalid';
+    if (!formData.first_name.trim()) newErrors.first_name = 'First name is required';
+    if (!formData.last_name.trim()) newErrors.last_name = 'Last name is required';
+    if (!formData.phone_number.trim()) newErrors.phone_number = 'Phone number is required';
+    if (!formData.year_of_exp) newErrors.year_of_exp = 'Years of experience is required';
+    if (!formData.degree) newErrors.degree = 'Degree is required';
     if (!formData.bio.trim()) newErrors.bio = 'Bio is required';
-    if (!formData.cvFile) newErrors.cvFile = 'CV/Resume is required';
-    if (!formData.gender) newErrors.gender = 'Gender is required';
-    if (!formData.location.trim()) newErrors.location = 'Location is required';
-    if (!formData.state.trim()) newErrors.state = 'State of residence is required';
-    if (!formData.country.trim()) newErrors.country = 'Country of residence is required';
+    if (!formData.cv) newErrors.cv = 'CV/Resume is required';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -324,17 +314,44 @@ const Careers = () => {
 
     setIsSubmitting(true);
     
-    // Here you would typically send the data to your backend
-    // For now, we'll just simulate a submission
     try {
-      console.log('Application submitted for job:', selectedJob?.title, formData);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      alert(`Application for ${selectedJob?.title} submitted successfully! We will get back to you soon.`);
-      handleCloseModal();
+      // Prepare FormData for multipart/form-data submission
+      const formDataToSend = new FormData();
+      formDataToSend.append('email', formData.email);
+      formDataToSend.append('first_name', formData.first_name);
+      formDataToSend.append('last_name', formData.last_name);
+      formDataToSend.append('phone_number', formData.phone_number);
+      formDataToSend.append('year_of_exp', parseInt(formData.year_of_exp));
+      formDataToSend.append('degree', formData.degree);
+      formDataToSend.append('bio', formData.bio);
+      formDataToSend.append('cv', formData.cv);
+
+      console.log('Submitting application for job:', selectedJob?.id);
+      
+      // Make API call to submit application
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/jobs/${selectedJob.id}/applications/`, {
+        method: 'POST',
+        body: formDataToSend
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Application submitted successfully:', result);
+        showFeedbackModal('success', `Application for ${selectedJob?.title} submitted successfully! We will get back to you soon.`);
+      } else {
+        let errorMessage = 'Please try again.';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.detail || errorMessage;
+        } catch (e) {
+          errorMessage = `Server error: ${response.status} ${response.statusText}`;
+        }
+        console.error('API Error:', errorMessage);
+        showFeedbackModal('error', `Error submitting application: ${errorMessage}`);
+      }
     } catch (error) {
       console.error('Error submitting application:', error);
-      alert('Error submitting application. Please try again.');
+      showFeedbackModal('error', 'Error submitting application. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -349,13 +366,13 @@ const Careers = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white py-20">
+      <div className="bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white py-12 md:py-16 lg:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6">
+            <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-4 md:mb-6">
               Join Our Team
             </h1>
-            <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto">
+            <p className="text-lg sm:text-xl md:text-2xl mb-6 md:mb-8 max-w-3xl mx-auto px-2">
               Be part of Nigeria&apos;s leading real estate platform. Help us transform how people buy, sell, and rent properties.
             </p>
             <div className="flex flex-wrap justify-center gap-4 text-sm">
@@ -377,22 +394,54 @@ const Careers = () => {
       </div>
 
       {/* Jobs and Application Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 lg:py-16">
+        <div className="text-center mb-8 md:mb-12">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 md:mb-4">
             Available Positions
           </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+          <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto px-2">
             Discover exciting career opportunities and find the perfect role for you
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 min-h-[800px]">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 min-h-[600px] md:min-h-[700px] lg:min-h-[800px]">
           {/* Left Side - Job Listings */}
           <div className="space-y-4">
             <h3 className="text-xl font-semibold text-gray-900 mb-6">Open Positions</h3>
-            <div className="space-y-4 max-h-[700px] overflow-y-auto pr-2">
-              {availableJobs.map((job) => (
+            <div className="space-y-4 max-h-[400px] md:max-h-[500px] lg:max-h-[700px] overflow-y-auto pr-2">
+              {loadingJobs ? (
+                <div className="space-y-4">
+                  <JobCardSkeleton />
+                  <JobCardSkeleton />
+                </div>
+              ) : jobsError ? (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <div className="text-red-500 mb-4">
+                    <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Failed to Load Jobs</h3>
+                  <p className="text-gray-600 mb-4">{jobsError}</p>
+                  <button
+                    onClick={fetchJobs}
+                    className="bg-[#014d98] text-white px-4 py-2 rounded-lg hover:bg-[#3ab7b1] transition-colors"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              ) : jobs.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <div className="text-gray-400 mb-4">
+                    <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2V6" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Jobs Available</h3>
+                  <p className="text-gray-600">Check back later for new opportunities.</p>
+                </div>
+              ) : (
+                jobs.map((job) => (
                 <div 
                   key={job.id} 
                   className={`bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer border-2 ${
@@ -406,14 +455,14 @@ const Careers = () => {
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
                         <h4 className="text-lg font-semibold text-gray-900 mb-2">{job.title}</h4>
-                        <div className="flex items-center text-sm text-gray-600 mb-2">
-                          <Building className="w-4 h-4 mr-1" />
-                          <span>{job.department}</span>
-                        </div>
-                        <div className="flex items-center text-sm text-gray-600 mb-2">
-                          <MapPin className="w-4 h-4 mr-1" />
-                          <span>{job.location}</span>
-                        </div>
+                    <div className="flex items-center text-sm text-gray-600 mb-2">
+                      <Building className="w-4 h-4 mr-1" />
+                      <span>{job.category}</span>
+                    </div>
+                    <div className="flex items-center text-sm text-gray-600 mb-2">
+                      <MapPin className="w-4 h-4 mr-1" />
+                      <span>{job.location}</span>
+                    </div>
                       </div>
                       <div className="text-right">
                         <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
@@ -427,10 +476,10 @@ const Careers = () => {
                         <Clock className="w-4 h-4 mr-2" />
                         <span>{job.experience}</span>
                       </div>
-                      <div className="flex items-center text-sm text-gray-600">
-                        <DollarSign className="w-4 h-4 mr-2" />
-                        <span>{job.salary}</span>
-                      </div>
+                  <div className="flex items-center text-sm text-gray-600">
+                    <DollarSign className="w-4 h-4 mr-2" />
+                    <span>{job.pay_range}</span>
+                  </div>
                       <div className="flex items-center text-sm text-gray-500">
                         <span>Posted {job.postedDate}</span>
                       </div>
@@ -442,7 +491,7 @@ const Careers = () => {
 
                     <div className="flex items-center justify-between">
                       <div className="text-xs text-gray-500">
-                        {job.requirements.length} requirements
+                        {job.requirement.split('\n').length} requirements
                       </div>
                       <button
                         onClick={(e) => {
@@ -456,27 +505,41 @@ const Careers = () => {
                     </div>
                   </div>
                 </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 
           {/* Right Side - Application Form */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
+          <div ref={formRef} className="bg-white rounded-xl shadow-lg p-6">
             {selectedJob ? (
               <div>
                 <div className="mb-6">
+                  {/* Mobile Back Button */}
+                  <div className="md:hidden mb-4">
+                    <button
+                      onClick={() => setSelectedJob(null)}
+                      className="flex items-center text-[#014d98] hover:text-[#3ab7b1] transition-colors"
+                    >
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                      Back to Jobs
+                    </button>
+                  </div>
+                  
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">
                     Apply for {selectedJob.title}
                   </h3>
                   <p className="text-gray-600 mb-4">
-                    {selectedJob.department} • {selectedJob.location}
+                    {selectedJob.category} • {selectedJob.location}
                   </p>
                   <div className="bg-gray-50 rounded-lg p-4 mb-6">
                     <h4 className="font-medium text-gray-900 mb-2">Job Description</h4>
                     <p className="text-sm text-gray-700 mb-3">{selectedJob.description}</p>
                     <h4 className="font-medium text-gray-900 mb-2">Requirements</h4>
                     <ul className="text-sm text-gray-700 space-y-1">
-                      {selectedJob.requirements.map((req, index) => (
+                      {selectedJob.requirement.split('\n').map((req, index) => (
                         <li key={index} className="flex items-start">
                           <span className="text-[#014d98] mr-2">•</span>
                           <span>{req}</span>
@@ -494,7 +557,7 @@ const Careers = () => {
                       Personal Information
                     </h4>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Email <span className="text-red-500">*</span>
@@ -519,13 +582,13 @@ const Careers = () => {
                         </label>
                         <input
                           type="text"
-                          name="firstName"
-                          value={formData.firstName}
+                          name="first_name"
+                          value={formData.first_name}
                           onChange={handleChange}
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#014d98] focus:border-transparent transition-colors"
                           placeholder="John"
                         />
-                        {getErrorMessage('firstName')}
+                        {getErrorMessage('first_name')}
                       </div>
 
                       <div>
@@ -534,13 +597,13 @@ const Careers = () => {
                         </label>
                         <input
                           type="text"
-                          name="lastName"
-                          value={formData.lastName}
+                          name="last_name"
+                          value={formData.last_name}
                           onChange={handleChange}
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#014d98] focus:border-transparent transition-colors"
                           placeholder="Doe"
                         />
-                        {getErrorMessage('lastName')}
+                        {getErrorMessage('last_name')}
                       </div>
 
                       <div>
@@ -551,14 +614,14 @@ const Careers = () => {
                           <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                           <input
                             type="tel"
-                            name="phoneNumber"
-                            value={formData.phoneNumber}
+                          name="phone_number"
+                          value={formData.phone_number}
                             onChange={handleChange}
                             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#014d98] focus:border-transparent transition-colors"
                             placeholder="+234 801 234 5678"
                           />
                         </div>
-                        {getErrorMessage('phoneNumber')}
+                        {getErrorMessage('phone_number')}
                       </div>
                     </div>
                   </div>
@@ -570,20 +633,20 @@ const Careers = () => {
                       Professional Information
                     </h4>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Years of Experience <span className="text-red-500">*</span>
                         </label>
                         <CustomDropdown
                           options={experienceOptions}
-                          value={formData.yearsExperience}
+                          value={formData.year_of_exp}
                           onChange={handleChange}
                           placeholder="Select Experience"
-                          name="yearsExperience"
-                          error={errors.yearsExperience}
+                          name="year_of_exp"
+                          error={errors.year_of_exp}
                         />
-                        {getErrorMessage('yearsExperience')}
+                        {getErrorMessage('year_of_exp')}
                       </div>
 
                       <div>
@@ -625,13 +688,13 @@ const Careers = () => {
                           <Upload className="mx-auto h-8 w-8 text-gray-400" />
                           <div className="flex text-sm text-gray-600 justify-center">
                             <label
-                              htmlFor="cvFile"
+                              htmlFor="cv"
                               className="relative cursor-pointer bg-white rounded-md font-medium text-[#014d98] hover:text-[#3ab7b1] focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-[#014d98] transition-colors"
                             >
                               <span>Upload a file</span>
                               <input
-                                id="cvFile"
-                                name="cvFile"
+                                id="cv"
+                                name="cv"
                                 type="file"
                                 accept=".pdf,.doc,.docx"
                                 className="sr-only"
@@ -643,15 +706,15 @@ const Careers = () => {
                           <p className="text-xs text-gray-500">
                             Max 10 MB
                           </p>
-                          {formData.cvFile && (
+                          {formData.cv && (
                             <p className="text-sm text-green-600 flex items-center justify-center mt-1">
                               <FileText className="w-4 h-4 mr-1" />
-                              {formData.cvFile.name}
+                              {formData.cv.name}
                             </p>
                           )}
                         </div>
                       </div>
-                      {getErrorMessage('cvFile')}
+                      {getErrorMessage('cv')}
                     </div>
                   </div>
 
@@ -697,7 +760,7 @@ const Careers = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
             <div className="text-center p-6">
               <div className="bg-gradient-to-r from-[#014d98] to-[#3ab7b1] rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
                 <Briefcase className="w-8 h-8 text-white" />
@@ -730,6 +793,54 @@ const Careers = () => {
           </div>
         </div>
       </div>
+
+      {/* Feedback Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4">
+            <div className="p-6">
+              <div className="flex items-center justify-center mb-4">
+                {modalType === 'success' ? (
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                    <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                ) : (
+                  <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
+                    <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+              
+              <h3 className={`text-xl font-semibold text-center mb-4 ${
+                modalType === 'success' ? 'text-green-900' : 'text-red-900'
+              }`}>
+                {modalType === 'success' ? 'Application Submitted!' : 'Submission Failed'}
+              </h3>
+              
+              <p className="text-gray-600 text-center mb-6">
+                {modalMessage}
+              </p>
+              
+              <div className="flex justify-center">
+                <button
+                  onClick={closeFeedbackModal}
+                  className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+                    modalType === 'success'
+                      ? 'bg-green-600 hover:bg-green-700 text-white'
+                      : 'bg-red-600 hover:bg-red-700 text-white'
+                  }`}
+                >
+                  {modalType === 'success' ? 'Continue' : 'Try Again'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
