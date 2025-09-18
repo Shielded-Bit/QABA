@@ -5,9 +5,9 @@ from .models import Job, JobForm
 
 @admin.register(Job)
 class JobAdmin(admin.ModelAdmin):
-    list_display = ("title", "category", "location", "pay_range")
+    list_display = ("title", "category", "location", "pay_range", "status")
     search_fields = ("title", "category", "location")
-    list_filter = ("category", "location")
+    list_filter = ("category", "location", "status")
 
 
 @admin.register(JobForm)

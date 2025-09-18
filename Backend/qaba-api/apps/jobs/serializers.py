@@ -1,6 +1,22 @@
 from rest_framework import serializers
 
-from .models import JobForm
+from .models import Job, JobForm
+
+
+class JobSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Job
+        fields = [
+            "id",
+            "title",
+            "category",
+            "location",
+            "pay_range",
+            "description",
+            "requirement",
+            "status",
+        ]
+        read_only_fields = fields
 
 
 class JobFormSerializer(serializers.ModelSerializer):
