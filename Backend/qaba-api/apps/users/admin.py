@@ -7,6 +7,8 @@ from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
+from core.utils.send_email import send_email
+
 from .models import (
     AgentProfile,
     ClientProfile,
@@ -551,11 +553,6 @@ class NotificationAdmin(admin.ModelAdmin):
     def _send_approval_email(self, property_obj, decision):
         """Send email notification to property owner about approval/decline decision"""
         try:
-            from django.conf import settings
-            from django.core.mail import send_mail
-            from django.template.loader import render_to_string
-            from django.utils.html import strip_tags
-
             owner = property_obj.listed_by
 
             if owner.email:
@@ -563,7 +560,6 @@ class NotificationAdmin(admin.ModelAdmin):
                     f"Property Listing {decision.title()}: {property_obj.property_name}"
                 )
 
-                # Determine message based on decision
                 if decision == "approved":
                     message_title = "Congratulations! Your property has been approved"
                     message_body = f"Your property '{property_obj.property_name}' is now live on QABA platform."
@@ -571,10 +567,11 @@ class NotificationAdmin(admin.ModelAdmin):
                     message_title = "Property listing requires attention"
                     message_body = f"Your property '{property_obj.property_name}' needs some adjustments before it can go live."
 
-                # Render email template
-                html_message = render_to_string(
-                    "email/owner_property_review_notification.html",
-                    {
+                send_email(
+                    subject=subject,
+                    recipients=[owner.email],
+                    template_name="owner_property_review_notification",
+                    context={
                         "decision": decision.lower(),
                         "decision_title": message_title,
                         "message_body": message_body,
@@ -582,16 +579,6 @@ class NotificationAdmin(admin.ModelAdmin):
                         "location": property_obj.location,
                         "owner_name": owner.get_full_name(),
                     },
-                )
-                plain_message = strip_tags(html_message)
-
-                send_mail(
-                    subject=subject,
-                    message=plain_message,
-                    html_message=html_message,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[owner.email],
-                    fail_silently=False,
                 )
         except Exception as e:
             # Log the error but don't break the workflow
