@@ -8,6 +8,8 @@ DEBUG = getenv("DEBUG", "False") == "True"
 # Hosts and CORS/CSRF
 ALLOWED_HOSTS = [h for h in getenv("ALLOWED_HOSTS", "").split(",") if h]
 CSRF_TRUSTED_ORIGINS = [o for o in getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if o]
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOWED_ORIGINS = [o for o in getenv("CORS_ALLOWED_ORIGINS", "").split(",") if o]
 
 # Database configuration
 DATABASES = {
@@ -21,30 +23,28 @@ DATABASES = {
     }
 }
 
-# CORS Settings
-CORS_ALLOW_ALL_ORIGINS = False
-CORS_ALLOWED_ORIGINS = [o for o in getenv("CORS_ALLOWED_ORIGINS", "").split(",") if o]
-CORS_ALLOWED_ORIGIN_REGEXES = []
-
-# Security settings
-SECURE_BROWSER_XSS_FILTER = True
-SECURE_CONTENT_TYPE_NOSNIFF = True
-SECURE_SSL_REDIRECT = True
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-
-# Respect X-Forwarded-Proto when behind a reverse proxy (e.g., Nginx Proxy Manager)
+# When behind a reverse proxy/ingress that terminates TLS, keep redirect off here
+SECURE_SSL_REDIRECT = False
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_TZ = True
+USE_X_FORWARDED_HOST = True
 
-# Additional security headers
-SECURE_HSTS_SECONDS = 31536000  # 1 year
+# HSTS (enable when serving strictly over HTTPS)
+SECURE_HSTS_SECONDS = int(getenv("SECURE_HSTS_SECONDS", "31536000"))
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
+
+# Content security
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_BROWSER_XSS_FILTER = True
+
+# Cookie security
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = getenv("EMAIL_HOST")
 EMAIL_PORT = int(getenv("EMAIL_PORT", "587"))
-# Ensure booleans are parsed from strings like "True"/"False"
 EMAIL_USE_TLS = str(getenv("EMAIL_USE_TLS", "False")).lower() == "true"
 EMAIL_USE_SSL = str(getenv("EMAIL_USE_SSL", "False")).lower() == "true"
 EMAIL_TIMEOUT = int(getenv("EMAIL_TIMEOUT", "30"))
