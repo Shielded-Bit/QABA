@@ -1,0 +1,40 @@
+User-agent: *
+Allow: /
+
+# Allow all search engines to crawl all pages
+Allow: /properties
+Allow: /buy
+Allow: /rent
+Allow: /careers
+Allow: /about-us
+Allow: /contact
+Allow: /blog
+Allow: /details/*
+
+# Disallow admin and private areas
+Disallow: /agent-dashboard/
+Disallow: /dashboard/
+Disallow: /settings/
+Disallow: /messages/
+Disallow: /transactions/
+Disallow: /favourites/
+Disallow: /logout/
+Disallow: /password/
+Disallow: /reset-password/
+Disallow: /verify-email/
+Disallow: /payment-callback/
+Disallow: /manage/
+
+# Disallow API endpoints
+Disallow: /api/
+
+# Allow important static files
+Allow: /qarbaLogo.png
+Allow: /icons/
+Allow: /manifest.json
+
+# Sitemap location
+Sitemap: https://qarba.com/sitemap.xml
+
+# Crawl delay (optional - helps with server load)
+Crawl-delay: 1
