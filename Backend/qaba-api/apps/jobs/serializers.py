@@ -9,6 +9,7 @@ class JobSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "title",
+            "slug",
             "category",
             "location",
             "pay_range",
@@ -31,6 +32,9 @@ class JobFormSerializer(serializers.ModelSerializer):
             "phone_number",
             "year_of_exp",
             "degree",
+            "linkedin_url",
+            "location",
+            "referral",
             "bio",
             "cv",
         ]
