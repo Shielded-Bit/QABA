@@ -198,7 +198,6 @@ const Navbar = () => {
             { name: "Rent", path: "/rent" },
             { name: "Add Listing", path: "/add-listing" },
             { name: "Blog", path: "/blog" },
-            { name: "Careers", path: "/careers" },
           ].map(({ name, path }) => (
             <li key={path}>
               <Link
@@ -225,7 +224,6 @@ const Navbar = () => {
             { name: "Manage", path: "/manage" },
             { name: "About Us", path: "/about-us" },
             { name: "Blog", path: "/blog" },
-            { name: "Careers", path: "/careers" },
           ].map(({ name, path }) => (
             <li key={path}>
               <Link
@@ -333,7 +331,6 @@ const Navbar = () => {
             { name: "Manage", path: "/manage", icon: Settings },
             { name: "About Us", path: "/about-us", icon: InfoIcon },
             { name: "Blog", path: "/blog", icon: Newspaper },
-            { name: "Careers", path: "/careers", icon: Briefcase },
           ].map(({ name, path, icon: Icon }) => (
             <Link
               key={path}
