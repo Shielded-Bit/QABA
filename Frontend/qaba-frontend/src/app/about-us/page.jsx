@@ -742,7 +742,7 @@ const AboutPage = () => {
             <motion.div variants={scaleIn}>
               <Link 
                 href="/buy" 
-                className="inline-block px-8 py-3 bg-[#014d98] text-white rounded-lg hover:bg-[#013d78] transition-colors"
+                className="inline-flex px-8 py-3 bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white rounded-lg hover:from-[#013d78] hover:to-[#2a9a95] transition-all duration-300 shadow-lg hover:shadow-xl h-12 items-center justify-center"
               >
                 Browse Properties
               </Link>
@@ -750,7 +750,14 @@ const AboutPage = () => {
             <motion.div variants={scaleIn}>
               <Link 
                 href="/contact" 
-                className="inline-block px-8 py-3 bg-white border-2 border-[#014d98] text-[#014d98] rounded-lg hover:bg-blue-50 transition-colors"
+                className="inline-flex px-8 py-3 bg-white border border-[#014d98] text-[#014d98] rounded-lg hover:bg-gradient-to-r hover:from-[#014d98] hover:to-[#3ab7b1] hover:text-white hover:border-transparent transition-all duration-300 shadow-lg hover:shadow-xl h-12 items-center justify-center font-medium"
+                style={{ borderColor: '#014d98', color: '#014d98' }}
+                onMouseEnter={(e) => {
+                  e.target.style.color = 'white';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.color = '#014d98';
+                }}
               >
                 Contact Us
               </Link>
