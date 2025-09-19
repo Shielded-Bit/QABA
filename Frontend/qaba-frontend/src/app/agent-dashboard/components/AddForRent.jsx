@@ -22,7 +22,7 @@ const PROPERTY_TYPES = [
 
 const FEE_RATES = {
   AGENT_FEE_RATE: 0.10,
-  QABA_FEE_RATE: 0.05,
+  QARBA_FEE_RATE: 0.05,
   LANDLORD_FEE_RATE: 0.05
 };
 
@@ -38,22 +38,22 @@ const formatUtils = {
     
     if (userType === 'agent') {
       const agentFee = Math.round(parsedPrice * FEE_RATES.AGENT_FEE_RATE);
-      const qabaFee = Math.round(parsedPrice * FEE_RATES.QABA_FEE_RATE);
+      const qarbaFee = Math.round(parsedPrice * FEE_RATES.QARBA_FEE_RATE);
       return {
         basePrice: parsedPrice,
         agentFee,
-        qabaFee,
-        totalFee: agentFee + qabaFee,
-        totalPrice: parsedPrice + agentFee + qabaFee
+        qarbaFee,
+        totalFee: agentFee + qarbaFee,
+        totalPrice: parsedPrice + agentFee + qarbaFee
       };
     } else {
-      const qabaFee = Math.round(parsedPrice * FEE_RATES.LANDLORD_FEE_RATE);
+      const qarbaFee = Math.round(parsedPrice * FEE_RATES.LANDLORD_FEE_RATE);
       return {
         basePrice: parsedPrice,
         agentFee: 0,
-        qabaFee,
-        totalFee: qabaFee,
-        totalPrice: parsedPrice + qabaFee
+        qarbaFee,
+        totalFee: qarbaFee,
+        totalPrice: parsedPrice + qarbaFee
       };
     }
   }
@@ -175,8 +175,8 @@ const FeeBreakdown = ({ fees, frequency }) => {
           </div>
         )}
         <div className="flex justify-between">
-          <span>Qaba Fee ({fees.agentFee > 0 ? '5%' : '5%'}, one-time):</span>
-          <span>₦{formatUtils.formatNumberWithCommas(fees.qabaFee.toString())}</span>
+          <span>Qarba Fee ({fees.agentFee > 0 ? '5%' : '5%'}, one-time):</span>
+          <span>₦{formatUtils.formatNumberWithCommas(fees.qarbaFee.toString())}</span>
         </div>
         <div className="flex justify-between font-medium border-t border-gray-200 pt-2 mt-2">
           <span>Initial Payment (first {frequency.toLowerCase()}):</span>
@@ -230,7 +230,7 @@ const AddForRent = () => {
   });
 
   const [displayPrice, setDisplayPrice] = useState('');
-  const [fees, setFees] = useState({ basePrice: 0, agentFee: 0, qabaFee: 0, totalFee: 0, totalPrice: 0 });
+  const [fees, setFees] = useState({ basePrice: 0, agentFee: 0, qarbaFee: 0, totalFee: 0, totalPrice: 0 });
   const [amenities, setAmenities] = useState([]);
   const [mediaFiles, setMediaFiles] = useState({ image1: null, image2: null, video: null });
   
@@ -335,7 +335,7 @@ const AddForRent = () => {
       });
       setMediaFiles({ image1: null, image2: null, video: null });
       setDisplayPrice('');
-      setFees({ basePrice: 0, agentFee: 0, qabaFee: 0, totalFee: 0, totalPrice: 0 });
+      setFees({ basePrice: 0, agentFee: 0, qarbaFee: 0, totalFee: 0, totalPrice: 0 });
     }
   };
 
@@ -522,8 +522,8 @@ const AddForRent = () => {
           <p className="text-xs text-gray-500 mt-1">
             This is the base price that will be paid {formData.rent_frequency.toLowerCase()}. 
             {formData.user_type === 'agent' 
-              ? ' Agent fee and Qaba fee are one-time payments added to the first payment only.' 
-              : ' Qaba fee is a one-time payment added to the first payment only.'}
+              ? ' Agent fee and Qarba fee are one-time payments added to the first payment only.' 
+              : ' Qarba fee is a one-time payment added to the first payment only.'}
           </p>
         </div>
       </div>

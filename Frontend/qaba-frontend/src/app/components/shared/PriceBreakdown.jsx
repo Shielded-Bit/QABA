@@ -3,7 +3,7 @@ import React from 'react';
 const PriceBreakdown = ({ property }) => {
   const basePrice = property.rent_price || property.sale_price;
   const agentCommission = property.agent_commission;
-  const qabaFee = property.qaba_fee;
+  const qarbaFee = property.qaba_fee;
   const totalPrice = property.total_price;
   const isRent = property.listing_type === "RENT";
   const frequency = property.rent_frequency_display || 'Monthly';
@@ -37,11 +37,11 @@ const PriceBreakdown = ({ property }) => {
           </div>
         )}
         
-        {/* Qaba Service Fee */}
-        {qabaFee && parseFloat(qabaFee) > 0 && (
+        {/* Qarba Service Fee */}
+        {qarbaFee && parseFloat(qarbaFee) > 0 && (
           <div className="flex justify-between items-center py-2">
             <span className="text-gray-600">Service Fee</span>
-            <span className="font-semibold text-gray-900">₦{formatPrice(qabaFee)}</span>
+            <span className="font-semibold text-gray-900">₦{formatPrice(qarbaFee)}</span>
           </div>
         )}
         
@@ -65,7 +65,7 @@ const PriceBreakdown = ({ property }) => {
       </div>
       
       {/* Simple note */}
-      {(agentCommission || qabaFee) && (
+      {(agentCommission || qarbaFee) && (
         <div className="mt-4 p-3 bg-gray-50 rounded-lg">
           <p className="text-gray-600 text-sm">
             All fees are included in the total amount shown above.
