@@ -266,8 +266,8 @@ export default function PropertyDetail() {
   
   // Calculate fees based on property data
   const agentFee = property.agent_commission || (basePrice * 0.1);
-  const qabaFee = property.qaba_fee || (basePrice * 0.05);
-  const totalPrice = property.total_price || (parseFloat(basePrice) + parseFloat(agentFee) + parseFloat(qabaFee));
+  const qarbaFee = property.qaba_fee || (basePrice * 0.05);
+  const totalPrice = property.total_price || (parseFloat(basePrice) + parseFloat(agentFee) + parseFloat(qarbaFee));
 
   // Add status indicator badge
   const getStatusBadge = () => {
@@ -392,8 +392,8 @@ export default function PropertyDetail() {
                 </div>
                 
                 <div className="bg-white p-3 rounded shadow-sm">
-                  <p className="text-sm text-gray-500">Qaba Fee (5%)</p>
-                  <p className="font-bold">₦ {formatCurrency(qabaFee)}</p>
+                  <p className="text-sm text-gray-500">Qarba Fee (5%)</p>
+                  <p className="font-bold">₦ {formatCurrency(qarbaFee)}</p>
                   <p className="text-xs text-gray-500">One-time payment</p>
                 </div>
               </div>
