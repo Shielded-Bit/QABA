@@ -7,8 +7,14 @@ class Job(models.Model):
         ACTIVE = "ACTIVE", "Active"
         INACTIVE = "INACTIVE", "Inactive"
 
+    class Type(models.TextChoices):
+        FULL_TIME = "FULLTIME", "Full-time"
+        PART_TIME = "PARTTIME", "Part-time"
+        INTERNSHIP = "INTERNSHIP", "Internship"
+
     title = models.CharField(max_length=255)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
+    type = models.CharField(max_length=15, choices=Type.choices, default=Type.FULL_TIME)
     category = models.CharField(max_length=100)
     location = models.CharField(max_length=150)
     pay_range = models.CharField(max_length=100, blank=True, null=True)

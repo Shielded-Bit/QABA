@@ -10,6 +10,7 @@ class JobSerializer(serializers.ModelSerializer):
             "id",
             "title",
             "slug",
+            "type",
             "category",
             "location",
             "pay_range",
