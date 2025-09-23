@@ -1,3 +1,5 @@
+from cloudinary.models import CloudinaryField
+from django.conf import settings
 from django.db import models
 from django.utils.text import slugify
 
@@ -61,7 +63,13 @@ class JobForm(models.Model):
     location = models.CharField(max_length=150, blank=True, null=True)
     referral = models.CharField(max_length=150, blank=True, null=True)
     bio = models.TextField()
-    cv = models.FileField(upload_to="job_applications/cv/")
+    cv = CloudinaryField(
+        "cv",
+        folder=settings.CLOUDINARY_FOLDERS.get(
+            "job_applications", "qaba/jobs/applications"
+        ),
+        resource_type="auto",
+    )
 
     class Meta:
         ordering = ["-id"]
