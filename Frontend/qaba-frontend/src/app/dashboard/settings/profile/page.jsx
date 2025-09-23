@@ -137,7 +137,7 @@ export default function ProfilePage() {
     
     try {
       const headers = getHeaders(isFormData);
-      const requestOptions = { method, headers, cache: 'no-store' };
+      const requestOptions = { method, headers, cache: 'default' };
       if (body) requestOptions.body = isFormData ? body : JSON.stringify(body);
       
       const response = await fetch(`${API_BASE_URL}${endpoint}`, requestOptions);

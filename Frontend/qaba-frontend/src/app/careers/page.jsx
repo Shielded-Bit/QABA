@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Upload, FileText, User, Mail, Phone, MapPin, Briefcase, Users, MessageCircle, X, Clock, DollarSign, Building, ChevronDown } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Upload, FileText, User, Mail, Phone, MapPin, Briefcase, Users, MessageCircle, X, Clock, Building, ChevronDown } from 'lucide-react';
 
 // Job Card Skeleton Component
 const JobCardSkeleton = () => (
@@ -23,14 +24,7 @@ const JobCardSkeleton = () => (
       </div>
       
       <div className="space-y-2 mb-4">
-        <div className="flex items-center">
-          <div className="h-4 w-4 bg-gray-200 rounded mr-2"></div>
-          <div className="h-4 bg-gray-200 rounded w-24"></div>
-        </div>
-        <div className="flex items-center">
-          <div className="h-4 w-4 bg-gray-200 rounded mr-2"></div>
-          <div className="h-4 bg-gray-200 rounded w-32"></div>
-        </div>
+        <div className="h-4 bg-gray-200 rounded w-32"></div>
         <div className="h-4 bg-gray-200 rounded w-20"></div>
       </div>
 
@@ -125,6 +119,8 @@ const CustomDropdown = ({
 };
 
 const Careers = () => {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [showApplicationModal, setShowApplicationModal] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null);
   const [formData, setFormData] = useState({
@@ -134,6 +130,9 @@ const Careers = () => {
     phone_number: '',
     year_of_exp: '',
     degree: 'BSc',
+    linkedin_url: '',
+    location: '',
+    referral: '',
     bio: '',
     cv: null
   });
@@ -148,6 +147,46 @@ const Careers = () => {
   const [modalType, setModalType] = useState('success'); // 'success' or 'error'
   const [modalMessage, setModalMessage] = useState('');
 
+  // Function to find job by slug
+  const findJobBySlug = useCallback((slug) => {
+    return jobs.find(job => job.slug === slug);
+  }, [jobs]);
+
+  // Function to format job type for display
+  const formatJobType = (jobType) => {
+    const typeMap = {
+      'FULLTIME': 'Full-time',
+      'INTERNSHIP': 'Internship',
+      'PARTTIME': 'Part-time',
+      'CONTRACT': 'Contract',
+      'FREELANCE': 'Freelance',
+      'TEMPORARY': 'Temporary'
+    };
+    return typeMap[jobType] || jobType;
+  };
+
+  // Function to handle URL-based job selection
+  const handleUrlJobSelection = useCallback(() => {
+    const jobSlug = searchParams.get('job');
+    if (jobSlug && jobs.length > 0) {
+      const job = findJobBySlug(jobSlug);
+      if (job) {
+        setSelectedJob(job);
+        setShowApplicationModal(true);
+        
+        // On mobile, scroll to the form section
+        if (window.innerWidth < 768 && formRef.current) {
+          setTimeout(() => {
+            formRef.current.scrollIntoView({ 
+              behavior: 'smooth', 
+              block: 'start' 
+            });
+          }, 100);
+        }
+      }
+    }
+  }, [searchParams, jobs, findJobBySlug]);
+
   // Fetch jobs from API
   const fetchJobs = useCallback(async () => {
     try {
@@ -159,7 +198,8 @@ const Careers = () => {
         // Add UI-specific fields to each job
         const jobsWithUI = jobsData.map(job => ({
           ...job,
-          type: "Full-time", // Default type
+          // Use actual job type from API, format for display
+          type: formatJobType(job.type),
           experience: "2-4 years", // Default experience
           postedDate: "Recently" // Default posted date
         }));
@@ -181,6 +221,13 @@ const Careers = () => {
   useEffect(() => {
     fetchJobs();
   }, [fetchJobs]);
+
+  // Handle URL-based job selection when jobs are loaded
+  useEffect(() => {
+    if (jobs.length > 0) {
+      handleUrlJobSelection();
+    }
+  }, [jobs, handleUrlJobSelection]);
 
   // Dropdown options
   const experienceOptions = [
@@ -207,6 +254,11 @@ const Careers = () => {
   const handleJobApply = (job) => {
     setSelectedJob(job);
     setShowApplicationModal(true);
+    
+    // Update URL with job slug
+    const newUrl = job.slug ? `/careers?job=${job.slug}` : `/careers`;
+    router.push(newUrl, { scroll: false });
+    
     // Reset form when opening modal
     setFormData({
       email: '',
@@ -215,6 +267,9 @@ const Careers = () => {
       phone_number: '',
       year_of_exp: '',
       degree: 'BSc',
+      linkedin_url: '',
+      location: '',
+      referral: '',
       bio: '',
       cv: null
     });
@@ -239,6 +294,9 @@ const Careers = () => {
       phone_number: '',
       year_of_exp: '',
       degree: 'BSc',
+      linkedin_url: '',
+      location: '',
+      referral: '',
       bio: '',
       cv: null
     });
@@ -249,6 +307,9 @@ const Careers = () => {
     setShowApplicationModal(false);
     setSelectedJob(null);
     resetForm();
+    
+    // Clear job parameter from URL
+    router.push('/careers', { scroll: false });
   };
 
   const showFeedbackModal = (type, message) => {
@@ -323,6 +384,9 @@ const Careers = () => {
       formDataToSend.append('phone_number', formData.phone_number);
       formDataToSend.append('year_of_exp', parseInt(formData.year_of_exp));
       formDataToSend.append('degree', formData.degree);
+      formDataToSend.append('linkedin_url', formData.linkedin_url);
+      formDataToSend.append('location', formData.location);
+      formDataToSend.append('referral', formData.referral);
       formDataToSend.append('bio', formData.bio);
       formDataToSend.append('cv', formData.cv);
 
@@ -473,13 +537,8 @@ const Careers = () => {
 
                     <div className="space-y-2 mb-4">
                       <div className="flex items-center text-sm text-gray-600">
-                        <Clock className="w-4 h-4 mr-2" />
-                        <span>{job.experience}</span>
+                        <span>{job.pay_range}</span>
                       </div>
-                  <div className="flex items-center text-sm text-gray-600">
-                    <DollarSign className="w-4 h-4 mr-2" />
-                    <span>{job.pay_range}</span>
-                  </div>
                       <div className="flex items-center text-sm text-gray-500">
                         <span>Posted {job.postedDate}</span>
                       </div>
@@ -518,7 +577,10 @@ const Careers = () => {
                   {/* Mobile Back Button */}
                   <div className="md:hidden mb-4">
                     <button
-                      onClick={() => setSelectedJob(null)}
+                      onClick={() => {
+                        setSelectedJob(null);
+                        router.push('/careers', { scroll: false });
+                      }}
                       className="flex items-center text-[#014d98] hover:text-[#3ab7b1] transition-colors"
                     >
                       <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -662,6 +724,71 @@ const Careers = () => {
                           error={errors.degree}
                         />
                       </div>
+                    </div>
+
+                    {/* LinkedIn URL */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        LinkedIn URL
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <svg className="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <input
+                          type="url"
+                          name="linkedin_url"
+                          value={formData.linkedin_url}
+                          onChange={handleChange}
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#014d98] focus:border-transparent transition-colors"
+                          placeholder="https://linkedin.com/in/yourprofile"
+                        />
+                      </div>
+                      {getErrorMessage('linkedin_url')}
+                    </div>
+
+                    {/* Location */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Location
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <MapPin className="h-5 w-5 text-gray-400" />
+                        </div>
+                        <input
+                          type="text"
+                          name="location"
+                          value={formData.location}
+                          onChange={handleChange}
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#014d98] focus:border-transparent transition-colors"
+                          placeholder="e.g., Lagos, Nigeria"
+                        />
+                      </div>
+                      {getErrorMessage('location')}
+                    </div>
+
+                    {/* Referral */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Where did you hear about us?
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <Users className="h-5 w-5 text-gray-400" />
+                        </div>
+                        <input
+                          type="text"
+                          name="referral"
+                          value={formData.referral}
+                          onChange={handleChange}
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#014d98] focus:border-transparent transition-colors"
+                          placeholder="e.g., LinkedIn, Google, Friend, Social Media (optional)"
+                        />
+                      </div>
+                      {getErrorMessage('referral')}
                     </div>
 
                     <div>
