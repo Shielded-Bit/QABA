@@ -206,9 +206,6 @@ CLOUDINARY_STORAGE = {
     # Folder settings for different media types
     "MEDIA_TAG": "media",
     "STATIC_TAG": "static",
-    # Transformations and settings
-    "INVALID_VIDEO_ERROR_MESSAGE": "Please upload a valid video file.",
-    "EXCLUDE_DELETE_ORPHANED_MEDIA_PATHS": [],
 }
 
 # Set specific folders for different types of media
@@ -216,6 +213,7 @@ CLOUDINARY_FOLDERS = {
     "user_profiles": "qaba/users/profiles",
     "property_images": "qaba/properties/images",
     "property_videos": "qaba/properties/videos",
+    "job_applications": "qaba/jobs/applications",
 }
 
 FLW_SECRET_KEY = getenv("FLW_SECRET_KEY", "your-default-secret-key")
