@@ -132,21 +132,9 @@ export const metadata = {
   },
   manifest: '/manifest.json',
   icons: {
-    icon: [
-      { url: '/qarbaLogo.png', sizes: '16x16 32x32', type: 'image/png' },
-      { url: '/qarbaLogo.png', sizes: '16x16', type: 'image/png' },
-      { url: '/qarbaLogo.png', sizes: '32x32', type: 'image/png' },
-      { url: '/qarbaLogo.png', sizes: '96x96', type: 'image/png' },
-      { url: '/qarbaLogo.png', sizes: '128x128', type: 'image/png' },
-      { url: '/qarbaLogo.png', sizes: '192x192', type: 'image/png' }
-    ],
+    icon: '/qarbaLogo.png',
     shortcut: '/qarbaLogo.png',
-    apple: [
-      { url: '/qarbaLogo.png', sizes: '128x128', type: 'image/png' },
-      { url: '/qarbaLogo.png', sizes: '144x144', type: 'image/png' },
-      { url: '/qarbaLogo.png', sizes: '152x152', type: 'image/png' },
-      { url: '/qarbaLogo.png', sizes: '192x192', type: 'image/png' }
-    ],
+    apple: '/qarbaLogo.png',
   },
   appleWebApp: {
     capable: true,
@@ -171,14 +159,9 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <head>
         {/* Favicon and Icons */}
-        <link rel="icon" type="image/png" href="/qarbaLogo.png" sizes="16x16 32x32" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/qarbaLogo.png" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/qarbaLogo.png" />
-        <link rel="icon" type="image/png" sizes="96x96" href="/qarbaLogo.png" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/qarbaLogo.png" />
-        <link rel="apple-touch-icon" sizes="152x152" href="/qarbaLogo.png" />
-        <link rel="apple-touch-icon" sizes="144x144" href="/qarbaLogo.png" />
-        <link rel="apple-touch-icon" sizes="128x128" href="/qarbaLogo.png" />
+        <link rel="icon" type="image/png" href="/qarbaLogo.png" sizes="32x32" />
+        <link rel="shortcut icon" href="/qarbaLogo.png" />
+        <link rel="apple-touch-icon" href="/qarbaLogo.png" />
         
         {/* Additional SEO Meta Tags */}
         <meta name="format-detection" content="telephone=no" />
