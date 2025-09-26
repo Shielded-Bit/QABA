@@ -97,7 +97,7 @@ const Transactions = () => {
       <div className="px-6 py-4 border-b border-gray-100">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Recent Transactions</h2>
+            <h2 className="text-lg font-semibold text-gray-600">Recent Transactions</h2>
             <p className="text-sm text-gray-500 mt-1">Latest payment activities</p>
           </div>
           <Link 

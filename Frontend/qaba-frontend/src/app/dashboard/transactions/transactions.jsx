@@ -141,7 +141,7 @@ const TransactionTable = () => {
       <div className="px-6 py-5 border-b border-gray-100">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900">Transaction History</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Transaction History</h2>
             <p className="text-sm text-gray-500 mt-1">Manage and track all your payment activities</p>
           </div>
           <div className="relative">
@@ -262,7 +262,7 @@ const TransactionTable = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">No transactions found</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">No transactions found</h3>
                 <p className="text-gray-600 max-w-md mx-auto">No transaction history matches your current filters. Try adjusting your search criteria.</p>
                 <button
                   onClick={handleResetFilters}

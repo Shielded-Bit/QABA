@@ -3,7 +3,7 @@
 
 import Head from 'next/head';
 import { useState } from 'react';
-import { Search, Mail, Phone, MessageSquare, ChevronRight, ChevronDown, Bookmark, Play, Users } from 'lucide-react';
+import { Search, Mail, Phone, MessageSquare, ChevronRight, ChevronDown } from 'lucide-react';
 
 export default function HelpAndSupport() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -51,21 +51,23 @@ export default function HelpAndSupport() {
     : faqs;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="bg-gray-50">
       <Head>
         <title>Help & Support - Estate application</title>
         <meta name="description" content="Get help and support for your estate application. Find FAQs, contact support, and access resources." />
       </Head>
 
-      {/* Hero Header */}
-      <div className="bg-gradient-to-r from-blue-900 to-green-600 text-white">
-        <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto">
-            <h1 className="text-3xl font-bold mb-4">How can we help you?</h1>
-            <p className="text-gray-100 mb-8">Find answers, resources, and get the support you need</p>
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto">
+        {/* FAQs Section */}
+        <section className="mb-16">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6 gap-4">
+            <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#014d98] to-[#3ab7b1] flex-shrink-0">
+              Frequently Asked Questions
+            </h2>
             
             {/* Search Bar */}
-            <div className="relative max-w-xl mx-auto">
+            <div className="relative w-full lg:w-auto lg:max-w-md lg:min-w-[300px]">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Search size={18} className="text-gray-400" />
               </div>
@@ -74,27 +76,18 @@ export default function HelpAndSupport() {
                 placeholder="Search for help..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-white bg-opacity-95 border-0 rounded-full shadow-lg focus:ring-2 focus:ring-white focus:outline-none transition-all duration-300 text-black placeholder-gray-500"
+                className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-[#014d98] focus:border-transparent transition-all duration-300 text-black placeholder-gray-500"
               />
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-        {/* FAQs Section */}
-        <section className="mb-16">
-          <div className="flex items-baseline justify-between mb-6">
-            <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-900 to-green-600">
-              Frequently Asked Questions
-            </h2>
-            {searchQuery && (
+          
+          {searchQuery && (
+            <div className="mb-4">
               <p className="text-sm text-gray-500">
                 {filteredFaqs.length} result{filteredFaqs.length !== 1 ? 's' : ''} found
               </p>
-            )}
-          </div>
+            </div>
+          )}
           
           {filteredFaqs.length > 0 ? (
             <div className="space-y-3">
@@ -142,7 +135,7 @@ export default function HelpAndSupport() {
 
         {/* Contact Support Section */}
         <section className="mb-16">
-          <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-900 to-green-600 mb-6">
+          <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#014d98] to-[#3ab7b1] mb-6">
             Contact Support
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -195,61 +188,6 @@ export default function HelpAndSupport() {
           </div>
         </section>
 
-        {/* Resources Section */}
-        <section>
-          <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-900 to-green-600 mb-6">
-            Learning Resources
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden group hover:shadow-md transition-all duration-300">
-              <div className="h-32 bg-gradient-to-br from-blue-900/90 to-blue-700 p-6 flex items-center justify-center">
-                <Bookmark size={32} className="text-white opacity-75 group-hover:opacity-100 transition-opacity" />
-              </div>
-              <div className="p-6">
-                <h3 className="text-lg font-medium text-gray-800 mb-2">User Guides</h3>
-                <p className="text-gray-600 mb-4">Access our comprehensive user guides to learn how to use all features of the application.</p>
-                <a 
-                  href="#" 
-                  className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium"
-                >
-                  Read Guides <ChevronRight size={16} className="ml-1" />
-                </a>
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden group hover:shadow-md transition-all duration-300">
-              <div className="h-32 bg-gradient-to-br from-green-700/90 to-green-500 p-6 flex items-center justify-center">
-                <Play size={32} className="text-white opacity-75 group-hover:opacity-100 transition-opacity" />
-              </div>
-              <div className="p-6">
-                <h3 className="text-lg font-medium text-gray-800 mb-2">Video Tutorials</h3>
-                <p className="text-gray-600 mb-4">Watch step-by-step video tutorials to get the most out of your estate application.</p>
-                <a 
-                  href="#" 
-                  className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium"
-                >
-                  Watch Videos <ChevronRight size={16} className="ml-1" />
-                </a>
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden group hover:shadow-md transition-all duration-300">
-              <div className="h-32 bg-gradient-to-br from-purple-800/90 to-purple-600 p-6 flex items-center justify-center">
-                <Users size={32} className="text-white opacity-75 group-hover:opacity-100 transition-opacity" />
-              </div>
-              <div className="p-6">
-                <h3 className="text-lg font-medium text-gray-800 mb-2">Community Forum</h3>
-                <p className="text-gray-600 mb-4">Join our community forum to connect with other users and share tips.</p>
-                <a 
-                  href="#" 
-                  className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium"
-                >
-                  Join Community <ChevronRight size={16} className="ml-1" />
-                </a>
-              </div>
-            </div>
-          </div>
-        </section>
       </main>
 
   

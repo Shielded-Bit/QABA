@@ -59,12 +59,14 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="h-full">
       {/* Header */}
-      <h1 className="text-3xl font-bold p-6 bg-white  border-b border-gray-200">Messages</h1>
+      <div className="p-4 lg:p-6">
+        <h1 className="text-lg font-semibold text-gray-600">Messages</h1>
+      </div>
 
       {/* Main Content */}
-      <div className="flex">
+      <div className="flex h-full">
         {/* Left Side: Chat List */}
         <div className="w-64 bg-white border-r border-gray-200 p-1">
           <ul className="space-y-2">
@@ -101,13 +103,13 @@ export default function ChatPage() {
           {/* Chat Header */}
           {selectedPerson ? (
             <div className="bg-white p-4 border-b border-gray-200">
-              <h2 className="text-xl font-semibold">
+              <h2 className="text-lg font-semibold">
                 {people.find((person) => person.id === selectedPerson)?.name}
               </h2>
             </div>
           ) : (
             <div className="bg-white p-4 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-500">Select a chat to start messaging</h2>
+              <h2 className="text-lg font-semibold text-gray-500">Select a chat to start messaging</h2>
             </div>
           )}
 

@@ -7,45 +7,32 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination, Autoplay } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/pagination';
+import { useLandingPageCache } from '../../../contexts/LandingPageCacheContext';
 
 const Section6 = () => {
-  const [articles, setArticles] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // Use the landing page cache context
+  const { 
+    blogArticles: articles, 
+    isLoading: loading, 
+    initialized,
+    getLandingPageData
+  } = useLandingPageCache();
 
+  // Fetch blog articles using the cache system
   useEffect(() => {
+    // Only run if context is initialized
+    if (!initialized) return;
+    
     const fetchBlogs = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/blogs/`);
-        if (!res.ok) throw new Error('Failed to fetch blogs');
-        const data = await res.json();
-        const blogs = data.data || data;
-        // Sort by date and get latest 3
-        const latestBlogs = blogs
-          .sort((a, b) => new Date(b.published_at) - new Date(a.published_at))
-          .slice(0, 3)
-          .map(blog => ({
-            date: new Date(blog.published_at).toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            }),
-            title: blog.title,
-            description: blog.summary || blog.excerpt || '',
-            image: blog.cover_image_url,
-            link: `/blog/${blog.slug}`
-          }));
-        setArticles(latestBlogs);
+        await getLandingPageData();
       } catch (error) {
         console.error('Error fetching blogs:', error);
-        // Fallback to empty array if fetch fails
-        setArticles([]);
-      } finally {
-        setLoading(false);
       }
     };
     
     fetchBlogs();
-  }, []);
+  }, [getLandingPageData, initialized]);
 
   return (
     <section className="bg-[#efe4da] py-16 px-2 md:px-14">

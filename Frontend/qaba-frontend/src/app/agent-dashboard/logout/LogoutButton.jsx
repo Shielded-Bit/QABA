@@ -1,12 +1,19 @@
 "use client";
 
-import { XCircle, AlertCircle, LogOut } from "lucide-react";
-import { useState } from "react";
+import { XCircle, AlertCircle, LogOut, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import useLogout from "../../hooks/useLogout";
 
 const LogoutButton = ({ collapsed = false, onClose, className = "" }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const { logout } = useLogout();
+  const [isBrowser, setIsBrowser] = useState(false);
+  const { logout, isLoading } = useLogout();
+
+  // Check if we're in the browser
+  useEffect(() => {
+    setIsBrowser(true);
+  }, []);
 
   const openModal = () => {
     setIsOpen(true);
@@ -17,8 +24,8 @@ const LogoutButton = ({ collapsed = false, onClose, className = "" }) => {
     setIsOpen(false);
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     closeModal();
   };
 
@@ -41,8 +48,8 @@ const LogoutButton = ({ collapsed = false, onClose, className = "" }) => {
       </button>
 
       {/* Logout Modal */}
-      {isOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+      {isOpen && isBrowser && createPortal(
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-[9999]">
           <div className="bg-white p-6 rounded-2xl shadow-xl w-96 text-center relative">
             {/* Close Button */}
             <button
@@ -72,13 +79,22 @@ const LogoutButton = ({ collapsed = false, onClose, className = "" }) => {
               </button>
               <button
                 onClick={handleLogout}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                disabled={isLoading}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
               >
-                Log Out
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Signing out...
+                  </>
+                ) : (
+                  "Log Out"
+                )}
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

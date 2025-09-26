@@ -6,14 +6,15 @@ import Image from 'next/image';
 import { Bookmark } from 'lucide-react';
 import axios from 'axios';
 
-const ListingCard = ({ 
-  id, 
-  title, 
-  price, 
-  description, 
-  image, 
+const ListingCard = ({
+  id,
+  title,
+  price,
+  description,
+  image,
   type,
   propertyStatus = 'Available',
+  propertyTypeDisplay = '',
   amenities = []
 }) => {
   const router = useRouter();
@@ -140,27 +141,39 @@ const ListingCard = ({
         <div className="h-64 relative">
           <Image
             className="w-full h-full rounded-lg object-cover"
-            src={image}
-            alt={title}
-            layout="fill"
-            objectFit="cover"
+            src={image && image.trim() !== '' ? image : '/proper.png'}
+            alt={title || 'Property'}
+            fill
+            style={{ objectFit: 'cover' }}
+            onError={(e) => {
+              e.target.src = '/proper.png';
+            }}
           />
         </div>
         
-        {/* Type and Status Badges */}
+        {/* Type and Property Type Badges */}
         <div className="absolute top-6 left-6 flex gap-2">
           <span className={`px-3 py-1 rounded-full text-xs font-semibold text-white ${
             type === 'rent' ? 'bg-green-500' : 'bg-blue-500'
           }`}>
             {type === 'rent' ? 'Rent' : 'Buy'}
           </span>
+          {propertyTypeDisplay && (
+            <span className="px-3 py-1 rounded-full text-xs font-semibold text-white bg-gradient-to-r from-[#014d98] to-[#3ab7b1]">
+              {propertyTypeDisplay}
+            </span>
+          )}
+        </div>
+
+        {/* Status Badge - Top Right */}
+        <div className="absolute top-6 right-6">
           <span className={`px-3 py-1 rounded-full text-xs font-semibold text-white ${getStatusColor(propertyStatus)}`}>
             {propertyStatus}
           </span>
         </div>
 
-        {/* Favorite Icon with Tooltip */}
-        <div className="absolute top-6 right-6">
+        {/* Favorite Icon with Tooltip - Bottom Right */}
+        <div className="absolute bottom-6 right-6">
           <button
             className="p-2 bg-white rounded-full shadow-md hover:bg-gray-200 relative"
             onClick={toggleFavorite}

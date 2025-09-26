@@ -6,6 +6,9 @@ import Footer from "./components/static/Footer";
 import WhatsAppWidget from "./components/WhatsAppWidget";
 import { usePathname } from "next/navigation";
 import { ProfileProvider } from "../contexts/ProfileContext";
+import { PropertiesCacheProvider } from "../contexts/PropertiesCacheContext";
+import { ListingTypeCacheProvider } from "../contexts/ListingTypeCacheContext";
+import { LandingPageCacheProvider } from "../contexts/LandingPageCacheContext";
 
 export default function ClientLayout({ children }) {
   const pathname = usePathname();
@@ -19,18 +22,24 @@ export default function ClientLayout({ children }) {
 
   return (
     <ProfileProvider>
-      <div suppressHydrationWarning>
-        <div className="max-w-[2000px] mx-auto">
-          {mounted && !hideNavAndFooter && <Navbar />}
-          <div className="main-content">
-            {mounted && children}
-          </div>
-          {mounted && !hideNavAndFooter && <Footer />}
-        </div>
-        
-        {/* WhatsApp Widget - Available on all pages */}
-        {mounted && <WhatsAppWidget />}
-      </div>
+      <PropertiesCacheProvider>
+        <ListingTypeCacheProvider>
+          <LandingPageCacheProvider>
+            <div suppressHydrationWarning>
+              <div className="max-w-[2000px] mx-auto">
+                {mounted && !hideNavAndFooter && <Navbar />}
+                <div className="main-content">
+                  {mounted && children}
+                </div>
+                {mounted && !hideNavAndFooter && <Footer />}
+              </div>
+              
+              {/* WhatsApp Widget - Available on all pages */}
+              {mounted && <WhatsAppWidget />}
+            </div>
+          </LandingPageCacheProvider>
+        </ListingTypeCacheProvider>
+      </PropertiesCacheProvider>
     </ProfileProvider>
   );
 }
