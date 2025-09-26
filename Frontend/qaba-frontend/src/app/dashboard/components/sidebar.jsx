@@ -18,6 +18,8 @@ import { usePathname } from 'next/navigation';
 import { LogoutButton } from '../logout';
 import Link from 'next/link';
 import Image from 'next/image';
+import { TbLayoutSidebarLeftCollapseFilled } from "react-icons/tb";
+import { GoSidebarCollapse } from "react-icons/go";
 
 export default function Sidebar() {
   const [isPropertiesOpen, setIsPropertiesOpen] = useState(false);
@@ -61,6 +63,14 @@ export default function Sidebar() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Update CSS custom property for main content margin
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      '--sidebar-width', 
+      isSidebarCollapsed ? '64px' : '326px'
+    );
+  }, [isSidebarCollapsed]);
+
   // Define the toggle function - works on mobile and tablet screens
   const toggleSidebar = () => {
     if (isMobile || isTablet) {
@@ -76,49 +86,29 @@ export default function Sidebar() {
 
   return (
     <div
-      className={`fixed z-50 h-screen bg-white border-r shadow-sm flex flex-col transition-all duration-300 ${
-        isSidebarCollapsed ? 'w-16' : 'w-64'
+      className={`fixed z-30 top-[70px] h-[calc(100vh-70px)] flex flex-col transition-all duration-300 ease-in-out ${
+        isSidebarCollapsed ? "w-[64px]" : "w-[326px]"
       }`}
     >
-      <div className="flex items-center justify-between border-b px-3 py-6">
-        {/* Logo - always shown on desktop, only shown when expanded on mobile/tablet */}
-        {(!isMobile && !isTablet) || ((isMobile || isTablet) && !isSidebarCollapsed) ? (
-          <div className="flex items-center justify-start">
-            <Link 
-              href="/" 
-              className="flex items-center transition-all duration-300 hover:opacity-80"
-            >
-              <Image 
-                 src="/qarbaLogo.png" 
-                 alt="QARBA Logo" 
-                 width={130} 
-                 height={42} 
-                 className="h-10 w-auto"
-               />
-            </Link>
-          </div>
-        ) : null}
-        
-        {/* Show toggle button on mobile and tablet screens */}
-        {(isMobile || isTablet) && (
+      <div className="bg-white font-manrope w-full h-full mx-auto rounded-2xl shadow-sm flex flex-col">
+      <div className="flex items-center justify-center px-2 py-2">
+        {/* Show expand button when collapsed */}
+        {isSidebarCollapsed && (
           <button 
-            onClick={toggleSidebar} 
-            className={`p-2 hover:bg-gray-100 rounded-lg transition-colors ${
-              isSidebarCollapsed ? 'mx-auto' : ''
-            }`}
-            aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            onClick={() => setIsSidebarCollapsed(false)} 
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            aria-label="Expand sidebar"
           >
-            {isSidebarCollapsed ? (
-              <Menu size={20} className="text-gray-600" />
-            ) : (
-              <X size={20} className="text-gray-600" />
-            )}
+            <div className="flex flex-col items-center">
+              <GoSidebarCollapse className="w-5 h-5 text-gray-500" />
+              <span className="text-[8px] font-bold text-gray-500 mt-1">Open</span>
+            </div>
           </button>
         )}
       </div>
 
-      <nav className="flex-1 p-4 space-y-4">
-        {renderLink('/dashboard', 'Dashboard', pathname, LayoutDashboard, isSidebarCollapsed)}
+      <nav className="flex-1 p-2 pt-2 space-y-4 relative">
+        {renderDashboardLink('/dashboard', 'Dashboard', pathname, LayoutDashboard, isSidebarCollapsed, setIsSidebarCollapsed)}
 
         <div className="relative group">
           <button
@@ -139,9 +129,7 @@ export default function Sidebar() {
               <span className={getTextClass(isSidebarCollapsed)}>Properties</span>
             </div>
             {!isSidebarCollapsed && (
-              <ChevronDown
-                className={`transition-transform duration-200 ${isPropertiesOpen ? 'rotate-180' : ''}`}
-              />
+              <ChevronDown className={`w-5 h-5 transition-transform duration-200 ${isPropertiesOpen ? "rotate-180" : ""}`} />
             )}
           </button>
 
@@ -151,8 +139,8 @@ export default function Sidebar() {
             }`}
           >
             {renderSubLink('/dashboard/all-listed-properties', 'All Listed Properties', pathname, Building2, isSidebarCollapsed)}
-            {renderSubLink('/rent', 'Rent Properties', pathname, Key, isSidebarCollapsed)}
-            {renderSubLink('/buy', 'Buy Properties', pathname, Home, isSidebarCollapsed)}
+            {renderSubLink('/dashboard/all-listed-properties?filter=RENT', 'Rent Properties', pathname, Key, isSidebarCollapsed)}
+            {renderSubLink('/dashboard/all-listed-properties?filter=SALE', 'Buy Properties', pathname, Home, isSidebarCollapsed)}
           </div>
         </div>
 
@@ -168,6 +156,7 @@ export default function Sidebar() {
         <div className={getLinkClass(pathname, '/dashboard/logout', isSidebarCollapsed)}>
           <LogoutButton collapsed={isSidebarCollapsed} />
         </div>
+      </div>
       </div>
     </div>
   );
@@ -190,7 +179,7 @@ function checkActiveLink(pathname, href) {
 }
 
 function getIconClass(isCollapsed) {
-  return isCollapsed ? 'mx-auto' : 'mr-2';
+  return isCollapsed ? "w-5 h-5" : "mr-2 w-5 h-5";
 }
 
 function getTextClass(isCollapsed) {
@@ -235,5 +224,44 @@ function renderSubLink(href, label, pathname, Icon, isCollapsed) {
       </div>
       <span className={getTextClass(isCollapsed)}>{label}</span>
     </Link>
+  );
+}
+
+function renderDashboardLink(href, label, pathname, Icon, isCollapsed, setIsSidebarCollapsed) {
+  // Check if actually active (on dashboard page)
+  const isActuallyActive = checkActiveLink(pathname, href);
+  // Always show some active state for Dashboard link so collapse icon is always visible
+  const isActive = true; // Always active for Dashboard
+  return (
+    <div className={`group flex items-center ${
+      isCollapsed ? "justify-center px-2" : "px-3"
+    } py-2 rounded-md ${
+      isActive
+        ? isActuallyActive 
+          ? "bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white" // Full bright when actually active
+          : "bg-gradient-to-r from-[#014d98]/80 to-[#3ab7b1]/80 text-white" // Dimmed when not active
+        : "hover:bg-gradient-to-r from-[#014d98] to-[#3ab7b1] hover:text-white"
+    }`}>
+      <a href={href} className={`flex items-center ${isCollapsed ? "justify-center" : "flex-1"}`}>
+        <div className="relative">
+          <Icon className={getIconClass(isCollapsed)} />
+          {isCollapsed && (
+            <div className="absolute left-full z-50 ml-2 bg-black text-white text-xs px-2 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+              {label}
+            </div>
+          )}
+        </div>
+        <span className={getTextClass(isCollapsed)}>{label}</span>
+      </a>
+      {!isCollapsed && (
+        <button
+          onClick={() => setIsSidebarCollapsed(!isCollapsed)}
+          className="p-1 hover:bg-gray-100 rounded transition-colors ml-2"
+          aria-label="Collapse sidebar"
+        >
+          <TbLayoutSidebarLeftCollapseFilled className="w-5 h-5 text-white" />
+        </button>
+      )}
+    </div>
   );
 }

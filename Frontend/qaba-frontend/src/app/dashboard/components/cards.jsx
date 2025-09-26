@@ -219,7 +219,7 @@ const PropertyCard = ({ id, image, name, address, status, price }) => (
 );
 
 const NotificationCard = ({ notification, onMarkAsRead }) => (
-  <div className={`border-b pb-3 last:border-b-0 w-full transition ${notification.is_read ? 'bg-white' : 'bg-blue-50'}`}>
+  <div className={`border-b pb-3 last:border-b-0 w-full transition ${notification.is_read ? 'bg-white' : 'bg-blue-50 rounded-lg'}`}>
     <div className="p-3">
       <p className="text-sm text-gray-800">{notification.message}</p>
       <div className="mt-2 flex justify-between items-center">

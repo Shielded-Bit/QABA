@@ -17,6 +17,8 @@ import {
   LayoutDashboard,
   ChartNoAxesCombined,
 } from "lucide-react";
+import { GoSidebarExpand, GoSidebarCollapse } from "react-icons/go";
+import { TbLayoutSidebarLeftCollapseFilled } from "react-icons/tb";
 import { usePathname } from "next/navigation";
 import { LogoutButton } from "../logout";
 
@@ -71,62 +73,54 @@ export default function Sidebar() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // Update CSS custom property for main content margin
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      '--sidebar-width', 
+      isSidebarCollapsed ? '64px' : '326px'
+    );
+  }, [isSidebarCollapsed]);
+
   return (
     <div
-      className={`fixed z-50 h-screen bg-white border-r shadow-sm flex flex-col transition-all duration-300 ${
-        isSidebarCollapsed ? "w-16" : "w-64"
+      className={`fixed z-30 top-[70px] h-[calc(100vh-70px)] flex flex-col transition-all duration-300 ease-in-out ${
+        isSidebarCollapsed ? "w-[64px]" : "w-[326px]"
       }`}
     >
-      <div className="flex items-center justify-between border-b px-3 py-6">
-        {/* Logo - always shown on desktop, only shown when expanded on mobile/tablet */}
-        {(!isMobile && !isTablet) || ((isMobile || isTablet) && !isSidebarCollapsed) ? (
-          <div className="flex items-center">
-            <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
-              <Image 
-                 src="/qarbaLogo.png" 
-                 alt="QARBA Logo" 
-                 width={130} 
-                 height={42} 
-                 className="h-10 w-auto"
-               />
-            </Link>
-          </div>
-        ) : null}
-        
-        {/* Show toggle button on mobile and tablet screens */}
-        {(isMobile || isTablet) && (
+      <div className="bg-white font-manrope w-full h-full mx-auto rounded-2xl shadow-sm flex flex-col">
+      <div className="flex items-center justify-center px-2 py-2">
+        {/* Show expand button when collapsed */}
+        {isSidebarCollapsed && (
           <button 
-            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} 
-            className={`p-2 hover:bg-gray-100 rounded-lg transition-colors ${
-              isSidebarCollapsed ? 'mx-auto' : ''
-            }`}
-            aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            onClick={() => setIsSidebarCollapsed(false)} 
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            aria-label="Expand sidebar"
           >
-            {isSidebarCollapsed ? (
-              <Menu size={20} className="text-gray-600" />
-            ) : (
-              <X size={20} className="text-gray-600" />
-            )}
+            <div className="flex flex-col items-center">
+              <GoSidebarCollapse className="w-5 h-5 text-gray-500" />
+              <span className="text-[8px] font-bold text-gray-500 mt-1">Open</span>
+            </div>
           </button>
         )}
       </div>
       
-      <nav className="flex-1 p-4 space-y-4 relative">
-        {renderLink("/agent-dashboard", "Dashboard", pathname, LayoutDashboard, isSidebarCollapsed)}
+      <nav className="flex-1 p-2 pt-2 space-y-4 relative">
+        {renderDashboardLink("/agent-dashboard", "Dashboard", pathname, LayoutDashboard, isSidebarCollapsed, setIsSidebarCollapsed)}
 
         {renderPropertiesDropdown(isPropertiesOpen, setIsPropertiesOpen, isAddPropertyOpen, setIsAddPropertyOpen, pathname, isSidebarCollapsed)}
 
         {renderLink("/agent-dashboard/favourites", "Favourite", pathname, Heart, isSidebarCollapsed)}
-        {renderLink("/agent-dashboard/transactions", "Transactions", pathname, CreditCard, isSidebarCollapsed)}
+        {renderLink("/agent-dashboard/transactions", isSidebarCollapsed ? "Txns" : "Transactions", pathname, CreditCard, isSidebarCollapsed)}
         {renderLink("/agent-dashboard/propertyOverview", "Property Overview", pathname, ChartNoAxesCombined, isSidebarCollapsed)}
       </nav>
 
-      <div className="p-4 space-y-2 border-t">
+      <div className="p-2 space-y-2 border-t border-gray-200">
         {renderLink("/agent-dashboard/help-support", "Help & Support", pathname, HelpCircle, isSidebarCollapsed)}
         {renderLink("/agent-dashboard/settings/profile", "Settings", pathname, Settings, isSidebarCollapsed)}
         <div className={getLinkClass(pathname, "/agent-dashboard/logout", isSidebarCollapsed)}>
           <LogoutButton collapsed={isSidebarCollapsed} />
         </div>
+      </div>
       </div>
     </div>
   );
@@ -164,7 +158,7 @@ function renderPropertiesDropdown(isPropertiesOpen, setIsPropertiesOpen, isAddPr
           <span className={getTextClass(isCollapsed)}>Properties</span>
         </div>
         {!isCollapsed && (
-          <ChevronDown className={`transition-transform duration-200 ${isPropertiesOpen ? "rotate-180" : ""}`} />
+          <ChevronDown className={`w-5 h-5 transition-transform duration-200 ${isPropertiesOpen ? "rotate-180" : ""}`} />
         )}
       </button>
 
@@ -204,7 +198,7 @@ function renderPropertiesDropdown(isPropertiesOpen, setIsPropertiesOpen, isAddPr
                 <span className={getTextClass(isCollapsed)}>Add Property</span>
               </div>
               {!isCollapsed && (
-                <ChevronRight className={`transition-transform duration-200 ${isAddPropertyOpen ? "rotate-90" : ""}`} />
+                <ChevronRight className={`w-5 h-5 transition-transform duration-200 ${isAddPropertyOpen ? "rotate-90" : ""}`} />
               )}
             </button>
 
@@ -244,18 +238,60 @@ function checkActiveLink(pathname, href) {
 }
 
 function getIconClass(isCollapsed) {
-  return isCollapsed ? "mx-auto" : "mr-2";
+  return isCollapsed ? "w-5 h-5" : "mr-2 w-5 h-5";
 }
 
 function getTextClass(isCollapsed) {
   return isCollapsed ? "hidden" : "inline";
 }
 
+function renderDashboardLink(href, label, pathname, Icon, isCollapsed, setIsSidebarCollapsed) {
+  // Check if actually active (on dashboard page)
+  const isActuallyActive = checkActiveLink(pathname, href);
+  // Always show some active state for Dashboard link so collapse icon is always visible
+  const isActive = true; // Always active for Dashboard
+  return (
+    <div className={`group flex items-center ${
+      isCollapsed ? "justify-center px-2" : "px-3"
+    } py-2 rounded-md ${
+      isActive
+        ? isActuallyActive 
+          ? "bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white" // Full bright when actually active
+          : "bg-gradient-to-r from-[#014d98]/80 to-[#3ab7b1]/80 text-white" // Dimmed when not active
+        : "hover:bg-gradient-to-r from-[#014d98] to-[#3ab7b1] hover:text-white"
+    }`}>
+      <a href={href} className={`flex items-center ${isCollapsed ? "justify-center" : "flex-1"}`}>
+        <div className="relative">
+          <Icon className={getIconClass(isCollapsed)} />
+          {isCollapsed && (
+            <div className="absolute left-full z-50 ml-2 bg-black text-white text-xs px-2 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+              {label}
+            </div>
+          )}
+        </div>
+        <span className={getTextClass(isCollapsed)}>{label}</span>
+      </a>
+      {!isCollapsed && (
+        <button
+          onClick={() => setIsSidebarCollapsed(!isCollapsed)}
+          className="p-1 hover:bg-gray-100 rounded transition-colors ml-2"
+          aria-label="Collapse sidebar"
+        >
+          <TbLayoutSidebarLeftCollapseFilled className="w-5 h-5 text-white" />
+        </button>
+      )}
+    </div>
+  );
+}
+
 function renderLink(href, label, pathname, Icon, isCollapsed) {
   return (
     <a href={href} className={getLinkClass(pathname, href, isCollapsed)}>
-      <div className="relative">
+      <div className="relative flex flex-col items-center">
         <Icon className={getIconClass(isCollapsed)} />
+        {isCollapsed && (
+          <span className="text-[8px] font-bold text-gray-500 mt-1">{label}</span>
+        )}
         {isCollapsed && (
           <div className="absolute left-full z-50 ml-2 bg-black text-white text-xs px-2 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
             {label}

@@ -1,15 +1,22 @@
 "use client";
 
-import { XCircle, AlertCircle, LogOut } from "lucide-react";
+import { XCircle, AlertCircle, LogOut, Loader2 } from "lucide-react";
+import { createPortal } from "react-dom";
+import { useState, useEffect } from "react";
 import useModal from "./useModal";
 import useLogout from "../../hooks/useLogout";
 
 const LogoutButton = ({ collapsed = false }) => {
   const { isOpen, openModal, closeModal } = useModal();
-  const { logout } = useLogout();
+  const { logout, isLoading } = useLogout();
+  const [isBrowser, setIsBrowser] = useState(false);
 
-  const handleLogout = () => {
-    logout();
+  useEffect(() => {
+    setIsBrowser(true);
+  }, []);
+
+  const handleLogout = async () => {
+    await logout();
     closeModal();
   };
 
@@ -32,8 +39,8 @@ const LogoutButton = ({ collapsed = false }) => {
       </button>
 
       {/* Logout Modal */}
-      {isOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+      {isOpen && isBrowser && createPortal(
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-[9999]">
           <div className="bg-white p-6 rounded-2xl shadow-xl w-96 text-center relative">
             {/* Close Button */}
             <button
@@ -63,13 +70,22 @@ const LogoutButton = ({ collapsed = false }) => {
               </button>
               <button
                 onClick={handleLogout}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                disabled={isLoading}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
               >
-                Log Out
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Signing out...
+                  </>
+                ) : (
+                  "Log Out"
+                )}
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

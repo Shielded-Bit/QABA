@@ -6,7 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { AiOutlineClose } from "react-icons/ai";
 import { TbMenu4 } from "react-icons/tb";
-import { XCircle, AlertCircle, LogOut } from "lucide-react";
+import { XCircle, AlertCircle, LogOut, Loader2 } from "lucide-react";
 import Button from "../shared/Button";
 import { useProfile } from "../../../contexts/ProfileContext";
 import useLogout from "../../hooks/useLogout";
@@ -38,7 +38,7 @@ const Navbar = () => {
   
   // Get user data from context
   const { userData, profileImage, isLoading, userType } = useProfile() || {};
-  const { logout } = useLogout();
+  const { logout, isLoading: isLoggingOut } = useLogout();
   
   // Initialize from localStorage on component mount
   useEffect(() => {
@@ -157,8 +157,8 @@ const Navbar = () => {
     setShowSignOutModal(true);
   };
   
-  const handleConfirmSignOut = () => {
-    logout();
+  const handleConfirmSignOut = async () => {
+    await logout();
     setShowSignOutModal(false);
   };
 
@@ -250,14 +250,14 @@ const Navbar = () => {
               >
                 <div className="w-10 h-10 relative rounded-full overflow-hidden border border-gray-300 shadow-sm">
                   {cachedProfileImage ? (
-                    <Image
+                    <img
                       src={cachedProfileImage}
                       alt={`${cachedDisplayName} Profile`}
-                      width={40}
-                      height={40}
-                      className="rounded-full object-cover"
-                      priority
-                      unoptimized={cachedProfileImage.startsWith('data:')}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        console.log('Profile image failed to load:', cachedProfileImage);
+                        e.target.style.display = 'none';
+                      }}
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gray-200">
@@ -374,14 +374,14 @@ const Navbar = () => {
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-12 h-12 relative rounded-full overflow-hidden border-2 border-white shadow-md">
                   {cachedProfileImage ? (
-                    <Image
+                    <img
                       src={cachedProfileImage}
                       alt={`${cachedDisplayName} Profile`}
-                      width={48}
-                      height={48}
-                      className="rounded-full object-cover"
-                      priority
-                      unoptimized={cachedProfileImage.startsWith('data:')}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        console.log('Profile image failed to load:', cachedProfileImage);
+                        e.target.style.display = 'none';
+                      }}
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gray-200">
@@ -484,9 +484,17 @@ const Navbar = () => {
               </button>
               <button
                 onClick={handleConfirmSignOut}
-                className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+                disabled={isLoggingOut}
+                className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-70 disabled:cursor-not-allowed transition-colors font-medium flex items-center gap-2"
               >
-                Log Out
+                {isLoggingOut ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Signing out...
+                  </>
+                ) : (
+                  "Log Out"
+                )}
               </button>
             </div>
           </div>

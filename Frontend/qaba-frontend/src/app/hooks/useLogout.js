@@ -1,50 +1,21 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 const useLogout = () => {
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
 
   const logout = async () => {
-    try {
-      // Get the access token from localStorage or wherever it's stored
-      const accessToken = localStorage.getItem('access_token');
-      
-      if (!accessToken) {
-        console.error('No access token found');
-        // Clear any remaining user data
-        clearUserData();
-        router.push('/signin');
-        return;
-      }
-
-      // Make a POST request to the logout endpoint with the access token
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/logout/`, {
-        method: 'POST',
-        credentials: 'include', // Include cookies
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`
-        },
-      });
-
-      if (response.ok) {
-        console.log('Logout successful');
-      } else {
-        console.error('Logout failed:', response.status);
-      }
-      
-      // Clear user data regardless of API response
-      clearUserData();
-      
-      // Redirect to signin page
-      router.push('/signin');
-    } catch (error) {
-      console.error('Logout error:', error);
-      // Still clear data and redirect even if there's an exception
-      clearUserData();
-      router.push('/signin');
-    }
+    setIsLoading(true);
+    
+    // Clear user data immediately
+    clearUserData();
+    
+    // Force a complete page refresh to clear all cached state
+    // No API call needed - logout should be instant
+    window.location.href = '/signin';
   };
 
   // Helper function to clear all user-related data
@@ -79,7 +50,7 @@ const useLogout = () => {
     });
   };
 
-  return { logout };
+  return { logout, isLoading };
 };
 
 export default useLogout;
