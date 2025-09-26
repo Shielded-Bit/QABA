@@ -8,13 +8,15 @@ import { VscClearAll } from "react-icons/vsc";
 import { FiSearch, FiX } from "react-icons/fi";
 import { PropertyCardSkeleton } from '../agent-dashboard/favourites/components/LoadingSkeletons';
 import { useSearchParams } from 'next/navigation';
+import { usePropertiesCache } from '../../contexts/PropertiesCacheContext';
+import { RotateCcw } from 'lucide-react';
 
 
 function PropertiesContent() {
-  const [properties, setProperties] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [visibleListings, setVisibleListings] = useState(6);
+  const [searchTerm, setSearchTerm] = useState('');
+  const searchParams = useSearchParams();
+  const searchQuery = searchParams.get('q')?.toLowerCase() || '';
   
   const [filters, setFilters] = useState({
     city: '',
@@ -28,210 +30,47 @@ function PropertiesContent() {
     bathrooms: ''
   });
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const searchParams = useSearchParams();
-  const searchQuery = searchParams.get('q')?.toLowerCase() || '';
+  // Use the properties cache context
+  const {
+    properties,
+    cities: uniqueCities,
+    isLoading: loading,
+    error,
+    initialized,
+    getProperties,
+    refreshData,
+    clearCache
+  } = usePropertiesCache();
 
-  // Function to extract and format price from property data
-  const extractPrice = (property) => {
-    let price = null;
-    let formattedPrice = "";
-    
-    if (property.listing_type === "RENT") {
-      price = property.rent_price;
-      if (price) {
-        formattedPrice = `₦${Number(price).toLocaleString()} ${property.rent_frequency === "MONTHLY" ? "Per Month" : "Per Year"}`;
-      }
-    } else if (property.listing_type === "SALE") {
-      price = property.sale_price;
-      if (price) {
-        formattedPrice = `₦${Number(price).toLocaleString()}`;
-      }
-    }
-    
-    return formattedPrice || "Price on request";
-  };
-
-  // Fetch approved properties from API
+  // Fetch properties using the cache system
   useEffect(() => {
+    // Only run if context is initialized and we have filters
+    if (!initialized) return;
+    
     const fetchProperties = async () => {
       try {
-        setLoading(true);
-        setError(null);
+        const currentFilters = {
+          ...filters,
+          searchTerm: searchTerm.trim()
+        };
         
-        console.log('Current filters state:', filters);
+        // Only fetch if we have filters or search term, otherwise use cached data
+        const hasFilters = Object.values(currentFilters).some(value => value && value.trim());
         
-        // Build API URL with filters
-        let apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/properties/?listing_status=APPROVED`;
-        
-        // Add search parameter
-        if (searchTerm.trim()) {
-          apiUrl += `&search=${encodeURIComponent(searchTerm.trim())}`;
+        if (hasFilters) {
+          await getProperties(currentFilters);
         }
-        
-        // Add listing type filter
-        if (filters.listing_type) {
-          apiUrl += `&listing_type=${filters.listing_type}`;
-        }
-        
-        // Add filter parameters
-        if (filters.city) {
-          apiUrl += `&city=${encodeURIComponent(filters.city)}`;
-        }
-        
-        if (filters.property_type) {
-          apiUrl += `&property_type=${filters.property_type}`;
-        }
-        
-        if (filters.property_status) {
-          apiUrl += `&property_status=${filters.property_status}`;
-        }
-        
-        if (filters.lister_type) {
-          apiUrl += `&lister_type=${filters.lister_type}`;
-        }
-        
-        // Add bedroom filter
-        if (filters.bedrooms) {
-          apiUrl += `&bedrooms=${filters.bedrooms}`;
-        }
-        
-        // Add bathroom filter
-        if (filters.bathrooms) {
-          apiUrl += `&bathrooms=${filters.bathrooms}`;
-        }
-        
-        console.log('API URL with filters:', apiUrl);
-        
-        // Add price range parameters - using correct API parameter names
-        if (filters.price_range) {
-          if (filters.listing_type === "RENT") {
-            // For rental properties, use min_rent/max_rent
-            if (filters.price_range.endsWith('+')) {
-              const min = filters.price_range.replace('+', '');
-              apiUrl += `&min_rent=${min}`;
-            } else {
-              const [min, max] = filters.price_range.split('-').map(Number);
-              if (!isNaN(min)) {
-                apiUrl += `&min_rent=${min}`;
-              }
-              if (!isNaN(max)) {
-                apiUrl += `&max_rent=${max}`;
-              }
-            }
-          } else if (filters.listing_type === "SALE") {
-            // For sale properties, use min_sale/max_sale
-            if (filters.price_range.endsWith('+')) {
-              const min = filters.price_range.replace('+', '');
-              apiUrl += `&min_sale=${min}`;
-            } else {
-              const [min, max] = filters.price_range.split('-').map(Number);
-              if (!isNaN(min)) {
-                apiUrl += `&min_sale=${min}`;
-              }
-              if (!isNaN(max)) {
-                apiUrl += `&max_sale=${max}`;
-              }
-            }
-          } else {
-            // For all properties, use both min_rent/max_rent and min_sale/max_sale
-            if (filters.price_range.endsWith('+')) {
-              const min = filters.price_range.replace('+', '');
-              apiUrl += `&min_rent=${min}&min_sale=${min}`;
-            } else {
-              const [min, max] = filters.price_range.split('-').map(Number);
-              if (!isNaN(min)) {
-                apiUrl += `&min_rent=${min}&min_sale=${min}`;
-              }
-              if (!isNaN(max)) {
-                apiUrl += `&max_rent=${max}&max_sale=${max}`;
-              }
-            }
-          }
-        }
-
-        const res = await fetch(apiUrl, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-        
-        if (!res.ok) throw new Error('Failed to fetch properties');
-        const responseData = await res.json();
-        
-        // Extract the data array based on the actual API response structure
-        const propertiesData = responseData.data || [];
-        
-        // Map API data to our component's expected format
-        const formattedProperties = propertiesData.map(property => ({
-          id: property.id,
-          title: property.property_name || 'Beautiful Property',
-          price: extractPrice(property),
-          description: `${property.bedrooms || 0} bed, ${property.bathrooms || 0} bath property in ${property.location || 'premium location'}`,
-          image: property.thumbnail || 'https://res.cloudinary.com/dqbbm0guw/image/upload/v1734105941/Cliff_house_design_by_THE_LINE_visualization_1_1_ghvctf.png',
-          type: property.listing_type?.toLowerCase() || 'property',
-          location: property.location || '',
-          city: property.city || '',
-          propertyStatus: property.property_status_display || 'Available',
-          amenities: property.amenities || [],
-          listingType: property.listing_type || 'PROPERTY'
-        }));
-        
-        setProperties(formattedProperties);
+        // If no filters, the context will handle loading cached data automatically
       } catch (err) {
         console.error('Error fetching properties:', err);
-        setError('Failed to load properties. Please try again later.');
-        setProperties([]);
-      } finally {
-        setLoading(false);
       }
     };
 
     fetchProperties();
-  }, [filters.price_range, filters.city, filters.property_type, filters.property_status, filters.lister_type, filters.listing_type, filters.bedrooms, filters.bathrooms, searchTerm]);
-
-  // Get unique cities for filters - fetch all cities separately
-  const [allCities, setAllCities] = useState([]);
-  
-  // Fetch all available cities for the city filter
-  useEffect(() => {
-    const fetchAllCities = async () => {
-      try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/properties/?listing_status=APPROVED`,
-          {
-            headers: { 'Content-Type': 'application/json' }
-          }
-        );
-        
-        if (response.ok) {
-          const data = await response.json();
-          const allProperties = data.data || [];
-          
-          // Extract unique cities from all properties
-          const cities = [...new Set(
-            allProperties
-              .map(property => property.city)
-              .filter(city => city && city.trim())
-          )].sort();
-          
-          setAllCities(cities);
-        }
-      } catch (error) {
-        console.error('Error fetching cities:', error);
-      }
-    };
-    
-    fetchAllCities();
-  }, []);
-  
-  // Use allCities for the city filter dropdown
-  const uniqueCities = allCities;
+  }, [filters, searchTerm, getProperties, initialized]);
 
   // Reset filters
   const handleResetFilters = () => {
-    console.log('Resetting all filters');
     setFilters({
       city: '',
       state: '',
@@ -246,6 +85,7 @@ function PropertiesContent() {
     setSearchTerm(''); // Reset search term
     setVisibleListings(6);
   };
+
 
   // Load more properties
   const handleLoadMore = () => setVisibleListings((prev) => prev + 6);
@@ -289,7 +129,7 @@ function PropertiesContent() {
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className={`w-full h-10 sm:h-11 px-3 sm:px-4 py-2 sm:py-2.5 bg-white border-2 rounded-xl text-left text-xs sm:text-sm font-medium transition-all duration-200 flex items-center justify-between
+          className={`w-full h-10 sm:h-11 px-3 sm:px-4 py-2 sm:py-2.5 bg-white border rounded-xl text-left text-xs sm:text-sm font-medium transition-all duration-200 flex items-center justify-between
             ${isOpen 
               ? 'border-[#014d98] shadow-lg shadow-blue-100' 
               : value 
@@ -322,7 +162,7 @@ function PropertiesContent() {
         </button>
 
         {isOpen && (
-          <div className="absolute top-full left-0 right-0 mt-2 bg-white border-2 border-[#014d98] rounded-xl shadow-xl z-50 max-h-64 overflow-y-auto">
+          <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-[#014d98] rounded-xl shadow-xl z-[9999] max-h-64 overflow-y-auto">
             <div className="py-2">
               {!value && (
                 <div className="px-4 py-2 text-xs sm:text-sm text-gray-400 bg-gray-50 border-b border-gray-100">
@@ -365,6 +205,9 @@ function PropertiesContent() {
   ];
 
   const propertyTypes = [
+    { value: 'HOUSE', label: 'House' },
+    { value: 'APARTMENT', label: 'Apartment' },
+    { value: 'SELF_CONTAIN', label: 'Self Contain' },
     { value: 'TWO_BEDROOM_FLAT', label: 'Two Bedroom Flat' },
     { value: 'THREE_BEDROOM_FLAT', label: 'Three Bedroom Flat' },
     { value: 'STUDIO', label: 'Studio' },
@@ -420,7 +263,20 @@ function PropertiesContent() {
     <div className="px-4 sm:px-6 lg:px-14 py-4">
       <div className="pt-6">
         {/* Enhanced Search and Filters Section */}
-        <div className="bg-gradient-to-r from-gray-50 via-blue-50 to-teal-50 rounded-2xl p-4 sm:p-6 mb-8 border border-gray-100 shadow-sm">
+        <div className="relative rounded-2xl p-4 sm:p-6 mb-8 border border-gray-100 shadow-sm">
+          {/* Background Image */}
+          <div 
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat rounded-2xl overflow-hidden"
+            style={{
+              backgroundImage: `url('/proper1.png')`
+            }}
+          />
+          
+          {/* Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-black/10 rounded-2xl"></div>
+          
+          {/* Content */}
+          <div className="relative z-10">
           {/* Search Bar */}
           <div className="mb-6">
             <div className="relative max-w-2xl">
@@ -429,7 +285,7 @@ function PropertiesContent() {
               </div>
               <input
                 type="text"
-                placeholder="Search properties, locations, cities..."
+                placeholder="Search properties..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyDown={(e) => {
@@ -437,7 +293,7 @@ function PropertiesContent() {
                     setSearchTerm(e.target.value);
                   }
                 }}
-                className="w-full h-12 sm:h-14 pl-12 pr-12 py-3 sm:py-4 text-sm sm:text-base bg-white border-2 border-gray-200 rounded-xl focus:border-[#014d98] focus:outline-none focus:shadow-lg focus:shadow-blue-100 transition-all duration-200 placeholder-gray-500"
+                className="w-full h-12 sm:h-14 pl-12 pr-12 py-3 sm:py-4 text-base bg-white border border-gray-200 rounded-xl focus:border-[#014d98] focus:outline-none transition-all duration-200 placeholder-gray-500"
               />
               {searchTerm && (
                 <button
@@ -461,29 +317,45 @@ function PropertiesContent() {
           {/* Filters Section */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm sm:text-base font-semibold text-[#014d98] flex items-center gap-2">
-                <span>Filters</span>
+                <h3 className="text-sm sm:text-base font-semibold text-white flex items-center gap-2">
+                <span>Active Filters:</span>
                 {activeFiltersCount > 0 && (
-                  <span className="bg-[#3ab7b1] text-white text-xs px-2 py-1 rounded-full">
+                  <span className="bg-white/20 text-white text-xs px-2 py-1 rounded-full border border-white/30">
                     {activeFiltersCount}
                   </span>
                 )}
               </h3>
               
-              <button
-                onClick={handleResetFilters}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
-                  activeFiltersCount > 0
-                    ? 'bg-red-50 text-red-600 hover:bg-red-100 border-2 border-red-200' 
-                    : 'bg-gray-100 text-gray-400 cursor-not-allowed border-2 border-gray-200'
-                }`}
-                disabled={activeFiltersCount === 0}
-                title="Reset all filters and search"
-              >
-                <VscClearAll className="w-4 h-4" />
-                <span className="hidden sm:inline">Reset All</span>
-                <span className="sm:hidden">Reset</span>
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={async () => {
+                    try {
+                      await refreshData();
+                    } catch (error) {
+                      console.error('Refresh failed:', error);
+                    }
+                  }}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200 bg-blue-50 text-blue-600 hover:bg-blue-100 border-2 border-blue-200"
+                  title="Refresh data from server"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  <span className="hidden sm:inline">Refresh</span>
+                </button>
+                <button
+                  onClick={handleResetFilters}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                    activeFiltersCount > 0
+                      ? 'bg-red-50 text-red-600 hover:bg-red-100 border-2 border-red-200'
+                      : 'bg-gray-100 text-gray-400 cursor-not-allowed border-2 border-gray-200'
+                  }`}
+                  disabled={activeFiltersCount === 0}
+                  title="Reset all filters and search"
+                >
+                  <VscClearAll className="w-4 h-4" />
+                  <span className="hidden sm:inline">Reset All</span>
+                  <span className="sm:hidden">Reset</span>
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8 gap-3 sm:gap-4">
@@ -553,8 +425,8 @@ function PropertiesContent() {
 
             {/* Active Filters Display */}
             {activeFiltersCount > 0 && (
-              <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-200">
-                <span className="text-xs text-gray-600 font-medium">Active filters:</span>
+              <div className="flex flex-wrap gap-2 pt-2 border-t border-white/20">
+                <span className="text-xs text-white font-medium">Active filters:</span>
                 {searchTerm.trim() && (
                   <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#014d98] text-white text-xs rounded-full">
                                          Search: &quot;{searchTerm.substring(0, 20)}{searchTerm.length > 20 ? '...' : ''}&quot;
@@ -601,6 +473,7 @@ function PropertiesContent() {
                 })}
               </div>
             )}
+          </div>
           </div>
         </div>
       </div>
@@ -655,6 +528,7 @@ function PropertiesContent() {
                   image={property.image}
                   type={property.type}
                   propertyStatus={property.propertyStatus}
+                  propertyTypeDisplay={property.propertyTypeDisplay}
                   amenities={property.amenities}
                 />
               ))}
@@ -727,6 +601,7 @@ function PropertiesContent() {
                       description={property.description}
                       image={property.image}
                       type={property.type}
+                      propertyTypeDisplay={property.propertyTypeDisplay}
                     />
                   ))}
               </div>

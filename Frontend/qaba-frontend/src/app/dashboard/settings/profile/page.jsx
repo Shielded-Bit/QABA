@@ -491,7 +491,7 @@ export default function ProfilePage() {
 
   // Render Component
   return (
-    <div className="max-w-4xl mx-auto px-4 lg:px-6 py-6">
+    <div className="h-full p-4 lg:p-6">
       {/* Toast Container */}
       <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
       

@@ -125,6 +125,9 @@ export function ProfileProvider({ children }) {
         localStorage.setItem('profile_photo_url', profilePhotoUrl);
       }
 
+      // Set the last fetch timestamp
+      localStorage.setItem('profile_last_fetch', new Date().getTime().toString());
+
       setProfileData({
         userData: userData,
         profileImage: profilePhotoUrl ? `${profilePhotoUrl}?t=${new Date().getTime()}` : null,
@@ -188,7 +191,36 @@ export function ProfileProvider({ children }) {
   useEffect(() => {
     // Only fetch profile if we're in the browser
     if (typeof window !== 'undefined') {
-      fetchProfile();
+      // First, try to load from localStorage for immediate display
+      const savedData = localStorage.getItem('user_data');
+      const savedImageUrl = localStorage.getItem('profile_photo_url');
+      const savedUserType = localStorage.getItem('user_type');
+      
+      if (savedData && savedUserType) {
+        try {
+          const parsedData = JSON.parse(savedData);
+          setProfileData({
+            userData: parsedData,
+            profileImage: savedImageUrl || null,
+            isLoading: false,
+            error: null,
+          });
+          
+          // Only fetch fresh data if localStorage is stale (older than 5 minutes)
+          const lastFetch = localStorage.getItem('profile_last_fetch');
+          const now = new Date().getTime();
+          const fiveMinutes = 5 * 60 * 1000;
+          
+          if (!lastFetch || (now - parseInt(lastFetch)) > fiveMinutes) {
+            fetchProfile();
+          }
+        } catch (parseErr) {
+          console.error("Error parsing saved data:", parseErr);
+          fetchProfile();
+        }
+      } else {
+        fetchProfile();
+      }
     }
   }, [fetchProfile]);
 

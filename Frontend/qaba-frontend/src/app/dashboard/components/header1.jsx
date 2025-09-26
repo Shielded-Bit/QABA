@@ -2,14 +2,18 @@
 
 import { useState, useEffect, useRef } from "react";
 import { BellDot, X } from "lucide-react";
+import { RiMenuFoldFill } from "react-icons/ri";
 import Image from "next/image";
 import Link from "next/link";
 import { useProfile } from "../../../contexts/ProfileContext";
 import { useNotifications } from "../../../contexts/NotificationContext";
 import { createPortal } from "react-dom";
+import MobileMenu from "./MobileMenu";
+import PropertiesBanner from "../../components/banner/PropertiesBanner";
 
 export default function TopNav() {
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [isBrowser, setIsBrowser] = useState(false);
   
   // Cache state - initialize from localStorage on mount
@@ -149,9 +153,9 @@ export default function TopNav() {
     }
   }, [profileImage, cachedProfileImage, isInitialized]);
 
-  // Add body class to prevent scrolling when notifications are open
+  // Add body class to prevent scrolling when modals are open
   useEffect(() => {
-    if (showNotifications) {
+    if (showNotifications || showMobileMenu) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';
@@ -159,7 +163,7 @@ export default function TopNav() {
     return () => {
       document.body.style.overflow = 'unset';
     };
-  }, [showNotifications]);
+  }, [showNotifications, showMobileMenu]);
 
   const handleMarkAsRead = async (id) => {
     try {
@@ -169,12 +173,48 @@ export default function TopNav() {
     }
   };
 
+  // Get the profile image URL - prioritizes localStorage for immediate display
+  const getProfileImageUrl = () => {
+    // Always prioritize localStorage first for immediate display
+    if (typeof window !== 'undefined') {
+      const savedProfileImage = localStorage.getItem('profile_photo_url');
+      if (savedProfileImage && savedProfileImage.trim() !== '') {
+        return savedProfileImage;
+      }
+    }
+    
+    // Fallback to cached data if localStorage is empty
+    if (cachedProfileImage) {
+      return cachedProfileImage;
+    }
+    
+    // Fallback to context value if available
+    if (profileImage) {
+      return profileImage;
+    } 
+    
+    // Last resort: check user data and cache it
+    const userDataToUse = cachedUserData || userData;
+    if (userDataToUse) {
+      const photoUrl = userDataToUse.agentprofile?.profile_photo_url || 
+                      userDataToUse.clientprofile?.profile_photo_url ||
+                      userDataToUse.profile?.profile_photo_url;
+      if (photoUrl && typeof window !== 'undefined') {
+        // Cache it for future use
+        localStorage.setItem('profile_photo_url', photoUrl);
+        return photoUrl;
+      }
+    }
+    
+    return null;
+  };
+
   // Render the modal overlay and notification content with portal
   const renderNotificationContent = () => {
     if (!isBrowser) return null;
 
     return createPortal(
-      <div className="fixed inset-0 z-50">
+      <div className="fixed inset-0 z-[60]">
         {/* Overlay */}
         <div 
           className="absolute inset-0 bg-black bg-opacity-50"
@@ -229,17 +269,34 @@ export default function TopNav() {
     );
   };
 
-  return (
-    <div className="bg-gray-100 w-full sticky top-0 z-30">
-      {/* Large Screen Navigation */}
-      <div className="hidden sm:flex justify-between items-center p-6 px-3 md:px-10">
-        {/* Search Bar */}
-        <div className="flex items-center flex-1 relative max-w-md">
-          {/* Search bar removed */}
-        </div>
+  // Only show loading if we haven't initialized from cache yet
+  const shouldShowLoading = !isInitialized || (!cachedUserData && isLoading);
+  const profileImageUrl = getProfileImageUrl();
 
-        {/* Notification + Profile Section */}
-        <div className="flex items-center gap-6 relative">
+  return (
+    <div className="w-full sticky top-0 z-30">
+      {/* Large Screen Navigation */}
+      <div className="hidden sm:flex justify-between items-center h-[70px] px-4">
+        <nav className="bg-white font-manrope w-[100%] max-w-[100%] h-[70px] mx-auto rounded-2xl py-[15px] px-6 opacity-100 shadow-sm">
+          <div className="flex items-center justify-between h-full">
+            {/* Left Side - Logo */}
+            <div className="flex items-center space-x-2">
+              <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
+                <Image 
+                  src="/qarbaLogo.png" 
+                  alt="QARBA Logo" 
+                  width={180} 
+                  height={48} 
+                  className="h-12 w-auto"
+                />
+              </Link>
+            </div>
+
+            {/* Center - Banner Component */}
+            <PropertiesBanner />
+
+            {/* Right Side - All Navigation Items */}
+            <div className="flex items-center justify-end" style={{ gap: '20px' }}>
           {/* Notification Bell */}
           <div className="relative cursor-pointer" onClick={() => setShowNotifications(!showNotifications)}>
             <BellDot className="h-7 w-7 text-gray-600 hover:text-blue-500 transition duration-300" />
@@ -251,17 +308,17 @@ export default function TopNav() {
           </div>
 
           {/* User Profile */}
-          <Link href={cachedSettingsUrl} className="flex items-center gap-2 cursor-pointer">
-            <div className="w-10 h-10 relative rounded-full overflow-hidden border border-gray-300 shadow-sm">
-              {cachedProfileImage ? (
-                <Image
-                  src={cachedProfileImage}
+          <Link href={cachedSettingsUrl} className="flex items-center gap-3 cursor-pointer">
+            <div className="w-12 h-12 relative rounded-full overflow-hidden border border-gray-300 shadow-sm">
+              {profileImageUrl && !shouldShowLoading ? (
+                <img
+                  src={profileImageUrl}
                   alt={`${cachedDisplayName} Profile`}
-                  width={40}
-                  height={40}
-                  className="rounded-full object-cover"
-                  priority
-                  unoptimized={cachedProfileImage.startsWith('data:')}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    console.log('Profile image failed to load:', profileImageUrl);
+                    e.target.style.display = 'none';
+                  }}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-gray-200">
@@ -276,57 +333,100 @@ export default function TopNav() {
               <span className="text-xs text-gray-500">{cachedRole}</span>
             </div>
           </Link>
-        </div>
+            </div>
+          </div>
+        </nav>
       </div>
 
-      {/* Mobile Navigation */}
-      <div className="sm:hidden flex justify-between items-center p-4 px-3">
-        {/* Search Bar (Mobile) */}
-        <div className="flex items-center flex-1 relative mx-4"></div>
-
-        {/* Right side icons container */}
-        <div className="flex items-center gap-3">
-          {/* Notification Bell */}
-          <div className="relative cursor-pointer" onClick={() => setShowNotifications(!showNotifications)}>
-            <BellDot className="h-6 w-6 text-gray-600 hover:text-blue-500 transition duration-300" />
-            {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-4 h-4 flex items-center justify-center rounded-full">
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </span>
-            )}
-          </div>
-
-          {/* User Profile (Mobile) */}
-          <Link href={cachedSettingsUrl} className="flex items-center gap-2 cursor-pointer">
-            <div className="w-8 h-8 relative rounded-full overflow-hidden border border-gray-300">
-              {cachedProfileImage ? (
-                <Image
-                  src={cachedProfileImage}
-                  alt={`${cachedShortName} Profile`}
-                  width={32}
-                  height={32}
-                  className="rounded-full object-cover"
-                  priority
-                  unoptimized={cachedProfileImage.startsWith('data:')}
+      {/* Mobile Navigation - Enhanced with more content */}
+      <div className="sm:hidden flex justify-between items-center h-[70px] px-2">
+        <nav className="bg-white font-manrope w-[100%] max-w-[100%] h-[70px] mx-auto rounded-2xl py-[15px] px-2 opacity-100 shadow-sm">
+          <div className="flex items-center justify-between h-full">
+            {/* Left side - Logo and Menu button */}
+            <div className="flex items-center gap-3 flex-1">
+              {/* Menu Button */}
+              <button 
+                onClick={() => setShowMobileMenu(!showMobileMenu)}
+                className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <RiMenuFoldFill className="h-6 w-6 text-[#014d98]" />
+              </button>
+              
+              {/* Logo */}
+              <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
+                <Image 
+                  src="/qarbaLogo.png" 
+                  alt="QARBA Logo" 
+                  width={140} 
+                  height={40} 
+                  className="h-10 w-auto"
                 />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                  <span className="text-sm font-medium text-gray-500">
-                    {cachedInitial}
-                  </span>
-                </div>
-              )}
+              </Link>
             </div>
-            <span className="text-sm font-medium text-gray-800">{cachedShortName}</span>
-          </Link>
-        </div>
+
+            {/* Center - User Info (only show if there's space) */}
+            <div className="hidden xs:flex flex-col items-center flex-1 max-w-[120px]">
+              <span className="text-xs font-medium text-gray-800 truncate w-full text-center">
+                {cachedShortName}
+              </span>
+              <span className="text-xs text-gray-500 truncate w-full text-center">
+                {cachedRole}
+              </span>
+            </div>
+
+            {/* Right side icons container */}
+            <div className="flex items-center gap-2">
+              {/* Notification Bell */}
+              <div className="relative cursor-pointer" onClick={() => setShowNotifications(!showNotifications)}>
+                <BellDot className="h-6 w-6 text-gray-600 hover:text-blue-500 transition duration-300" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-4 h-4 flex items-center justify-center rounded-full">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </div>
+
+              {/* User Profile (Mobile) - Larger on mobile */}
+              <Link href={cachedSettingsUrl} className="flex items-center cursor-pointer">
+                <div className="w-10 h-10 relative rounded-full overflow-hidden border border-gray-300">
+                  {profileImageUrl && !shouldShowLoading ? (
+                    <img
+                      src={profileImageUrl}
+                      alt={`${cachedShortName} Profile`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        console.log('Profile image failed to load:', profileImageUrl);
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                      <span className="text-lg font-medium text-gray-500">
+                        {cachedInitial}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </Link>
+            </div>
+          </div>
+        </nav>
       </div>
 
       {/* Notification Modal */}
       {showNotifications && renderNotificationContent()}
 
       {/* Mobile Menu Portal */}
-      {/* The mobile menu portal is removed as the menu button is removed */}
+      <MobileMenu 
+        isOpen={showMobileMenu}
+        onClose={() => setShowMobileMenu(false)}
+        profileImageUrl={profileImageUrl}
+        cachedDisplayName={cachedDisplayName}
+        cachedRole={cachedRole}
+        cachedInitial={cachedInitial}
+        cachedSettingsUrl={cachedSettingsUrl}
+        shouldShowLoading={shouldShowLoading}
+      />
     </div>
   );
 }

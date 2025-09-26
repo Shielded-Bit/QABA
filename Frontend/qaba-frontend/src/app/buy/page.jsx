@@ -5,15 +5,13 @@ import ListingCard from '../components/listingCard/ListingCard';
 import Button from '../components/shared/Button';
 import { IoMdArrowDropdown, IoMdArrowDropup } from "react-icons/io";
 import { VscClearAll } from "react-icons/vsc";
-import { FiX } from "react-icons/fi";
+import { FiX, FiSearch } from "react-icons/fi";
 import { PropertyCardSkeleton } from '../agent-dashboard/favourites/components/LoadingSkeletons';
 import { useSearchParams } from 'next/navigation';
 import { propertyLocationIndex } from "../utils/propertyLocationIndex";
+import { ListingTypeCacheProvider, useListingTypeCache } from '../../contexts/ListingTypeCacheContext';
 
 function BuyContent() {
-  const [properties, setProperties] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [visibleListings, setVisibleListings] = useState(6);
   
   const [filters, setFilters] = useState({
@@ -24,147 +22,46 @@ function BuyContent() {
     lister_type: ''
   });
 
+  const [searchTerm, setSearchTerm] = useState('');
   const searchParams = useSearchParams();
   const searchQuery = searchParams.get('q')?.toLowerCase() || '';
 
-  // Function to extract and format price from property data
-  const extractPrice = (property) => {
-    let price = null;
-    let formattedPrice = "";
-    
-    if (property.listing_type === "SALE") {
-      price = property.sale_price;
-      if (price) {
-        formattedPrice = `₦${Number(price).toLocaleString()}`;
-      }
-    }
-    
-    return formattedPrice || "Price on request";
-  };
+  // Use the buy cache context
+  const { 
+    properties, 
+    cities: uniqueCities, 
+    isLoading: loading, 
+    error, 
+    initialized,
+    getProperties
+  } = useListingTypeCache();
 
-  // Fetch approved sale properties from API
+  // Fetch properties using the cache system
   useEffect(() => {
+    // Only run if context is initialized and we have filters
+    if (!initialized) return;
+    
     const fetchProperties = async () => {
       try {
-        setLoading(true);
-        setError(null);
+        const currentFilters = {
+          ...filters,
+          searchTerm: searchTerm.trim()
+        };
         
-        // Build API URL with filters
-        let apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/properties/?listing_status=APPROVED&listing_type=SALE`;
+        // Only fetch if we have filters or search term, otherwise use cached data
+        const hasFilters = Object.values(currentFilters).some(value => value && value.trim());
         
-        // Add filter parameters
-        if (filters.city) {
-          apiUrl += `&city=${encodeURIComponent(filters.city)}`;
+        if (hasFilters) {
+          await getProperties(currentFilters);
         }
-        
-        if (filters.property_type) {
-          apiUrl += `&property_type=${filters.property_type}`;
-        }
-        
-        if (filters.property_status) {
-          apiUrl += `&property_status=${filters.property_status}`;
-        }
-        
-        if (filters.lister_type) {
-          apiUrl += `&lister_type=${filters.lister_type}`;
-        }
-        
-        // Add price range parameters - using correct API parameter names for sale
-        if (filters.price_range) {
-          if (filters.price_range.endsWith('+')) {
-            const min = filters.price_range.replace('+', '');
-            apiUrl += `&min_sale=${min}`;
-          } else {
-            const [min, max] = filters.price_range.split('-').map(Number);
-            if (!isNaN(min)) {
-              apiUrl += `&min_sale=${min}`;
-            }
-            if (!isNaN(max)) {
-              apiUrl += `&max_sale=${max}`;
-            }
-          }
-        }
-
-        const res = await fetch(apiUrl, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-        
-        if (!res.ok) throw new Error('Failed to fetch properties');
-        const responseData = await res.json();
-        const propertiesData = responseData.data || [];
-        
-        const formattedProperties = propertiesData.map(property => ({
-          id: property.id,
-          title: property.property_name || 'Beautiful Property',
-          price: extractPrice(property),
-          description: `${property.bedrooms || 0} bed, ${property.bathrooms || 0} bath property in ${property.location || 'premium location'}`,
-          image: property.thumbnail || 'https://res.cloudinary.com/dqbbm0guw/image/upload/v1734105941/Cliff_house_design_by_THE_LINE_visualization_1_1_ghvctf.png',
-          type: 'sale',
-          location: property.location || '',
-          city: property.city || '',
-          propertyStatus: property.property_status_display || 'Available',
-          amenities: property.amenities || []
-        }));
-        
-        setProperties(formattedProperties);
+        // If no filters, the context will handle loading cached data automatically
       } catch (err) {
         console.error('Error fetching properties:', err);
-        setError('Failed to load properties. Please try again later.');
-        setProperties([]);
-      } finally {
-        setLoading(false);
       }
     };
 
     fetchProperties();
-  }, [
-    filters.price_range,
-    filters.city,
-    filters.property_type,
-    filters.property_status,
-    filters.lister_type
-  ]);
-
-  // Get unique cities for filters - fetch all cities separately
-  const [allCities, setAllCities] = useState([]);
-  
-  // Fetch all available cities for the city filter
-  useEffect(() => {
-    const fetchAllCities = async () => {
-      try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/properties/?listing_status=APPROVED&listing_type=SALE`,
-          {
-            headers: { 'Content-Type': 'application/json' }
-          }
-        );
-        
-        if (response.ok) {
-          const data = await response.json();
-          const allProperties = data.data || [];
-          
-          // Extract unique cities from all properties
-          const cities = [...new Set(
-            allProperties
-              .map(property => property.city)
-              .filter(city => city && city.trim())
-          )].sort();
-          
-          setAllCities(cities);
-        }
-      } catch (error) {
-        console.error('Error fetching cities:', error);
-      }
-    };
-    
-    fetchAllCities();
-  }, []);
-  
-  // Use allCities for the city filter dropdown
-  const uniqueCities = allCities;
+  }, [filters, searchTerm, getProperties, initialized]);
 
   // Reset filters
   const handleResetFilters = () => {
@@ -175,8 +72,10 @@ function BuyContent() {
       property_status: '',
       lister_type: ''
     });
+    setSearchTerm(''); // Reset search term
     setVisibleListings(6); // Reset to show first 6 items
   };
+
 
   // Load more properties
   const handleLoadMore = () => setVisibleListings((prev) => prev + 6);
@@ -220,7 +119,7 @@ function BuyContent() {
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className={`w-full h-10 sm:h-11 px-3 sm:px-4 py-2 sm:py-2.5 bg-white border-2 rounded-xl text-left text-xs sm:text-sm font-medium transition-all duration-200 flex items-center justify-between
+          className={`w-full h-10 sm:h-11 px-3 sm:px-4 py-2 sm:py-2.5 bg-white border rounded-xl text-left text-xs sm:text-sm font-medium transition-all duration-200 flex items-center justify-between
             ${isOpen 
               ? 'border-[#014d98] shadow-lg shadow-blue-100' 
               : value 
@@ -234,15 +133,24 @@ function BuyContent() {
           </span>
           <div className="flex items-center ml-2">
             {value && (
-              <button
+              <span
                 onClick={(e) => {
                   e.stopPropagation();
                   onChange('');
                 }}
-                className="mr-1 p-0.5 hover:bg-gray-100 rounded-full transition-colors"
+                className="mr-1 p-0.5 hover:bg-gray-100 rounded-full transition-colors cursor-pointer inline-flex items-center justify-center"
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onChange('');
+                  }
+                }}
               >
                 <FiX className="w-3 h-3 text-gray-400 hover:text-gray-600" />
-              </button>
+              </span>
             )}
             {isOpen ? (
               <IoMdArrowDropup className="w-4 h-4 sm:w-5 sm:h-5 text-[#014d98]" />
@@ -253,7 +161,7 @@ function BuyContent() {
         </button>
 
         {isOpen && (
-          <div className="absolute top-full left-0 right-0 mt-2 bg-white border-2 border-[#014d98] rounded-xl shadow-xl z-50 max-h-64 overflow-y-auto">
+          <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-[#014d98] rounded-xl shadow-xl z-[9999] max-h-64 overflow-y-auto">
             <div className="py-2">
               {!value && (
                 <div className="px-4 py-2 text-xs sm:text-sm text-gray-400 bg-gray-50 border-b border-gray-100">
@@ -291,6 +199,9 @@ function BuyContent() {
   };
 
   const propertyTypes = [
+    { value: 'HOUSE', label: 'House' },
+    { value: 'APARTMENT', label: 'Apartment' },
+    { value: 'SELF_CONTAIN', label: 'Self Contain' },
     { value: 'TWO_BEDROOM_FLAT', label: 'Two Bedroom Flat' },
     { value: 'THREE_BEDROOM_FLAT', label: 'Three Bedroom Flat' },
     { value: 'STUDIO', label: 'Studio' },
@@ -326,72 +237,102 @@ function BuyContent() {
   return (
     <div className="px-4 sm:px-6 lg:px-14 py-4">
       <div className="pt-6">
-        {/* Enhanced Filters Section */}
-        <div className="bg-gradient-to-r from-gray-50 via-blue-50 to-teal-50 rounded-2xl p-4 sm:p-6 mb-8 border border-gray-100 shadow-sm">
-          {/* Filters Section */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm sm:text-base font-semibold text-[#014d98] flex items-center gap-2">
-                <span>Filters</span>
-                {activeFiltersCount > 0 && (
-                  <span className="bg-[#3ab7b1] text-white text-xs px-2 py-1 rounded-full">
-                    {activeFiltersCount}
-                  </span>
-                )}
-              </h3>
-              
-              <button
-                onClick={handleResetFilters}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
-                  activeFiltersCount > 0
-                    ? 'bg-red-50 text-red-600 hover:bg-red-100 border-2 border-red-200' 
-                    : 'bg-gray-100 text-gray-400 cursor-not-allowed border-2 border-gray-200'
-                }`}
-                disabled={activeFiltersCount === 0}
-                title="Reset all filters"
-              >
-                <VscClearAll className="w-4 h-4" />
-                <span className="hidden sm:inline">Reset All</span>
-                <span className="sm:hidden">Reset</span>
-              </button>
+        {/* Enhanced Search and Filters Section */}
+        <div className="relative rounded-2xl p-4 sm:p-6 mb-8 border border-gray-100 shadow-sm">
+          {/* Background Image */}
+          <div 
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat rounded-2xl overflow-hidden"
+            style={{
+              backgroundImage: `url('/proper1.png')`
+            }}
+          />
+          
+          {/* Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-black/10 rounded-2xl"></div>
+          
+          {/* Content */}
+          <div className="relative z-10">
+            {/* Search Bar */}
+            <div className="mb-6">
+              <div className="relative max-w-md">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <FiSearch className="h-5 w-5 text-[#014d98]" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Search properties..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-12 pr-12 py-3 text-base bg-white border border-gray-200 rounded-xl focus:border-[#014d98] focus:outline-none transition-all duration-200 placeholder-gray-500"
+                />
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-              <CustomDropdown
-                label="City"
-                placeholder="Select City"
-                options={uniqueCities}
-                value={filters.city}
-                onChange={(value) => setFilters({ ...filters, city: value })}
-              />
-              <CustomDropdown
-                label="Type"
-                placeholder="Property Type"
-                options={propertyTypes}
-                value={filters.property_type}
-                onChange={(value) => setFilters({ ...filters, property_type: value })}
-              />
-              <CustomDropdown
-                label="Price"
-                placeholder="Price Range"
-                options={priceRanges}
-                value={filters.price_range}
-                onChange={(value) => setFilters({ ...filters, price_range: value })}
-              />
-              <CustomDropdown
-                label="Status"
-                placeholder="Availability"
-                options={propertyStatusOptions}
-                value={filters.property_status}
-                onChange={(value) => setFilters({ ...filters, property_status: value })}
-              />
-              <CustomDropdown
-                label="By"
-                placeholder="Lister Type"
-                options={listerTypeOptions}
-                value={filters.lister_type}
-                onChange={(value) => setFilters({ ...filters, lister_type: value })}
-              />
+            {/* Filters Section */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm sm:text-base font-semibold text-white flex items-center gap-2">
+                  <span>Active Filters:</span>
+                  {activeFiltersCount > 0 && (
+                    <span className="bg-white/20 text-white text-xs px-2 py-1 rounded-full border border-white/30">
+                      {activeFiltersCount}
+                    </span>
+                  )}
+                </h3>
+                
+                <button
+                  onClick={handleResetFilters}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                    activeFiltersCount > 0 || searchTerm
+                      ? 'bg-red-50 text-red-600 hover:bg-red-100 border-2 border-red-200' 
+                      : 'bg-gray-100 text-gray-400 cursor-not-allowed border-2 border-gray-200'
+                  }`}
+                  disabled={activeFiltersCount === 0 && !searchTerm}
+                  title="Reset all filters"
+                >
+                  <VscClearAll className="w-4 h-4" />
+                  <span className="hidden sm:inline">Reset All</span>
+                  <span className="sm:hidden">Reset</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+                <CustomDropdown
+                  label="City"
+                  placeholder="Select City"
+                  options={uniqueCities}
+                  value={filters.city}
+                  onChange={(value) => setFilters({ ...filters, city: value })}
+                />
+                <CustomDropdown
+                  label="Type"
+                  placeholder="Property Type"
+                  options={propertyTypes}
+                  value={filters.property_type}
+                  onChange={(value) => setFilters({ ...filters, property_type: value })}
+                />
+                <CustomDropdown
+                  label="Price"
+                  placeholder="Price Range"
+                  options={priceRanges}
+                  value={filters.price_range}
+                  onChange={(value) => setFilters({ ...filters, price_range: value })}
+                />
+                <CustomDropdown
+                  label="Status"
+                  placeholder="Availability"
+                  options={propertyStatusOptions}
+                  value={filters.property_status}
+                  onChange={(value) => setFilters({ ...filters, property_status: value })}
+                />
+                <CustomDropdown
+                  label="By"
+                  placeholder="Lister Type"
+                  options={listerTypeOptions}
+                  value={filters.lister_type}
+                  onChange={(value) => setFilters({ ...filters, lister_type: value })}
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -440,6 +381,7 @@ function BuyContent() {
                   image={property.image}
                   type={property.type}
                   propertyStatus={property.propertyStatus}
+                  propertyTypeDisplay={property.propertyTypeDisplay}
                   amenities={property.amenities}
                 />
               ))}
@@ -492,6 +434,7 @@ function BuyContent() {
                       description={property.description}
                       image={property.image}
                       type={property.type}
+                      propertyTypeDisplay={property.propertyTypeDisplay}
                     />
                   ))}
               </div>
@@ -505,8 +448,10 @@ function BuyContent() {
 
 export default function Buy() {
   return (
-    <Suspense fallback={<div className="w-full flex justify-center py-10"><PropertyCardSkeleton /></div>}>
-      <BuyContent />
-    </Suspense>
+    <ListingTypeCacheProvider listingType="SALE">
+      <Suspense fallback={<div className="w-full flex justify-center py-10"><PropertyCardSkeleton /></div>}>
+        <BuyContent />
+      </Suspense>
+    </ListingTypeCacheProvider>
   );
 }
