@@ -18,16 +18,13 @@ from rest_framework_simplejwt.views import TokenRefreshView
 
 from .models import AgentProfile, ClientProfile, LandlordProfile, User
 from .serializers import (
-    AdminRegistrationSerializer,
     AgentProfilePatchSerializer,
     AgentProfileSerializer,
-    AgentRegistrationSerializer,
     ClientProfilePatchSerializer,
     ClientProfileSerializer,
-    ClientRegistrationSerializer,
     ContactFormSerializer,
     LandlordProfileSerializer,
-    LandlordRegistrationSerializer,
+    RegistrationSerializer,
     LoginSerializer,
     NotificationSerializer,
     PasswordChangeSerializer,
@@ -82,9 +79,9 @@ class LogoutView(APIView):
 
 
 @extend_schema(tags=["Authentication"])
-class ClientRegistrationView(generics.CreateAPIView):
+class RegistrationView(generics.CreateAPIView):
     permission_classes = (permissions.AllowAny,)
-    serializer_class = ClientRegistrationSerializer
+    serializer_class = RegistrationSerializer
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -98,61 +95,6 @@ class ClientRegistrationView(generics.CreateAPIView):
             message="Registration successful. Please check your email to verify your account.",
             status_code=status.HTTP_201_CREATED,
         )
-
-
-@extend_schema(tags=["Authentication"])
-class AgentRegistrationView(generics.CreateAPIView):
-    permission_classes = (permissions.AllowAny,)
-    serializer_class = AgentRegistrationSerializer
-
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-
-        send_verification_email(user)
-
-        return APIResponse.success(
-            data={"user": UserSerializer(user).data},
-            message="Registration successful. Please check your email to verify your account.",
-            status_code=status.HTTP_201_CREATED,
-        )
-
-
-@extend_schema(tags=["Authentication"])
-class LandlordRegistrationView(generics.CreateAPIView):
-    permission_classes = (permissions.AllowAny,)
-    serializer_class = LandlordRegistrationSerializer
-
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-
-        send_verification_email(user)
-
-        return APIResponse.success(
-            data={"user": UserSerializer(user).data},
-            message="Registration successful. Please check your email to verify your account.",
-            status_code=status.HTTP_201_CREATED,
-        )
-
-
-@extend_schema(tags=["Authentication"])
-class AdminRegistrationView(generics.CreateAPIView):
-    permission_classes = (permissions.IsAdminUser,)
-    serializer_class = AdminRegistrationSerializer
-
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-        return APIResponse.success(
-            data={"user": UserSerializer(user).data},
-            message="Registration successful.",
-            status_code=status.HTTP_201_CREATED,
-        )
-
 
 @extend_schema(tags=["Profiles"])
 class ClientProfileView(APIView):
