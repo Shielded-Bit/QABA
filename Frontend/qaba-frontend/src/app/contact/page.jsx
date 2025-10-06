@@ -61,8 +61,8 @@ const ContactPage = () => {
     {
       icon: <FaPhone className="text-[#3ab7b1] text-xl" />,
       title: "Phone",
-      content: "+234 707 664 7640",
-      action: "tel:+2347076647640"
+      content: "+234 815 590 1163",
+      action: "tel:+2348155901163"
     },
     {
       icon: <FaWhatsapp className="text-[#3ab7b1] text-xl" />,
@@ -285,13 +285,13 @@ const ContactPage = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a 
-              href="tel:+2348031234567" 
+              href="tel:+2348155901163" 
               className="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-gradient-to-r from-[#014d98] to-[#3ab7b1] hover:opacity-90 transition"
             >
               Call Us Now
             </a>
             <a 
-              href="https://wa.me/2348031234567" 
+              href="https://wa.me/2347076647640" 
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center px-8 py-3 border-2 border-[#014d98] text-base font-medium rounded-md text-[#014d98] bg-white hover:bg-gray-50 transition"

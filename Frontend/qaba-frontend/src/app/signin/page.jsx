@@ -80,6 +80,25 @@ const SignIn = () => {
     setToast({ message, type, isVisible: true });
   };
 
+  // Check for session expiration message
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const expiredMessage = sessionStorage.getItem('session_expired_message');
+      if (expiredMessage) {
+        showToast(expiredMessage, 'error');
+        sessionStorage.removeItem('session_expired_message');
+      }
+      
+      // Check URL for expiration reason
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('reason') === 'expired') {
+        showToast('Your session has expired. Please log in again.', 'error');
+        // Clean up URL
+        window.history.replaceState({}, '', '/signin');
+      }
+    }
+  }, []);
+
   // Function to hide toast
   const hideToast = () => {
     setToast(prev => ({ ...prev, isVisible: false }));
@@ -190,16 +209,18 @@ const SignIn = () => {
     try {
       const response = await signIn(requestData);
       
-      // Extract token and user details
+      // Extract tokens and user details
       const accessToken = response.data?.access;
+      const refreshToken = response.data?.refresh;
       const userType = response.data?.user?.user_type;
 
-      if (!accessToken || !userType) {
+      if (!accessToken || !refreshToken || !userType) {
         throw new Error("Invalid login response: Missing token or user type.");
       }
 
-      // Store token and user type
+      // Store both access and refresh tokens
       localStorage.setItem("access_token", accessToken);
+      localStorage.setItem("refresh_token", refreshToken);
       localStorage.setItem("user_type", userType);
 
       // Fetch user data from /me endpoint immediately after login

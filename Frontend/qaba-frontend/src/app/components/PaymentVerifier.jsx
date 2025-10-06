@@ -7,6 +7,7 @@ import {
   getPendingPaymentRef,
   storePaymentInfo 
 } from '../utils/paymentUtils';
+import { handle401Error } from '../../utils/authHandler';
 
 const PaymentVerifier = ({ onSuccess, onError }) => {
   const router = useRouter();
@@ -101,10 +102,9 @@ const PaymentVerifier = ({ onSuccess, onError }) => {
 
             if (!response.ok) {
               if (response.status === 401) {
-                console.error('Authentication failed:', await response.text());
-                localStorage.removeItem('access_token');
-                localStorage.removeItem('auth_token');
-                throw new Error('Authentication expired. Please log in again.');
+                console.error('Authentication failed - session expired');
+                handle401Error(response, new Error('Session expired. Please log in again.'));
+                return;
               } else if (response.status === 404) {
                 const errorData = await response.json();
                 console.error('Transaction not found:', errorData);
