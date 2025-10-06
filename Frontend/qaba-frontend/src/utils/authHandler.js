@@ -1,9 +1,11 @@
 /**
  * Global Authentication Handler
- * Handles session expiration, token clearing, and user redirection
+ * Handles session expiration, token clearing, token refresh, and user redirection
  */
 
 let isHandlingExpiration = false; // Prevent multiple simultaneous redirects
+let isRefreshing = false; // Prevent multiple simultaneous refresh attempts
+let refreshPromise = null; // Store ongoing refresh promise to prevent race conditions
 
 /**
  * Clear all user-related data from storage
@@ -49,6 +51,71 @@ export const clearAllUserData = () => {
 };
 
 /**
+ * Attempt to refresh the access token using the refresh token
+ * Implements singleton pattern to prevent multiple simultaneous refresh attempts
+ * @returns {Promise<string|null>} New access token or null if refresh failed
+ */
+export const refreshAccessToken = async () => {
+  // If already refreshing, return the same promise
+  if (isRefreshing && refreshPromise) {
+    console.log('Token refresh already in progress, waiting for result...');
+    return refreshPromise;
+  }
+  
+  // Check if we have a refresh token
+  const refreshToken = typeof window !== 'undefined' ? localStorage.getItem('refresh_token') : null;
+  
+  if (!refreshToken) {
+    console.warn('No refresh token available - cannot refresh access token');
+    return null;
+  }
+  
+  // Mark as refreshing and create promise
+  isRefreshing = true;
+  
+  refreshPromise = (async () => {
+    try {
+      console.log('Attempting to refresh access token...');
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/token/refresh/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ refresh: refreshToken }),
+      });
+
+      if (!response.ok) {
+        console.error('Token refresh failed with status:', response.status);
+        return null;
+      }
+
+      const data = await response.json();
+      const newAccessToken = data.access || data.data?.access;
+
+      if (newAccessToken) {
+        // Store the new access token
+        localStorage.setItem('access_token', newAccessToken);
+        console.log('✅ Access token refreshed successfully');
+        return newAccessToken;
+      }
+
+      console.error('Token refresh response did not contain access token');
+      return null;
+    } catch (error) {
+      console.error('Error refreshing token:', error);
+      return null;
+    } finally {
+      // Reset refresh state
+      isRefreshing = false;
+      refreshPromise = null;
+    }
+  })();
+  
+  return refreshPromise;
+};
+
+/**
  * Handle session expiration
  * Clears all data and redirects to sign-in page
  */
@@ -80,16 +147,29 @@ export const handleSessionExpiration = (message = 'Your session has expired. Ple
 };
 
 /**
- * Handle 401 Unauthorized errors
+ * Handle 401 Unauthorized errors with automatic token refresh
  * @param {Response} response - The fetch response object
  * @param {Error} error - The error object (optional)
- * @returns {boolean} - Returns true if 401 was handled
+ * @returns {Promise<boolean>} - Returns true if 401 was handled successfully (token refreshed or user logged out)
  */
-export const handle401Error = (response, error = null) => {
+export const handle401Error = async (response, error = null) => {
   if (!response) return false;
   
   if (response.status === 401) {
-    const errorMessage = error?.message || 'Authentication expired. Please log in again.';
+    console.warn('401 Unauthorized detected - attempting token refresh');
+    
+    // Try to refresh the access token first
+    const newToken = await refreshAccessToken();
+    
+    if (newToken) {
+      // ✅ Token refresh successful - user can continue
+      console.log('Token refreshed successfully - user session extended');
+      return true;
+    }
+    
+    // ❌ Token refresh failed - now logout the user
+    console.error('Token refresh failed - logging out user');
+    const errorMessage = error?.message || 'Your session has expired. Please log in again.';
     handleSessionExpiration(errorMessage);
     return true;
   }
@@ -176,6 +256,7 @@ const authHandler = {
   getAuthToken,
   authenticatedFetch,
   resetExpirationFlag,
+  refreshAccessToken,
 };
 
 export default authHandler;

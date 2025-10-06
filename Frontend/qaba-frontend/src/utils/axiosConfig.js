@@ -1,10 +1,10 @@
 /**
  * Axios Configuration with Global Interceptors
- * Handles automatic 401 error detection and session expiration
+ * Handles automatic 401 error detection, token refresh, and request retry
  */
 
 import axios from 'axios';
-import { handleSessionExpiration, getAuthToken } from './authHandler';
+import { handleSessionExpiration, getAuthToken, refreshAccessToken } from './authHandler';
 
 // Create axios instance
 const apiClient = axios.create({
@@ -31,22 +31,40 @@ apiClient.interceptors.request.use(
   }
 );
 
-// Response interceptor - Handle 401 errors globally
+// Response interceptor - Handle 401 errors with automatic token refresh and retry
 apiClient.interceptors.response.use(
   (response) => {
     // If response is successful, just return it
     return response;
   },
-  (error) => {
+  async (error) => {
+    const originalRequest = error.config;
+    
     // Check if error response exists and has status 401
-    if (error.response && error.response.status === 401) {
-      console.error('401 Unauthorized - Session expired');
+    if (error.response && error.response.status === 401 && !originalRequest._retry) {
+      // Mark request as retried to prevent infinite loops
+      originalRequest._retry = true;
       
-      // Handle session expiration
-      handleSessionExpiration('Your session has expired. Please log in again.');
+      console.warn('Axios interceptor: 401 detected, attempting token refresh');
       
-      // Return a rejected promise to stop further execution
-      return Promise.reject(new Error('Session expired'));
+      // Try to refresh the token
+      const newToken = await refreshAccessToken();
+      
+      if (newToken) {
+        // ✅ Token refresh successful - update authorization header and retry request
+        console.log('Token refreshed, retrying original request...');
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        
+        // Retry the original request with the new token
+        return apiClient(originalRequest);
+      } else {
+        // ❌ Token refresh failed - logout user
+        console.error('Token refresh failed - logging out user');
+        handleSessionExpiration('Your session has expired. Please log in again.');
+        
+        // Return a rejected promise to stop further execution
+        return Promise.reject(new Error('Session expired'));
+      }
     }
     
     // For other errors, just pass them through
