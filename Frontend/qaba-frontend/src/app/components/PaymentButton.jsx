@@ -7,6 +7,7 @@ import {
   storePaymentInfo, 
   storeRedirectUrl 
 } from '../utils/paymentUtils';
+import { handle401Error } from '../../utils/authHandler';
 import { X } from 'lucide-react';
 import PaymentOptionsModal from '../components/modal/PaymentOptionsModal';
 
@@ -126,10 +127,9 @@ const PaymentButton = ({ propertyId, propertyType, price, buttonText = 'Proceed 
       if (!response.ok) {
         // Handle different error statuses
         if (response.status === 401) {
-          // Authentication failed - token might be expired
-          localStorage.removeItem('access_token');
-          localStorage.removeItem('auth_token');
-          throw new Error('Authentication required. Please log in again.');
+          // Authentication failed - session expired
+          handle401Error(response, new Error('Session expired. Please log in again.'));
+          return;
         } else {
           // Extract and handle property availability errors
           const errorMessage = extractErrorMessage(responseData);

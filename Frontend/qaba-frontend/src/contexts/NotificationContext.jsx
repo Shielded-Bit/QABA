@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
+import { handle401Error, getAuthToken } from '../utils/authHandler';
 
 // API Configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -28,7 +29,9 @@ export const NotificationProvider = ({ children }) => {
       const token = getToken();
       
       if (!token) {
-        throw new Error('Authentication token not found');
+        // No token - user not logged in, skip silently
+        setLoading(false);
+        return;
       }
 
       const response = await fetch(`${API_BASE_URL}/api/v1/notifications/`, {
@@ -37,6 +40,13 @@ export const NotificationProvider = ({ children }) => {
           'Content-Type': 'application/json'
         }
       });
+      
+      // Handle 401 errors (session expired)
+      if (response.status === 401) {
+        console.warn('Session expired while fetching notifications');
+        handle401Error(response, new Error('Session expired'));
+        return;
+      }
       
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
@@ -74,6 +84,12 @@ export const NotificationProvider = ({ children }) => {
           'Content-Type': 'application/json'
         }
       });
+      
+      // Handle 401 errors (session expired)
+      if (response.status === 401) {
+        handle401Error(response, new Error('Session expired'));
+        return;
+      }
       
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
