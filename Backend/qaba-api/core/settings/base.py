@@ -43,6 +43,10 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     # Third-party apps
     "corsheaders",  # Add this line
+    "django_otp",
+    "django_otp.plugins.otp_static",
+    "django_otp.plugins.otp_totp",
+    "two_factor",
     "rest_framework",  # Django REST framework
     "rest_framework_simplejwt",  # Django REST framework JWT
     "drf_spectacular",  # drf-spectacular
@@ -64,6 +68,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django_otp.middleware.OTPMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -143,7 +148,7 @@ SPECTACULAR_SETTINGS = {
 # JWT Settings
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(
-        minutes=int(getenv("ACCESS_TOKEN_LIFETIME", "15"))
+        hours=int(getenv("ACCESS_TOKEN_LIFETIME", "24"))
     ),
     "REFRESH_TOKEN_LIFETIME": timedelta(
         days=int(getenv("REFRESH_TOKEN_LIFETIME", "30"))
@@ -157,6 +162,13 @@ AUTHENTICATION_BACKENDS = [
     "core.utils.email_backend.EmailBackend",
     "django.contrib.auth.backends.ModelBackend",
 ]
+
+LOGIN_URL = "two_factor:login"
+LOGIN_REDIRECT_URL = "admin:index"
+
+OTP_TOTP_ISSUER = getenv("OTP_TOTP_ISSUER", "QABA Admin")
+
+TWO_FACTOR_PATCH_ADMIN = True
 
 FRONTEND_URL = getenv("FRONTEND_URL", "http://localhost:3000")
 BACKEND_URL = getenv("BACKEND_URL", "http://localhost:8000")
