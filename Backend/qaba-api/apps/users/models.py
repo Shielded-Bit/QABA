@@ -252,7 +252,6 @@ class PropertySurveyMeeting(models.Model):
         super().save(*args, **kwargs)
 
 
-# Signal handlers to automatically create profiles when users are created
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     """Create appropriate profile when a user is created"""

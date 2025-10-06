@@ -28,7 +28,6 @@ class ClientProfilePatchSerializer(serializers.ModelSerializer):
         ]
 
     def validate(self, attrs):
-        # Add any specific validation for PATCH operations
         return attrs
 
 
@@ -46,7 +45,6 @@ class AgentProfilePatchSerializer(serializers.ModelSerializer):
         ]
 
     def validate(self, attrs):
-        # Add any specific validation for PATCH operations
         return attrs
 
 
@@ -162,6 +160,19 @@ class BaseUserRegistrationSerializer(serializers.ModelSerializer):
         return user
 
 
+class RegistrationSerializer(BaseUserRegistrationSerializer):
+    allowed_user_types = (
+        (User.UserType.CLIENT, "Client"),
+        (User.UserType.AGENT, "Agent"),
+        (User.UserType.LANDLORD, "Landlord"),
+    )
+
+    user_type = serializers.ChoiceField(choices=allowed_user_types, required=True)
+
+    class Meta(BaseUserRegistrationSerializer.Meta):
+        fields = BaseUserRegistrationSerializer.Meta.fields + ["user_type"]
+
+
 class SendEmailVerificationSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
@@ -193,21 +204,18 @@ class UserSerializer(serializers.ModelSerializer):
             try:
                 return ClientProfileSerializer(obj.clientprofile).data
             except ClientProfile.DoesNotExist:
-                # Create profile if it doesn't exist
                 profile = ClientProfile.objects.create(user=obj)
                 return ClientProfileSerializer(profile).data
         elif obj.user_type == User.UserType.AGENT:
             try:
                 return AgentProfileSerializer(obj.agentprofile).data
             except AgentProfile.DoesNotExist:
-                # Create profile if it doesn't exist
                 profile = AgentProfile.objects.create(user=obj)
                 return AgentProfileSerializer(profile).data
         elif obj.user_type == User.UserType.LANDLORD:
             try:
                 return LandlordProfileSerializer(obj.landlordprofile).data
             except LandlordProfile.DoesNotExist:
-                # Create profile if it doesn't exist
                 profile = LandlordProfile.objects.create(user=obj)
                 return LandlordProfileSerializer(profile).data
 
@@ -234,43 +242,6 @@ class LoginSerializer(serializers.Serializer):
         if not user.is_active:
             raise serializers.ValidationError("Account is not activated")
         return user
-
-
-class ClientRegistrationSerializer(BaseUserRegistrationSerializer):
-    class Meta(BaseUserRegistrationSerializer.Meta):
-        pass
-
-    def create(self, validated_data):
-        validated_data["user_type"] = User.UserType.CLIENT
-        return super().create(validated_data)
-
-
-class AgentRegistrationSerializer(BaseUserRegistrationSerializer):
-    class Meta(BaseUserRegistrationSerializer.Meta):
-        pass
-
-    def create(self, validated_data):
-        validated_data["user_type"] = User.UserType.AGENT
-        return super().create(validated_data)
-
-
-class LandlordRegistrationSerializer(BaseUserRegistrationSerializer):
-    class Meta(BaseUserRegistrationSerializer.Meta):
-        pass
-
-    def create(self, validated_data):
-        validated_data["user_type"] = User.UserType.LANDLORD
-        return super().create(validated_data)
-
-
-class AdminRegistrationSerializer(BaseUserRegistrationSerializer):
-    class Meta(BaseUserRegistrationSerializer.Meta):
-        pass
-
-    def create(self, validated_data):
-        validated_data["user_type"] = User.UserType.ADMIN
-        return super().create(validated_data)
-
 
 class PasswordChangeSerializer(serializers.Serializer):
     old_password = serializers.CharField(write_only=True)
