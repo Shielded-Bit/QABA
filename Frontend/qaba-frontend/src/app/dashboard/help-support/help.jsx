@@ -179,10 +179,10 @@ export default function HelpAndSupport() {
               </div>
               <p className="text-gray-600 mb-4">For urgent inquiries during business hours</p>
               <a 
-                href="tel:+2347076647640" 
+                href="tel:+2348155901163" 
                 className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium"
               >
-                +234 707 664 7640
+                +234 815 590 1163
               </a>
             </div>
           </div>

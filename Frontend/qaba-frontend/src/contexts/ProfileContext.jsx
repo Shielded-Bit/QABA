@@ -1,5 +1,6 @@
 "use client";
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import { handle401Error } from '../utils/authHandler';
 
 const ProfileContext = createContext(null);
 
@@ -51,6 +52,13 @@ export function ProfileProvider({ children }) {
       if (!headers) return null;
 
       const response = await fetch(`${API_BASE_URL}/api/v1/users/me/`, { headers });
+      
+      // Handle 401 errors (session expired)
+      if (response.status === 401) {
+        handle401Error(response, new Error('Session expired while fetching user data'));
+        return null;
+      }
+      
       const result = await handleApiError(response).json();
       
       if (result.success && result.data) {
@@ -80,6 +88,13 @@ export function ProfileProvider({ children }) {
       }
 
       const response = await fetch(endpoint, { headers });
+      
+      // Handle 401 errors (session expired)
+      if (response.status === 401) {
+        handle401Error(response, new Error('Session expired while fetching profile data'));
+        return null;
+      }
+      
       return await handleApiError(response).json();
     } catch (err) {
       console.error("Profile fetch error:", err);

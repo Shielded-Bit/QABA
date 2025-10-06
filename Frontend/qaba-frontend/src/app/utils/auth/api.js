@@ -1,5 +1,7 @@
 import axios from 'axios';
 import qs from 'qs';
+import apiClient from '../../../utils/axiosConfig'; // Use configured axios with interceptors
+
 export const API_BASE_URL = `${process.env.NEXT_PUBLIC_API_URL}/api/v1`;
 
 // Register a new client

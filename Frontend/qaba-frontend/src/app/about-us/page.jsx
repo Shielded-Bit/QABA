@@ -54,14 +54,7 @@ const AboutPage = () => {
     }
   ];
 
-  const [counters, setCounters] = useState({
-    properties: 0,
-    customers: 0,
-    successRate: 0,
-    support: 0
-  });
   const [currentTeamIndex, setCurrentTeamIndex] = useState(0);
-  const statsRef = useRef(null);
   const heroRef = useRef(null);
   const missionRef = useRef(null);
   const teamRef = useRef(null);
@@ -104,79 +97,6 @@ const AboutPage = () => {
     }
   };
 
-  // Counter animation function
-  const animateCounter = (start, end, duration, callback) => {
-    const startTime = Date.now();
-    const range = end - start;
-
-    const updateCounter = () => {
-      const currentTime = Date.now();
-      const elapsed = currentTime - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      
-      // Easing function for smooth animation
-      const easeOutQuart = 1 - Math.pow(1 - progress, 4);
-      const currentValue = Math.floor(start + (range * easeOutQuart));
-      
-      callback(currentValue);
-      
-      if (progress < 1) {
-        requestAnimationFrame(updateCounter);
-      }
-    };
-    
-    requestAnimationFrame(updateCounter);
-  };
-
-  // Intersection Observer to trigger animation when section is visible
-  useEffect(() => {
-    const currentRef = statsRef.current;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setCounters({
-              properties: 0,
-              customers: 0,
-              successRate: 0,
-              support: 0
-            });
-            
-            animateCounter(0, 25000, 2000, (value) => {
-              setCounters(prev => ({ ...prev, properties: value }));
-            });
-            
-            animateCounter(0, 15000, 2200, (value) => {
-              setCounters(prev => ({ ...prev, customers: value }));
-            });
-            
-            animateCounter(0, 95, 1800, (value) => {
-              setCounters(prev => ({ ...prev, successRate: value }));
-            });
-            
-            animateCounter(0, 24, 1500, (value) => {
-              setCounters(prev => ({ ...prev, support: value }));
-            });
-          }
-        });
-      },
-      {
-        threshold: 0.3,
-        rootMargin: '0px 0px -50px 0px'
-      }
-    );
-
-    if (currentRef) {
-      observer.observe(currentRef);
-    }
-
-    return () => {
-      if (currentRef) {
-        observer.unobserve(currentRef);
-      }
-    };
-  }, []);
-
   // Manual scroll team carousel (auto-scroll disabled)
 
 
@@ -197,20 +117,6 @@ const AboutPage = () => {
   };
 
 
-
-  // Format numbers for display
-  const formatNumber = (num, suffix = '') => {
-    if (suffix === 'K+') {
-      return `${(num / 1000).toFixed(num >= 1000 ? 0 : 1)}K+`;
-    }
-    if (suffix === '%') {
-      return `${num}%`;
-    }
-    if (suffix === '/7') {
-      return `${num}/7`;
-    }
-    return num.toString();
-  };
 
   return (
     <div className="min-h-screen bg-white overflow-x-hidden">
@@ -299,45 +205,6 @@ const AboutPage = () => {
                 </div>
               </motion.div>
             </motion.div>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Stats Section */}
-      <motion.div 
-        ref={statsRef} 
-        className="py-16 bg-white"
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true }}
-        variants={staggerChildren}
-      >
-        <div className="px-4 sm:px-6 lg:px-14">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {Object.entries({
-              'Listed Properties': [counters.properties, 'K+'],
-              'Happy Customers': [counters.customers, 'K+'],
-              'Success Rate': [counters.successRate, '%'],
-              'Support Hours': [counters.support, '/7']
-            }).map(([label, [value, suffix]], index) => (
-              <motion.div 
-                key={label}
-                className="text-center p-6 rounded-2xl bg-gradient-to-br from-blue-50 to-teal-50 hover:shadow-lg transition-shadow"
-                variants={scaleIn}
-                whileHover={{ y: -5 }}
-              >
-                <motion.div 
-                  className="text-4xl font-bold text-[#014d98] mb-2"
-                  initial={{ opacity: 0, scale: 0.5 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                >
-                  {formatNumber(value, suffix)}
-                </motion.div>
-                <div className="text-gray-600">{label}</div>
-              </motion.div>
-            ))}
           </div>
         </div>
       </motion.div>
