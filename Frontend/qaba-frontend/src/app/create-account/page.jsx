@@ -8,7 +8,7 @@ import RoleSelection from '../components/shared/RoleSelection';
 import SignInWithGoogle from '../components/shared/SignInWithGoogle';
 import PasswordInput from '../components/shared/PasswordInput';
 import TextInput from '../components/shared/TextInput';
-import { registerClient, registerAgent, registerLandlord, sendVerificationEmail } from '../../app/utils/auth/api.js'; // Import functions
+import { register, sendVerificationEmail } from '../../app/utils/auth/api.js'; // Import unified register
 import EmailVerificationModal from '../components/modal/ EmailVerificationModal.jsx';
 
 // Image assets used in the UI
@@ -204,14 +204,19 @@ const Register = () => {
     };
 
     try {
-      let response;
-      if (formData.role === "client") {
-        response = await registerClient(requestData);
-      } else if (formData.role === "landlord") {
-        response = await registerLandlord(requestData);
-      } else {
-        response = await registerAgent(requestData);
-      }
+      // Map local role values to API user_type values
+      const roleMap = {
+        client: 'CLIENT',
+        agent: 'AGENT',
+        landlord: 'LANDLORD'
+      };
+
+      const payload = {
+        ...requestData,
+        user_type: roleMap[formData.role] || 'CLIENT'
+      };
+
+      const response = await register(payload);
 
       if (response.success) {
         // Show email verification modal on success
