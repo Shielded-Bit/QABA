@@ -23,10 +23,18 @@ const ListedByCard = ({ agent }) => {
         {/* Main Details */}
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
-            <h3 className="text-gray-900 font-bold text-lg">{agent.name}</h3>
-            {agent.verified && (
-              <FaCheckCircle className="text-blue-500 text-sm" title="Verified User" />
-            )}
+            {(() => {
+              const full = agent.name || '';
+              const firstName = (full && typeof full === 'string') ? full.split(' ')[0] : (agent.first_name || '');
+              return (
+                <>
+                  <h3 className="text-gray-900 font-bold text-lg">{firstName}</h3>
+                  {agent.verified && (
+                    <FaCheckCircle className="text-blue-500 text-sm" title="Verified User" />
+                  )}
+                </>
+              );
+            })()}
           </div>
           
           <p className="text-gray-600 text-sm font-medium flex items-center gap-2">

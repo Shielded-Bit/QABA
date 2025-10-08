@@ -4,7 +4,6 @@ import apiClient from '../../../utils/axiosConfig'; // Use configured axios with
 
 export const API_BASE_URL = `${process.env.NEXT_PUBLIC_API_URL}/api/v1`;
 
-// Register a new client
 // Helper function to handle API errors properly
 const handleApiError = (error) => {
   if (error.response && error.response.data) {
@@ -14,63 +13,32 @@ const handleApiError = (error) => {
   throw new Error('Network error occurred');
 };
 
-export const registerClient = async (data) => {
+// Unified register function: posts to /auth/register/ with a user_type field
+export const register = async (data) => {
   try {
-    // Include confirmPassword as password_confirm in the API request
+    // Expectation: data contains password, password_confirm (or confirmPassword), first_name, last_name, email, user_type
     const requestData = {
-      ...data,
-      password_confirm: data.confirmPassword
+      email: data.email,
+      password: data.password,
+      password_confirm: data.password_confirm || data.confirmPassword,
+      first_name: data.first_name || data.firstname || data.firstName,
+      last_name: data.last_name || data.lastname || data.lastName,
+      user_type: data.user_type || data.userType || data.role
     };
-    
-    const response = await axios.post(`${API_BASE_URL}/auth/register/client/`, requestData, {
+
+    const response = await axios.post(`${API_BASE_URL}/auth/register/`, requestData, {
       headers: {
         'Content-Type': 'application/json',
       },
     });
+
     return response.data;
   } catch (error) {
     return handleApiError(error);
   }
 };
 
-// Register a new agent
-export const registerAgent = async (data) => {
-  try {
-    // Include confirmPassword as password_confirm in the API request
-    const requestData = {
-      ...data,
-      password_confirm: data.confirmPassword
-    };
-    
-    const response = await axios.post(`${API_BASE_URL}/auth/register/agent/`, requestData, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    return response.data;
-  } catch (error) {
-    return handleApiError(error);
-  }
-};
-
-// Register a new landlord
-export const registerLandlord = async (data) => {
-  try {
-    const requestData = {
-      ...data,
-      password_confirm: data.confirmPassword
-    };
-    // Use the correct endpoint (no /auth/)
-    const response = await axios.post(`${API_BASE_URL}/register/landlord/`, requestData, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    return response.data;
-  } catch (error) {
-    return handleApiError(error);
-  }
-};
+// Note: old per-role register wrappers removed. Use `register(data)` with a `user_type` field ('CLIENT'|'AGENT'|'LANDLORD').
 
 // Send a verification email
 export const sendVerificationEmail = async (email) => {
