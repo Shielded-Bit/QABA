@@ -182,6 +182,11 @@ class SendEmailVerificationSerializer(serializers.Serializer):
         return value
 
 
+class OTPVerificationSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    otp = serializers.CharField(max_length=6)
+
+
 class UserSerializer(serializers.ModelSerializer):
     profile = serializers.SerializerMethodField(read_only=True)
 
@@ -243,6 +248,7 @@ class LoginSerializer(serializers.Serializer):
             raise serializers.ValidationError("Account is not activated")
         return user
 
+
 class PasswordChangeSerializer(serializers.Serializer):
     old_password = serializers.CharField(write_only=True)
     new_password = serializers.CharField(write_only=True)
@@ -254,16 +260,13 @@ class PasswordChangeSerializer(serializers.Serializer):
         return value
 
 
-class EmailVerificationSerializer(serializers.Serializer):
-    token = serializers.CharField()
-
-
 class PasswordResetRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
 
 class PasswordResetConfirmSerializer(serializers.Serializer):
-    token = serializers.CharField()
+    email = serializers.EmailField()
+    otp = serializers.CharField(max_length=6)
     new_password = serializers.CharField(write_only=True)
 
 

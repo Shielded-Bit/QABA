@@ -3,8 +3,9 @@
 <body>
     <h2>Welcome to QABA!</h2>
     <p>Hi {{ user.first_name }},</p>
-    <p>Please verify your email by clicking the link below:</p>
-    <a href="{{ verification_url }}">Verify Email</a>
-    <p>This link will expire in 24 hours.</p>
+    <p>Thank you for registering with QABA. To complete your email verification, please use the One-Time Password (OTP) below:</p>
+    <h3>{{ otp }}</h3>
+    <p>This OTP is valid for a short period. Please enter it on the verification page to activate your account.</p>
+    <p>If you did not register for an account with QABA, please disregard this email.</p>
 </body>
 </html>

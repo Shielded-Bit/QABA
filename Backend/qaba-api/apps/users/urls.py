@@ -5,7 +5,7 @@ from .views import (
     ClientProfileView,
     ContactFormView,
     CurrentUserView,
-    EmailVerificationView,
+    OTPVerificationView,
     LoginView,
     LogoutView,
     NotificationListView,
@@ -26,7 +26,7 @@ auth_patterns = [
     path("auth/logout/", LogoutView.as_view(), name="logout"),
     path("auth/register/", RegistrationView.as_view(), name="register"),
     path("auth/token/refresh/", RefreshTokenView.as_view(), name="refresh-token"),
-    path("auth/verify-email/", EmailVerificationView.as_view(), name="verify-email"),
+    path("auth/verify-email/", OTPVerificationView.as_view(), name="verify-email"),
     path(
         "auth/password-reset/",
         PasswordResetRequestView.as_view(),
