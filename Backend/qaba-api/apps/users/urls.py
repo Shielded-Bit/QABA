@@ -6,6 +6,7 @@ from .views import (
     ContactFormView,
     CurrentUserView,
     OTPVerificationView,
+    GoogleAuthView,
     LoginView,
     LogoutView,
     NotificationListView,
@@ -23,6 +24,7 @@ from .views import (
 
 auth_patterns = [
     path("auth/login/", LoginView.as_view(), name="login"),
+    path("auth/google/", GoogleAuthView.as_view(), name="google-auth"),
     path("auth/logout/", LogoutView.as_view(), name="logout"),
     path("auth/register/", RegistrationView.as_view(), name="register"),
     path("auth/token/refresh/", RefreshTokenView.as_view(), name="refresh-token"),

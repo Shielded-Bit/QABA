@@ -1,5 +1,6 @@
 from datetime import datetime, time, timedelta
 
+from django.conf import settings
 from django.contrib.auth import authenticate
 from django.utils import timezone
 from rest_framework import serializers
@@ -171,6 +172,51 @@ class RegistrationSerializer(BaseUserRegistrationSerializer):
 
     class Meta(BaseUserRegistrationSerializer.Meta):
         fields = BaseUserRegistrationSerializer.Meta.fields + ["user_type"]
+
+
+class GoogleAuthSerializer(serializers.Serializer):
+    id_token = serializers.CharField()
+    user_type = serializers.ChoiceField(
+        choices=RegistrationSerializer.allowed_user_types, required=False
+    )
+
+    def validate(self, attrs):
+        client_id = settings.GOOGLE_CLIENT_ID
+        if not client_id:
+            raise serializers.ValidationError(
+                {"non_field_errors": ["Google authentication is not configured."]}
+            )
+
+        try:
+            payload = verify_google_id_token(attrs["id_token"], audience=client_id)
+        except ImportError as exc:
+            raise serializers.ValidationError(
+                {
+                    "non_field_errors": [
+                        "Google authentication dependencies are not installed."
+                    ]
+                }
+            ) from exc
+        except ValueError as exc:
+            raise serializers.ValidationError(
+                {"id_token": ["Invalid Google ID token."]}
+            ) from exc
+
+        email = payload.get("email")
+        email_verified = payload.get("email_verified")
+
+        if not email:
+            raise serializers.ValidationError(
+                {"id_token": ["Google ID token does not include an email."]}
+            )
+
+        if email_verified not in (True, "true", "True", "1"):
+            raise serializers.ValidationError(
+                {"id_token": ["Google email is not verified."]}
+            )
+
+        attrs["payload"] = payload
+        return attrs
 
 
 class SendEmailVerificationSerializer(serializers.Serializer):
@@ -459,9 +505,24 @@ class PropertySurveyMeetingCreateSerializer(serializers.ModelSerializer):
             if self.instance:
                 conflict_check = conflict_check.exclude(id=self.instance.id)
 
-            if conflict_check.exists():
-                raise serializers.ValidationError(
-                    "You already have a meeting scheduled at this date and time."
-                )
+        if conflict_check.exists():
+            raise serializers.ValidationError(
+                "You already have a meeting scheduled at this date and time."
+            )
 
         return data
+
+
+def verify_google_id_token(id_token_value, audience):
+    try:
+        from google.auth.transport import requests as google_requests
+        from google.oauth2 import id_token as google_id_token
+    except ImportError as exc:
+        raise ImportError(
+            "google-auth library is required for Google authentication."
+        ) from exc
+
+    auth_request = google_requests.Request()
+    return google_id_token.verify_oauth2_token(
+        id_token_value, auth_request, audience=audience
+    )

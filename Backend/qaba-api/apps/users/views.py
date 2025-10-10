@@ -23,6 +23,7 @@ from .serializers import (
     ClientProfilePatchSerializer,
     ClientProfileSerializer,
     ContactFormSerializer,
+    GoogleAuthSerializer,
     LandlordProfileSerializer,
     LoginSerializer,
     NotificationSerializer,
@@ -59,6 +60,85 @@ class LoginView(APIView):
             }
             return APIResponse.success(data=data, message="Login successful")
         APIResponse.unauthorized(message=serializer.errors)
+
+
+@extend_schema(
+    tags=["Authentication"],
+    request=GoogleAuthSerializer,
+    responses={
+        200: OpenApiResponse(
+            description="Returns JWT tokens and user data when Google authentication succeeds."
+        )
+    },
+)
+class GoogleAuthView(APIView):
+    permission_classes = (permissions.AllowAny,)
+
+    def post(self, request):
+        serializer = GoogleAuthSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        payload = serializer.validated_data["payload"]
+        email = payload["email"].lower()
+        user_type = serializer.validated_data.get("user_type", User.UserType.CLIENT)
+
+        first_name = payload.get("given_name") or ""
+        last_name = payload.get("family_name") or ""
+        full_name = payload.get("name") or ""
+
+        if full_name and (not first_name or not last_name):
+            name_parts = full_name.split()
+            if not first_name and name_parts:
+                first_name = name_parts[0]
+            if not last_name and len(name_parts) > 1:
+                last_name = " ".join(name_parts[1:])
+
+        if not first_name:
+            first_name = email.split("@")[0]
+        if not last_name:
+            last_name = "User"
+
+        user, created = User.objects.get_or_create(
+            email=email,
+            defaults={
+                "first_name": first_name,
+                "last_name": last_name,
+                "user_type": user_type,
+                "is_active": True,
+                "is_email_verified": True,
+            },
+        )
+
+        if created:
+            user.set_unusable_password()
+            user.save(update_fields=["password"])
+        else:
+            updated_fields = set()
+            if not user.is_active:
+                user.is_active = True
+                updated_fields.add("is_active")
+            if not user.is_email_verified:
+                user.is_email_verified = True
+                updated_fields.add("is_email_verified")
+            if first_name and user.first_name != first_name:
+                user.first_name = first_name
+                updated_fields.add("first_name")
+            if last_name and user.last_name != last_name:
+                user.last_name = last_name
+                updated_fields.add("last_name")
+            if updated_fields:
+                user.save(update_fields=list(updated_fields))
+
+        refresh = RefreshToken.for_user(user)
+        data = {
+            "refresh": str(refresh),
+            "access": str(refresh.access_token),
+            "user": UserSerializer(user).data,
+        }
+
+        return APIResponse.success(
+            data=data, message="Google authentication successful"
+        )
 
 
 @extend_schema(
