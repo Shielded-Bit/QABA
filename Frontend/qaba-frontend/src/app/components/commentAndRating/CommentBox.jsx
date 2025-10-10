@@ -34,8 +34,6 @@ export default function CommentBox({ propertyId }) {
         reviewed_property: propertyId
       };
 
-      console.log('Submitting review with data:', requestBody);
-
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/reviews/create/`, {
         method: 'POST',
         headers: {
@@ -47,11 +45,6 @@ export default function CommentBox({ propertyId }) {
       });
 
       const data = await response.json();
-      console.log('API Response:', {
-        status: response.status,
-        statusText: response.statusText,
-        data: data
-      });
       
       if (!response.ok) {
         // Handle validation errors

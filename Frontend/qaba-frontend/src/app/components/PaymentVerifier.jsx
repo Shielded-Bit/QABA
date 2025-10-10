@@ -51,17 +51,8 @@ const PaymentVerifier = ({ onSuccess, onError }) => {
       const transactionId = urlParams.get('transaction_id');
       let pendingTxRef = getPendingPaymentRef();
       
-      console.log('Payment Verification Started:', {
-        urlParams: Object.fromEntries(urlParams.entries()),
-        txStatus,
-        txRef,
-        transactionId,
-        pendingTxRef
-      });
-      
       // If we have a transaction reference in the URL but not in localStorage, store it
       if (txRef && !pendingTxRef) {
-        console.log('Storing new transaction reference:', txRef);
         storePaymentInfo(txRef, transactionId);
         pendingTxRef = txRef;
       }
@@ -72,10 +63,6 @@ const PaymentVerifier = ({ onSuccess, onError }) => {
           setVerifying(true);
           
           const referenceToVerify = txRef || pendingTxRef; // Prioritize the URL parameter
-          console.log('Making verification request with:', {
-            reference: referenceToVerify,
-            apiUrl: `${process.env.NEXT_PUBLIC_API_URL}/api/v1/verify-payment/${referenceToVerify}/`
-          });
 
           const authToken = getAuthToken();
           if (!authToken) {
@@ -117,10 +104,8 @@ const PaymentVerifier = ({ onSuccess, onError }) => {
             }
           
             const data = await response.json();
-            console.log('Payment verification full response:', data);
             
             if (data.success && data.data?.status === "successful") {
-              console.log('Payment verified successfully');
               setVerified(true);
               clearPaymentInfo();
               

@@ -316,7 +316,6 @@ export default function TopNav() {
                   alt={`${cachedDisplayName} Profile`}
                   className="w-full h-full object-cover"
                   onError={(e) => {
-                    console.log('Profile image failed to load:', profileImageUrl);
                     e.target.style.display = 'none';
                   }}
                 />
@@ -395,7 +394,6 @@ export default function TopNav() {
                       alt={`${cachedShortName} Profile`}
                       className="w-full h-full object-cover"
                       onError={(e) => {
-                        console.log('Profile image failed to load:', profileImageUrl);
                         e.target.style.display = 'none';
                       }}
                     />

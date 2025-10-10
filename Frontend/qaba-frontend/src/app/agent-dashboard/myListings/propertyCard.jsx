@@ -105,7 +105,6 @@ const PropertyCard = ({ house }) => {
 };
 
 const PropertyGrid = ({ properties, loading }) => {
-    console.log('PropertyGrid received properties:', properties);
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 6;
 
