@@ -390,7 +390,6 @@ const Careers = () => {
       formDataToSend.append('bio', formData.bio);
       formDataToSend.append('cv', formData.cv);
 
-      console.log('Submitting application for job:', selectedJob?.id);
       
       // Make API call to submit application
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/jobs/${selectedJob.id}/applications/`, {
@@ -400,7 +399,6 @@ const Careers = () => {
 
       if (response.ok) {
         const result = await response.json();
-        console.log('Application submitted successfully:', result);
         showFeedbackModal('success', `Application for ${selectedJob?.title} submitted successfully! We will get back to you soon.`);
       } else {
         let errorMessage = 'Please try again.';

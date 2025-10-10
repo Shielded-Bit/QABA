@@ -407,7 +407,6 @@ function PropertiesContent() {
                 options={bedroomOptions}
                 value={filters.bedrooms}
                 onChange={(value) => {
-                  console.log('Bedroom filter changed to:', value);
                   setFilters({ ...filters, bedrooms: value });
                 }}
               />
@@ -417,7 +416,6 @@ function PropertiesContent() {
                 options={bathroomOptions}
                 value={filters.bathrooms}
                 onChange={(value) => {
-                  console.log('Bathroom filter changed to:', value);
                   setFilters({ ...filters, bathrooms: value });
                 }}
               />

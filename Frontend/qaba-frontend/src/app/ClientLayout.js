@@ -9,6 +9,7 @@ import { ProfileProvider } from "../contexts/ProfileContext";
 import { PropertiesCacheProvider } from "../contexts/PropertiesCacheContext";
 import { ListingTypeCacheProvider } from "../contexts/ListingTypeCacheContext";
 import { LandingPageCacheProvider } from "../contexts/LandingPageCacheContext";
+import { GoogleOAuthProvider } from '@react-oauth/google';
 
 export default function ClientLayout({ children }) {
   const pathname = usePathname();
@@ -21,25 +22,27 @@ export default function ClientLayout({ children }) {
   const hideNavAndFooter = pathname.startsWith("/dashboard") || pathname.startsWith("/agent-dashboard");
 
   return (
-    <ProfileProvider>
-      <PropertiesCacheProvider>
-        <ListingTypeCacheProvider>
-          <LandingPageCacheProvider>
-            <div suppressHydrationWarning>
-              <div className="max-w-[2000px] mx-auto">
-                {mounted && !hideNavAndFooter && <Navbar />}
-                <div className="main-content">
-                  {mounted && children}
+    <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''}>
+      <ProfileProvider>
+        <PropertiesCacheProvider>
+          <ListingTypeCacheProvider>
+            <LandingPageCacheProvider>
+              <div suppressHydrationWarning>
+                <div className="max-w-[2000px] mx-auto">
+                  {mounted && !hideNavAndFooter && <Navbar />}
+                  <div className="main-content">
+                    {mounted && children}
+                  </div>
+                  {mounted && !hideNavAndFooter && <Footer />}
                 </div>
-                {mounted && !hideNavAndFooter && <Footer />}
+
+                {/* WhatsApp Widget - Available on all pages */}
+                {mounted && <WhatsAppWidget />}
               </div>
-              
-              {/* WhatsApp Widget - Available on all pages */}
-              {mounted && <WhatsAppWidget />}
-            </div>
-          </LandingPageCacheProvider>
-        </ListingTypeCacheProvider>
-      </PropertiesCacheProvider>
-    </ProfileProvider>
+            </LandingPageCacheProvider>
+          </ListingTypeCacheProvider>
+        </PropertiesCacheProvider>
+      </ProfileProvider>
+    </GoogleOAuthProvider>
   );
 }

@@ -32,7 +32,6 @@ export default function PaymentCallbackPage() {
   }, []);
 
   const handlePaymentSuccess = (data) => {
-    console.log('Payment successfully verified:', data);
     // Remove automatic redirection - let user control when to proceed via the modal
   };
 

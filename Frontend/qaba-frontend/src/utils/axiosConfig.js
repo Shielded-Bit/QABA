@@ -52,7 +52,6 @@ apiClient.interceptors.response.use(
       
       if (newToken) {
         // ✅ Token refresh successful - update authorization header and retry request
-        console.log('Token refreshed, retrying original request...');
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
         
         // Retry the original request with the new token

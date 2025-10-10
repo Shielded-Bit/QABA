@@ -58,7 +58,6 @@ export const clearAllUserData = () => {
 export const refreshAccessToken = async () => {
   // If already refreshing, return the same promise
   if (isRefreshing && refreshPromise) {
-    console.log('Token refresh already in progress, waiting for result...');
     return refreshPromise;
   }
   
@@ -75,8 +74,6 @@ export const refreshAccessToken = async () => {
   
   refreshPromise = (async () => {
     try {
-      console.log('Attempting to refresh access token...');
-      
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/token/refresh/`, {
         method: 'POST',
         headers: {
@@ -96,7 +93,6 @@ export const refreshAccessToken = async () => {
       if (newAccessToken) {
         // Store the new access token
         localStorage.setItem('access_token', newAccessToken);
-        console.log('✅ Access token refreshed successfully');
         return newAccessToken;
       }
 
@@ -163,7 +159,6 @@ export const handle401Error = async (response, error = null) => {
     
     if (newToken) {
       // ✅ Token refresh successful - user can continue
-      console.log('Token refreshed successfully - user session extended');
       return true;
     }
     

@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from "next/navigation";
-import { signIn } from '../../app/utils/auth/api.js';
+import { GoogleLogin } from '@react-oauth/google';
+import { signIn, googleSignIn } from '../../app/utils/auth/api.js';
 import TextInput from '../components/shared/TextInput.jsx';
 import PasswordInput from '../components/shared/PasswordInput.jsx';
 
@@ -73,6 +74,7 @@ const SignIn = () => {
   const [loading, setLoading] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [toast, setToast] = useState({ message: '', type: 'success', isVisible: false });
+  const [googleLoading, setGoogleLoading] = useState(false);
   const router = useRouter();
 
   // Function to show toast
@@ -285,6 +287,88 @@ const SignIn = () => {
     }
   };
 
+  // Google Sign In Handler
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setGoogleLoading(true);
+
+    try {
+      // Get the ID token from the credential response
+      const idToken = credentialResponse.credential;
+
+      if (!idToken) {
+        throw new Error('Failed to get ID token from Google');
+      }
+
+      // Call backend API with the ID token (no user_type needed for sign in)
+      const response = await googleSignIn(idToken);
+
+      if (response.success || response.data) {
+        const data = response.data || response;
+
+        // Extract tokens and user details
+        const accessTokenFromBackend = data.access;
+        const refreshToken = data.refresh;
+        const userType = data.user?.user_type;
+
+        if (accessTokenFromBackend && refreshToken && userType) {
+          // Store tokens and user type
+          localStorage.setItem('access_token', accessTokenFromBackend);
+          localStorage.setItem('refresh_token', refreshToken);
+          localStorage.setItem('user_type', userType);
+
+          // Fetch user data
+          try {
+            const meResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/users/me/`, {
+              headers: {
+                'Authorization': `Bearer ${accessTokenFromBackend}`,
+                'Content-Type': 'application/json',
+              },
+            });
+
+            if (meResponse.ok) {
+              const userData = await meResponse.json();
+              localStorage.setItem('user_data', JSON.stringify(userData.data));
+
+              const profilePhotoUrl = userData.data.agentprofile?.profile_photo_url ||
+                                    userData.data.clientprofile?.profile_photo_url;
+              if (profilePhotoUrl) {
+                localStorage.setItem('profile_photo_url', profilePhotoUrl);
+              }
+            }
+          } catch (error) {
+            console.error('Error fetching user data:', error);
+          }
+
+          // Show success toast
+          showToast('Sign in successful! Redirecting to dashboard...', 'success');
+
+          // Redirect based on user type
+          setTimeout(() => {
+            if (userType === 'AGENT' || userType === 'LANDLORD') {
+              router.push('/agent-dashboard');
+            } else if (userType === 'CLIENT') {
+              router.push('/dashboard/all-listed-properties');
+            }
+          }, 1500);
+        } else {
+          throw new Error('Invalid response from server');
+        }
+      } else {
+        throw new Error(response.message || 'Google sign in failed');
+      }
+    } catch (error) {
+      console.error('Google sign in error:', error);
+      showToast(error.message || 'Google sign in failed. Please try again.', 'error');
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  const handleGoogleError = () => {
+    showToast('Google sign in was cancelled or failed', 'error');
+    setGoogleLoading(false);
+  };
+
   // Show loading spinner while checking authentication
   if (checkingAuth) {
     return <LoadingSpinner />;
@@ -394,19 +478,31 @@ const SignIn = () => {
                 <div className="h-px w-40 bg-gray-300"></div>
               </div>
 
-              <button
-                type="button"
-                className="mt-10 flex w-full items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-600 shadow-sm hover:bg-gray-200 transition-all duration-300"
-              >
-                <Image
-                  src={bgpict[1].src}
-                  alt={bgpict[1].alt}
-                  width={20}
-                  height={20}
-                  className="w-5 h-5 mr-2"
-                />
-                Sign in with Google
-              </button>
+              <div className="mt-10 flex w-full items-center justify-center">
+                {googleLoading ? (
+                  <button
+                    disabled
+                    className="flex w-full items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-600 shadow-sm opacity-50 cursor-not-allowed"
+                  >
+                    <Image
+                      src={bgpict[1].src}
+                      alt={bgpict[1].alt}
+                      width={20}
+                      height={20}
+                      className="w-5 h-5 mr-2"
+                    />
+                    Signing in...
+                  </button>
+                ) : (
+                  <GoogleLogin
+                    onSuccess={handleGoogleSuccess}
+                    onError={handleGoogleError}
+                    text="signin_with"
+                    width="100%"
+                    size="large"
+                  />
+                )}
+              </div>
 
               <p className="mt-6 text-left text-xs text-gray-600">
                 By signing in you accept our{' '}
@@ -511,19 +607,31 @@ const SignIn = () => {
                 <div className="h-px w-24 bg-gray-300"></div>
               </div>
 
-              <button
-                type="button"
-                className="mt-8 flex w-full items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-600 shadow-sm hover:bg-gray-200 transition-all duration-300"
-              >
-                <Image
-                  src={bgpict[1].src}
-                  alt={bgpict[1].alt}
-                  width={20}
-                  height={20}
-                  className="w-5 h-5 mr-2"
-                />
-                Sign in with Google
-              </button>
+              <div className="mt-8 flex w-full items-center justify-center">
+                {googleLoading ? (
+                  <button
+                    disabled
+                    className="flex w-full items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-600 shadow-sm opacity-50 cursor-not-allowed"
+                  >
+                    <Image
+                      src={bgpict[1].src}
+                      alt={bgpict[1].alt}
+                      width={20}
+                      height={20}
+                      className="w-5 h-5 mr-2"
+                    />
+                    Signing in...
+                  </button>
+                ) : (
+                  <GoogleLogin
+                    onSuccess={handleGoogleSuccess}
+                    onError={handleGoogleError}
+                    text="signin_with"
+                    width="100%"
+                    size="large"
+                  />
+                )}
+              </div>
 
               <p className="mt-6 text-left text-xs text-gray-600">
                 By signing in you accept our{' '}

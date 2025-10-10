@@ -13,8 +13,6 @@ const VerifyEmailContent = () => {
   const params = useSearchParams();
   const token = params.get("token");
 
-  console.log("Token:", token); // Debugging
-
   useEffect(() => {
     if (!token) return; // Ensure token exists before running
 
@@ -23,7 +21,6 @@ const VerifyEmailContent = () => {
         const response = await axios.get(
           `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/verify-email/?token=${token}`
         );
-        console.log("Verify Email Response:", response.status, response.data); // Debugging
 
         if (response.status === 200) {
           setShowSuccessModal(true);

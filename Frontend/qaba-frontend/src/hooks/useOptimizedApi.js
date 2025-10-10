@@ -60,7 +60,7 @@ export const useProperties = (options = {}) => {
       
       // Show cache indicator in dev mode
       if (process.env.NODE_ENV === 'development' && result.fromCache) {
-        console.log('Properties loaded from cache');
+        // Properties loaded from cache
       }
       
     } catch (err) {
@@ -108,7 +108,7 @@ export const usePropertyDetails = (propertyId) => {
       setProperty(result.property);
       
       if (process.env.NODE_ENV === 'development' && result.fromCache) {
-        console.log(`Property ${propertyId} loaded from cache`);
+        // Property loaded from cache
       }
       
     } catch (err) {
@@ -154,7 +154,7 @@ export const useUserProfile = () => {
       setProfileData(result.profileData);
       
       if (process.env.NODE_ENV === 'development' && result.fromCache) {
-        console.log('User profile loaded from cache');
+        // User profile loaded from cache
       }
       
     } catch (err) {
@@ -201,7 +201,7 @@ export const useTransactions = (page = 1, limit = 10) => {
       setTotal(result.total);
       
       if (process.env.NODE_ENV === 'development' && result.fromCache) {
-        console.log(`Transactions page ${currentPage} loaded from cache`);
+        // Transactions loaded from cache
       }
       
     } catch (err) {
@@ -252,7 +252,7 @@ export const usePropertySearch = (query, options = {}) => {
       setResults(result.properties);
       
       if (process.env.NODE_ENV === 'development' && result.fromCache) {
-        console.log(`Search results for "${searchQuery}" loaded from cache`);
+        // Search results loaded from cache
       }
       
     } catch (err) {
@@ -309,7 +309,7 @@ export const useAnalytics = (periodType = 'monthly', year = new Date().getFullYe
       setAnalytics(result.analytics);
       
       if (process.env.NODE_ENV === 'development' && result.fromCache) {
-        console.log(`Analytics for ${periodType} ${year} loaded from cache`);
+        // Analytics loaded from cache
       }
       
     } catch (err) {
@@ -339,7 +339,7 @@ export const usePrefetch = () => {
   const prefetchProperties = useCallback(async (propertyIds) => {
     try {
       await apiService.prefetchPropertyDetails(propertyIds);
-      console.log(`Prefetched ${propertyIds.length} properties`);
+      // Prefetched properties
     } catch (err) {
       console.error('Error prefetching properties:', err);
     }
@@ -347,7 +347,7 @@ export const usePrefetch = () => {
 
   const clearCache = useCallback((pattern) => {
     // apiService.clearCache(pattern);
-    console.log(pattern ? `Cleared cache for: ${pattern}` : 'Cleared all cache');
+    // Cache cleared
   }, []);
 
 */

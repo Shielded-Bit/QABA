@@ -66,9 +66,7 @@ export default function PasswordPage() {
 
     setIsRequestingReset(true);
     try {
-      console.log('Attempting to send password reset email to:', email);
       const url = `${API_BASE_URL}/api/v1/auth/password-reset/`;
-      console.log('API URL:', url);
       
       const response = await fetch(url, {
         method: 'POST',
@@ -79,11 +77,8 @@ export default function PasswordPage() {
         body: JSON.stringify({ email }),
       });
 
-      console.log('Response status:', response.status);
-      
       try {
         const responseData = await response.json();
-        console.log('Response data:', responseData);
 
         if (response.ok) {
           setEmailSent(true);

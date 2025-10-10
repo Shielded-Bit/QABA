@@ -255,7 +255,6 @@ const Navbar = () => {
                       alt={`${cachedDisplayName} Profile`}
                       className="w-full h-full object-cover"
                       onError={(e) => {
-                        console.log('Profile image failed to load:', cachedProfileImage);
                         e.target.style.display = 'none';
                       }}
                     />
@@ -379,7 +378,6 @@ const Navbar = () => {
                       alt={`${cachedDisplayName} Profile`}
                       className="w-full h-full object-cover"
                       onError={(e) => {
-                        console.log('Profile image failed to load:', cachedProfileImage);
                         e.target.style.display = 'none';
                       }}
                     />

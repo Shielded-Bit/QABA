@@ -62,7 +62,6 @@ const NewPasswordForm = () => {
         new_password: password,
       });
 
-      console.log('Response:', response.data);
       setSuccess(true);
       setTimeout(() => router.push('/signin'), 2000);
     } catch (err) {

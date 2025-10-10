@@ -9,7 +9,6 @@ const ScheduleVisitModal = ({ isOpen, onClose, property }) => {
   const [errorMessage, setErrorMessage] = useState("");
 
   // Debug: Log the property to see what's being passed
-  console.log("Property passed to modal:", property);
 
   if (!isOpen) return null;
 

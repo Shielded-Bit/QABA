@@ -431,7 +431,7 @@ const Register = () => {
                 </a>
               </p>
             </form>
-            <SignInWithGoogle bgpict={bgpict} />
+            <SignInWithGoogle bgpict={bgpict} formData={formData} />
           </div>
         </div>
 
@@ -513,7 +513,7 @@ const Register = () => {
                 </a>
               </p>
             </form>
-            <SignInWithGoogle bgpict={bgpict} />
+            <SignInWithGoogle bgpict={bgpict} formData={formData} />
           </div>
         </div>
       </div>

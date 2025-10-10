@@ -123,7 +123,6 @@ export default function MobileMenu({
                   alt={`${cachedDisplayName} Profile`}
                   className="w-full h-full object-cover"
                   onError={(e) => {
-                    console.log('Profile image failed to load:', finalProfileImageUrl);
                     e.target.style.display = 'none';
                   }}
                 />
