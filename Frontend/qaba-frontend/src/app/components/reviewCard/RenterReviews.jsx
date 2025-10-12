@@ -160,8 +160,7 @@ const RenterReviews = ({ property }) => {
         }
 
         const data = await response.json();
-        console.log('API Response:', data);
-        
+
         let reviewsArray = [];
         if (data.success && data.data && data.data.reviews) {
           reviewsArray = data.data.reviews;

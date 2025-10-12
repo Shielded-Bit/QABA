@@ -82,7 +82,7 @@ export default function ProfilePage() {
   // Use the notifications hook with fallback
   const notificationsContext = useNotifications();
   const createNotification = notificationsContext?.createNotification || (async (msg) => {
-    console.log("Notification would be created (fallback):", msg);
+    // Fallback notification handler
     return true;
   });
   
@@ -165,7 +165,6 @@ export default function ProfilePage() {
       if (result.success && result.data) {
         // Update state with the fetched user data
         setApiUserData(result.data);
-        console.log("User data fetched:", result.data);
         
         // Update form values with the fetched data
         if (result.data.first_name) setValue('first_name', result.data.first_name);
@@ -241,7 +240,6 @@ export default function ProfilePage() {
       const profileData = await response.json();
       
       if (profileData?.success && profileData?.data) {
-        console.log("Profile data fetched:", profileData.data);
         
         // Extract location data - handle different possible structures
         const newLocationData = {
@@ -268,8 +266,6 @@ export default function ProfilePage() {
             ? `${imageUrl}&_cb=${new Date().getTime()}` 
             : `${imageUrl}?_cb=${new Date().getTime()}`;
           
-          console.log("Profile image URL:", cacheBustUrl);
-          
           // Update state and context
           setImagePreview(cacheBustUrl);
           updateProfileImage(cacheBustUrl);
@@ -281,7 +277,6 @@ export default function ProfilePage() {
           
           setImgError(false);
         } else {
-          console.log("No profile image found in data");
           setImagePreview(null);
         }
       }
@@ -308,7 +303,6 @@ export default function ProfilePage() {
   // Update form values when userData changes
   useEffect(() => {
     if (userData) {
-      console.log("userData received:", userData);
       
       // Set form values for user data if not already set by API data
       if (!apiUserData.first_name && userData.first_name) setValue('first_name', userData.first_name);
@@ -318,7 +312,6 @@ export default function ProfilePage() {
       // Handle email if not already set
       if (!apiUserData.email) {
         const email = getEmailFromData(userData);
-        console.log("Email found:", email);
         setValue('email', email);
         setUserEmail(email);
       }
@@ -345,7 +338,6 @@ export default function ProfilePage() {
     if (!userEmail && !apiUserData.email && typeof window !== 'undefined') {
       const storedEmail = localStorage.getItem('user_email');
       if (storedEmail) {
-        console.log("Using email from localStorage:", storedEmail);
         setUserEmail(storedEmail);
         setValue('email', storedEmail);
       }
@@ -456,7 +448,6 @@ export default function ProfilePage() {
       });
       
       const result = await response.json();
-      console.log("Image upload response:", result);
       
       // Reset selected image state
       setSelectedImage(null);
@@ -510,7 +501,6 @@ export default function ProfilePage() {
                 className="object-cover w-full h-full"
                 crossOrigin="anonymous"
                 onError={(e) => {
-                  console.log("Image loading error", e);
                   setImgError(true);
                   e.target.onerror = null;
                 }}

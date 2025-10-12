@@ -95,6 +95,39 @@ export const resetPassword = async (email) => {
   }
 };
 
+// Google OAuth sign in
+export const googleSignIn = async (idToken) => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/auth/google/`, {
+      id_token: idToken
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
+
+// Google OAuth sign up with role
+export const googleSignUp = async (idToken, userType) => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/auth/google/`, {
+      id_token: idToken,
+      user_type: userType
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
+
 export const createProperty = async (data) => {
   try {
     // Convert data to URL-encoded format
