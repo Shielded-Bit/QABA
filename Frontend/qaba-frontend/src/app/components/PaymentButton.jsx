@@ -148,8 +148,6 @@ const PaymentButton = ({ propertyId, propertyType, price, buttonText = 'Proceed 
         }
       }
       
-      console.log('Payment initiation response:', responseData);
-      
       if (responseData.success && responseData.data?.payment_link) {
         // Store transaction reference in localStorage for verification after redirect
         if (responseData.data.transaction?.reference) {

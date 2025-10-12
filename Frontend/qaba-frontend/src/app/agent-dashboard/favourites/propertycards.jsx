@@ -124,11 +124,8 @@ const AgentFavoritesPage = () => {
           }
         );
         
-        console.log('Favorites API response:', response.data);
-        
         if (response.status === 200) {
           const favoritesData = response.data.data || [];
-          console.log('Favorites data:', favoritesData);
           
           setFavorites(favoritesData);
           setFilteredFavorites(favoritesData);
