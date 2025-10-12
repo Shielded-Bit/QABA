@@ -1,10 +1,13 @@
 import logging
+import random
+import string
 from typing import Dict, List, Union
 
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 
+from apps.users.models import OTP
 from core.utils import microsoft_graph_email
 
 logger = logging.getLogger(__name__)
@@ -82,16 +85,12 @@ def send_email(
 
 def send_verification_email(user):
     """Send verification email to user"""
-    from core.utils.token import email_verification_token_generator
+    otp = "".join(random.choices(string.digits, k=6))
+    OTP.objects.create(user=user, otp=otp)
 
-    token = email_verification_token_generator.make_token(user)
-    user.email_verification_token = token
-    user.save()
-
-    verification_url = f"{settings.FRONTEND_URL}/verify-email?token={token}"
     context = {
         "user": user,
-        "verification_url": verification_url,
+        "otp": otp,
     }
 
     return send_email(
@@ -103,23 +102,19 @@ def send_verification_email(user):
 
 
 def send_password_reset_email(user):
-    """Send password reset email to user"""
-    from core.utils.token import email_verification_token_generator
+    """Send password reset OTP to user"""
+    otp = "".join(random.choices(string.digits, k=6))
+    OTP.objects.create(user=user, otp=otp)
 
-    token = email_verification_token_generator.make_token(user)
-    user.password_reset_token = token
-    user.save()
-
-    reset_url = f"{settings.FRONTEND_URL}/reset-password?token={token}"
     context = {
         "user": user,
-        "reset_url": reset_url,
+        "otp": otp,
     }
 
     return send_email(
         subject="Reset your password",
         recipients=user.email,
-        template_name="password_reset",
+        template_name="password_reset_otp",
         context=context,
     )
 

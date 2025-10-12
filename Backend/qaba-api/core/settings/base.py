@@ -153,7 +153,7 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(
         days=int(getenv("REFRESH_TOKEN_LIFETIME", "30"))
     ),
-    "ROTATE_REFRESH_TOKENS": False,
+    "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
@@ -181,6 +181,8 @@ MICROSOFT_GRAPH_SCOPE = getenv(
     "MICROSOFT_GRAPH_SCOPE", "https://graph.microsoft.com/.default"
 )
 DEFAULT_FROM_EMAIL = getenv("DEFAULT_FROM_EMAIL", "")
+
+GOOGLE_CLIENT_ID = getenv("GOOGLE_CLIENT_ID", "").strip()
 
 CORS_ALLOW_CREDENTIALS = True
 # Security Headers

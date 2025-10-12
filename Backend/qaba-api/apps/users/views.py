@@ -6,32 +6,34 @@ from core.utils.send_email import (
     send_survey_meeting_notification,
     send_verification_email,
 )
-from core.utils.token import email_verification_token_generator
 from django.db import transaction
-from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
+from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import generics, permissions, status
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
+from django.utils import timezone
 
-from .models import AgentProfile, ClientProfile, LandlordProfile, User
+from .models import OTP, AgentProfile, ClientProfile, LandlordProfile, User
 from .serializers import (
     AgentProfilePatchSerializer,
     AgentProfileSerializer,
     ClientProfilePatchSerializer,
     ClientProfileSerializer,
     ContactFormSerializer,
+    GoogleAuthSerializer,
     LandlordProfileSerializer,
-    RegistrationSerializer,
     LoginSerializer,
     NotificationSerializer,
+    OTPVerificationSerializer,
     PasswordChangeSerializer,
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
     PropertySurveyMeetingCreateSerializer,
     PropertySurveyMeetingSerializer,
+    RegistrationSerializer,
     SendEmailVerificationSerializer,
     UserSerializer,
     UserUpdateSerializer,
@@ -58,6 +60,85 @@ class LoginView(APIView):
             }
             return APIResponse.success(data=data, message="Login successful")
         APIResponse.unauthorized(message=serializer.errors)
+
+
+@extend_schema(
+    tags=["Authentication"],
+    request=GoogleAuthSerializer,
+    responses={
+        200: OpenApiResponse(
+            description="Returns JWT tokens and user data when Google authentication succeeds."
+        )
+    },
+)
+class GoogleAuthView(APIView):
+    permission_classes = (permissions.AllowAny,)
+
+    def post(self, request):
+        serializer = GoogleAuthSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        payload = serializer.validated_data["payload"]
+        email = payload["email"].lower()
+        user_type = serializer.validated_data.get("user_type", User.UserType.CLIENT)
+
+        first_name = payload.get("given_name") or ""
+        last_name = payload.get("family_name") or ""
+        full_name = payload.get("name") or ""
+
+        if full_name and (not first_name or not last_name):
+            name_parts = full_name.split()
+            if not first_name and name_parts:
+                first_name = name_parts[0]
+            if not last_name and len(name_parts) > 1:
+                last_name = " ".join(name_parts[1:])
+
+        if not first_name:
+            first_name = email.split("@")[0]
+        if not last_name:
+            last_name = "User"
+
+        user, created = User.objects.get_or_create(
+            email=email,
+            defaults={
+                "first_name": first_name,
+                "last_name": last_name,
+                "user_type": user_type,
+                "is_active": True,
+                "is_email_verified": True,
+            },
+        )
+
+        if created:
+            user.set_unusable_password()
+            user.save(update_fields=["password"])
+        else:
+            updated_fields = set()
+            if not user.is_active:
+                user.is_active = True
+                updated_fields.add("is_active")
+            if not user.is_email_verified:
+                user.is_email_verified = True
+                updated_fields.add("is_email_verified")
+            if first_name and user.first_name != first_name:
+                user.first_name = first_name
+                updated_fields.add("first_name")
+            if last_name and user.last_name != last_name:
+                user.last_name = last_name
+                updated_fields.add("last_name")
+            if updated_fields:
+                user.save(update_fields=list(updated_fields))
+
+        refresh = RefreshToken.for_user(user)
+        data = {
+            "refresh": str(refresh),
+            "access": str(refresh.access_token),
+            "user": UserSerializer(user).data,
+        }
+
+        return APIResponse.success(
+            data=data, message="Google authentication successful"
+        )
 
 
 @extend_schema(
@@ -95,6 +176,7 @@ class RegistrationView(generics.CreateAPIView):
             message="Registration successful. Please check your email to verify your account.",
             status_code=status.HTTP_201_CREATED,
         )
+
 
 @extend_schema(tags=["Profiles"])
 class ClientProfileView(APIView):
@@ -286,43 +368,41 @@ class RefreshTokenView(TokenRefreshView):
 
 @extend_schema(
     tags=["Authentication"],
-    parameters=[
-        OpenApiParameter(
-            name="token",
-            type=str,
-            location=OpenApiParameter.QUERY,
-            description="Email verification token",
-        )
-    ],
+    request=OTPVerificationSerializer,
     responses={
-        302: None,
-        400: OpenApiResponse(description="Invalid token"),
+        200: OpenApiResponse(description="Email verified successfully"),
+        400: OpenApiResponse(description="Invalid OTP or email"),
     },
 )
-class EmailVerificationView(APIView):
+class OTPVerificationView(APIView):
     permission_classes = (permissions.AllowAny,)
 
-    def get(self, request):
-        token = request.GET.get("token")
-        if not token:
-            return APIResponse.bad_request("Token is required")
+    def post(self, request):
+        serializer = OTPVerificationSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data["email"]
+            otp = serializer.validated_data["otp"]
 
-        try:
-            user = User.objects.get(email_verification_token=token)
+            try:
+                user = User.objects.get(email=email)
+                otp_instance = OTP.objects.get(user=user, otp=otp)
 
-            if not email_verification_token_generator.check_token(user, token):
-                return APIResponse.bad_request("Invalid token")
+                if otp_instance.expires_at < timezone.now():
+                    return APIResponse.bad_request("OTP has expired")
 
-            user.is_email_verified = True
-            user.email_verification_token = ""
-            user.is_active = True
-            user.save()
+                user.is_email_verified = True
+                user.is_active = True
+                user.save()
 
-            self._create_profile_for_user(user)
+                self._create_profile_for_user(user)
 
-            return APIResponse.success(data="Email verified")
-        except User.DoesNotExist:
-            return APIResponse.not_found("User not found")
+                otp_instance.delete()
+
+                return APIResponse.success(message="Email verified successfully")
+            except (User.DoesNotExist, OTP.DoesNotExist):
+                return APIResponse.bad_request("Invalid OTP or email")
+
+        return APIResponse.bad_request(serializer.errors)
 
     def _create_profile_for_user(self, user):
         """Create appropriate profile based on user type"""
@@ -402,7 +482,7 @@ class PasswordResetRequestView(APIView):
                     )
 
                 return APIResponse.success(
-                    message="A password reset email has been sent"
+                    message="A password reset OTP has been sent to your email"
                 )
 
             except User.DoesNotExist:
@@ -421,18 +501,25 @@ class PasswordResetConfirmView(APIView):
     def post(self, request):
         serializer = PasswordResetConfirmSerializer(data=request.data)
         if serializer.is_valid():
-            token = serializer.validated_data["token"]
-            try:
-                user = User.objects.get(password_reset_token=token)
-                if not email_verification_token_generator.check_token(user, token):
-                    return APIResponse.bad_request("Invalid token")
+            email = serializer.validated_data["email"]
+            otp = serializer.validated_data["otp"]
+            new_password = serializer.validated_data["new_password"]
 
-                user.set_password(serializer.validated_data["new_password"])
-                user.password_reset_token = ""
+            try:
+                user = User.objects.get(email=email)
+                otp_instance = OTP.objects.get(user=user, otp=otp)
+
+                if otp_instance.expires_at < timezone.now():
+                    return APIResponse.bad_request("OTP has expired")
+
+                user.set_password(new_password)
                 user.save()
+
+                otp_instance.delete()
+
                 return APIResponse.success(message="Password reset successful")
-            except User.DoesNotExist:
-                APIResponse.not_found("User not found")
+            except (User.DoesNotExist, OTP.DoesNotExist):
+                return APIResponse.bad_request("Invalid OTP or email")
         APIResponse.bad_request(message=serializer.errors)
 
 
