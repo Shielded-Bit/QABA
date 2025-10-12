@@ -1,3 +1,19 @@
+import mimetypes
+import os
+from urllib.parse import urlparse
+
+import requests
+from django.core.files.base import ContentFile
+from django.db import transaction
+from django.utils import timezone
+from drf_spectacular.utils import OpenApiResponse, extend_schema
+from rest_framework import generics, permissions, status
+from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenRefreshView
+
 from apps.users.models import Notification
 from apps.users.permissions import IsAgentOrLandlord, IsClient
 from core.utils.response import APIResponse
@@ -6,15 +22,6 @@ from core.utils.send_email import (
     send_survey_meeting_notification,
     send_verification_email,
 )
-from django.db import transaction
-from drf_spectacular.utils import OpenApiResponse, extend_schema
-from rest_framework import generics, permissions, status
-from rest_framework.parsers import FormParser, MultiPartParser
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.views import APIView
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.views import TokenRefreshView
-from django.utils import timezone
 
 from .models import OTP, AgentProfile, ClientProfile, LandlordProfile, User
 from .serializers import (
@@ -38,6 +45,48 @@ from .serializers import (
     UserSerializer,
     UserUpdateSerializer,
 )
+
+
+def set_profile_photo_from_google(user, picture_url):
+    if not picture_url:
+        return
+
+    profile_model_map = {
+        User.UserType.CLIENT: ClientProfile,
+        User.UserType.AGENT: AgentProfile,
+        User.UserType.LANDLORD: LandlordProfile,
+    }
+    profile_model = profile_model_map.get(user.user_type)
+    if not profile_model:
+        return
+
+    profile, _ = profile_model.objects.get_or_create(user=user)
+
+    if profile.profile_photo:
+        return
+
+    try:
+        response = requests.get(picture_url, timeout=5)
+        response.raise_for_status()
+    except requests.RequestException:
+        return
+
+    content_type = response.headers.get("Content-Type", "")
+    content_type = content_type.split(";")[0] if content_type else ""
+
+    extension = mimetypes.guess_extension(content_type) if content_type else None
+    if extension == ".jpe":
+        extension = ".jpg"
+
+    if not extension:
+        parsed_path = urlparse(picture_url).path
+        _, extension = os.path.splitext(parsed_path)
+
+    if not extension:
+        extension = ".jpg"
+
+    filename = f"google-profile-{user.pk}{extension}"
+    profile.profile_photo.save(filename, ContentFile(response.content), save=True)
 
 
 @extend_schema(tags=["Authentication"])
@@ -128,6 +177,8 @@ class GoogleAuthView(APIView):
                 updated_fields.add("last_name")
             if updated_fields:
                 user.save(update_fields=list(updated_fields))
+
+        set_profile_photo_from_google(user, payload.get("picture"))
 
         refresh = RefreshToken.for_user(user)
         data = {
