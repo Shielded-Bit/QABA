@@ -3,7 +3,7 @@ import os
 from urllib.parse import urlparse
 
 import requests
-from django.core.files.base import ContentFile
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import transaction
 from django.utils import timezone
 from drf_spectacular.utils import OpenApiResponse, extend_schema
@@ -86,7 +86,14 @@ def set_profile_photo_from_google(user, picture_url):
         extension = ".jpg"
 
     filename = f"google-profile-{user.pk}{extension}"
-    profile.profile_photo.save(filename, ContentFile(response.content), save=True)
+    inferred_content_type = mimetypes.guess_type(filename)[0]
+    upload = SimpleUploadedFile(
+        name=filename,
+        content=response.content,
+        content_type=content_type or inferred_content_type or "image/jpeg",
+    )
+    profile.profile_photo = upload
+    profile.save(update_fields=["profile_photo"])
 
 
 @extend_schema(tags=["Authentication"])
