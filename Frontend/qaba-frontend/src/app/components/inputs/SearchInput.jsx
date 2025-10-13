@@ -133,7 +133,22 @@ const SearchInput = ({ onSearch, placeholder = "e.g Abakiliki" }) => {
 
   const handleTabClick = (tab) => {
     if (tab === 'sell') {
-      router.push('/add-listing');
+      // Check if user is logged in and get their user type
+      if (typeof window !== 'undefined') {
+        const token = localStorage.getItem('access_token');
+        const userType = localStorage.getItem('user_type');
+
+        if (!token) {
+          // Not logged in - redirect to public add listing page
+          router.push('/add-listing');
+        } else if (userType === 'AGENT' || userType === 'LANDLORD') {
+          // Agent or Landlord - redirect to dashboard choose property type page
+          router.push('/agent-dashboard/choose-property-type');
+        } else {
+          // Client or other - redirect to public add listing page
+          router.push('/add-listing');
+        }
+      }
       return;
     }
     setActiveTab(tab);

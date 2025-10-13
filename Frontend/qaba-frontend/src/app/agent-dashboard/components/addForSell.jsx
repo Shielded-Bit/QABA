@@ -7,6 +7,13 @@ import DocumentUploadModal from "../../components/DocumentUploadModal"; // Impor
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
+// Fee rates constants
+const FEE_RATES = {
+  AGENT_FEE_RATE: 0.10,
+  QARBA_FEE_RATE: 0.05,
+  LANDLORD_FEE_RATE: 0.05
+};
+
 // Helper functions
 const formatNumberWithCommas = (value) => {
   const plainNumber = value.replace(/[^\d]/g, '');
@@ -15,6 +22,32 @@ const formatNumberWithCommas = (value) => {
 
 const convertToPlainNumber = (formattedValue) => {
   return formattedValue.replace(/[^\d]/g, '');
+};
+
+// Fee calculation function
+const calculateFees = (userType, salePrice) => {
+  const parsedPrice = parseInt(salePrice, 10) || 0;
+
+  if (userType === 'agent') {
+    const agentFee = Math.round(parsedPrice * FEE_RATES.AGENT_FEE_RATE);
+    const qarbaFee = Math.round(parsedPrice * FEE_RATES.QARBA_FEE_RATE);
+    return {
+      basePrice: parsedPrice,
+      agentFee,
+      qarbaFee,
+      totalFee: agentFee + qarbaFee,
+      totalPrice: parsedPrice + agentFee + qarbaFee
+    };
+  } else {
+    const qarbaFee = Math.round(parsedPrice * FEE_RATES.LANDLORD_FEE_RATE);
+    return {
+      basePrice: parsedPrice,
+      agentFee: 0,
+      qarbaFee,
+      totalFee: qarbaFee,
+      totalPrice: parsedPrice + qarbaFee
+    };
+  }
 };
 
 // Constants
@@ -91,11 +124,47 @@ const FileUpload = ({ onChange, fileType, selectedFile }) => (
   </div>
 );
 
+// Fee breakdown component
+const FeeBreakdown = ({ fees, userType }) => {
+  if (!fees.basePrice) return null;
+
+  return (
+    <div className="mt-4 p-4 bg-gray-50 rounded-md border border-gray-200">
+      <h4 className="text-lg font-medium text-[#014d98] mb-2">Fee Breakdown</h4>
+      <div className="space-y-2 text-sm">
+        <div className="flex justify-between font-medium">
+          <span>Sale Price:</span>
+          <span>₦{formatNumberWithCommas(fees.basePrice.toString())}</span>
+        </div>
+        {fees.agentFee > 0 && (
+          <div className="flex justify-between">
+            <span>Agent Commission (10%):</span>
+            <span>₦{formatNumberWithCommas(fees.agentFee.toString())}</span>
+          </div>
+        )}
+        <div className="flex justify-between">
+          <span>Qarba Fee (5%):</span>
+          <span>₦{formatNumberWithCommas(fees.qarbaFee.toString())}</span>
+        </div>
+        <div className="flex justify-between font-medium border-t border-gray-200 pt-2 mt-2">
+          <span>Total Price:</span>
+          <span className="text-[#014d98]">₦{formatNumberWithCommas(fees.totalPrice.toString())}</span>
+        </div>
+        {userType === 'agent' && (
+          <p className="text-xs text-gray-500 mt-1 italic">
+            Agent commission and Qarba fee are added to the sale price.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // API functions
 const createProperty = async (data, mediaFiles, documents) => {
   try {
     const formData = new FormData();
-    
+
     // Add property details
     Object.keys(data).forEach(key => {
       if (key === 'amenities_ids' && Array.isArray(data[key])) {
@@ -106,20 +175,31 @@ const createProperty = async (data, mediaFiles, documents) => {
         formData.append(key, data[key]);
       }
     });
-    
+
     // Add media files
     if (mediaFiles.image1) formData.append('images', mediaFiles.image1);
     if (mediaFiles.image2) formData.append('images', mediaFiles.image2);
     if (mediaFiles.video) formData.append('video', mediaFiles.video);
-    
+
     // Add documents
     documents.forEach(doc => {
       formData.append('documents', doc.file);
       formData.append('document_types', doc.type);
     });
-    
+
+    // DEBUG: Log all FormData entries
+    console.log('=== FORMDATA BEING SENT ===');
+    for (let [key, value] of formData.entries()) {
+      if (value instanceof File) {
+        console.log(`${key}: [File: ${value.name}]`);
+      } else {
+        console.log(`${key}: ${value}`);
+      }
+    }
+    console.log('=== END FORMDATA ===');
+
     const accessToken = localStorage.getItem('access_token');
-    
+
     if (!accessToken) {
       throw new Error('No access token found. Please log in.');
     }
@@ -167,12 +247,12 @@ const AddForSell = () => {
   const getAuthenticatedUserType = () => {
     if (typeof window !== 'undefined') {
       const userType = localStorage.getItem('user_type');
-      // Convert LANDLORD to LandLord and AGENT to agent for form compatibility
-      if (userType === 'LANDLORD') return 'LandLord';
+      // Convert LANDLORD to landlord and AGENT to agent for fee calculation
+      if (userType === 'LANDLORD') return 'landlord';
       if (userType === 'AGENT') return 'agent';
-      return 'LandLord'; // Default fallback
+      return 'landlord'; // Default fallback
     }
-    return 'LandLord';
+    return 'landlord';
   };
 
   // Helper function to determine if property type should show bedroom/bathroom fields
@@ -190,9 +270,10 @@ const AddForSell = () => {
     submit_for_review: false,
     location: "",
     bedrooms: 1,
-    bazthrooms: 1,
+    bathrooms: 1,
     area_sqft: 0,
     sale_price: "",
+    total_price: "",
     property_status: "New",
     amenities_ids: [],
     user_type: getAuthenticatedUserType(), // Set based on authenticated user
@@ -202,12 +283,13 @@ const AddForSell = () => {
 
   // Documents state
   const [documents, setDocuments] = useState([]);
-  
+
   // Document modal state
   const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
 
   // Other states
   const [displayPrice, setDisplayPrice] = useState('');
+  const [fees, setFees] = useState({ basePrice: 0, agentFee: 0, qarbaFee: 0, totalFee: 0, totalPrice: 0 });
   const [amenities, setAmenities] = useState([]);
   const [isLoadingAmenities, setIsLoadingAmenities] = useState(false);
   const [mediaFiles, setMediaFiles] = useState({
@@ -254,6 +336,15 @@ const AddForSell = () => {
       setDisplayPrice(formatNumberWithCommas(formData.sale_price));
     }
   }, [formData.sale_price]);
+
+  // Calculate fees when price or user type changes
+  useEffect(() => {
+    if (formData.sale_price) {
+      const calculatedFees = calculateFees(formData.user_type, formData.sale_price);
+      setFees(calculatedFees);
+      setFormData(prev => ({ ...prev, total_price: calculatedFees.totalPrice.toString() }));
+    }
+  }, [formData.user_type, formData.sale_price]);
 
   useEffect(() => {
     const getAmenities = async () => {
@@ -322,7 +413,7 @@ const AddForSell = () => {
 
   const handleCloseModal = () => {
     setModalOpen(false);
-    
+
     if (!isDraft) {
       setFormData({
         property_name: "",
@@ -335,21 +426,23 @@ const AddForSell = () => {
         bathrooms: 1,
         area_sqft: 0,
         sale_price: "",
+        total_price: "",
         property_status: "New",
         amenities_ids: [],
-        user_type: "LandLord",
+        user_type: getAuthenticatedUserType(),
         state: "",
         city: ""
       });
-      
+
       setMediaFiles({
         image1: null,
         image2: null,
         video: null
       });
-      
+
       setDocuments([]);
       setDisplayPrice('');
+      setFees({ basePrice: 0, agentFee: 0, qarbaFee: 0, totalFee: 0, totalPrice: 0 });
     }
   };
 
@@ -383,15 +476,30 @@ const AddForSell = () => {
   const handleSubmit = async (isDraftSubmission = false) => {
     try {
       setIsLoading(true);
-      
+
       const payload = {
         ...formData,
         submit_for_review: !isDraftSubmission,
         bedrooms: parseInt(formData.bedrooms),
         bathrooms: parseInt(formData.bathrooms),
-        area_sqft: formData.area_sqft ? parseFloat(formData.area_sqft) : 0
+        area_sqft: formData.area_sqft ? parseFloat(formData.area_sqft) : 0,
+        total_price: fees.totalPrice.toString()
       };
-      
+
+      // Add agent_commission only if user is an agent
+      if (formData.user_type === 'agent' && fees.agentFee > 0) {
+        payload.agent_commission = fees.agentFee.toFixed(2);
+      }
+
+      console.log('Submitting property with payload:', {
+        formData_user_type: formData.user_type,
+        listing_type: formData.listing_type,
+        sale_price: formData.sale_price,
+        total_price: payload.total_price,
+        agent_commission: payload.agent_commission,
+        agentFee: fees.agentFee
+      });
+
       const response = await createProperty(payload, mediaFiles, documents);
         
       if (!response.success) {
@@ -432,11 +540,6 @@ const AddForSell = () => {
     { value: "3", label: "3" },
     { value: "4", label: "4" },
     { value: "5", label: "5+" }
-  ];
-
-  const userTypeOptions = [
-    { value: "LandLord", label: "Landlord" },
-    { value: "agent", label: "Agent" }
   ];
 
   const statusOptions = [
@@ -520,16 +623,22 @@ const AddForSell = () => {
             placeholder="Enter square footage"
           />
         </FormField>
-        <FormField label="Sale Price">
+        <FormField label="Sale Price" className="md:col-span-2">
           <FormInput
             name="sale_price"
             value={displayPrice}
             onChange={handleInputChange}
             placeholder="12,000,000"
           />
+          <p className="text-xs text-gray-500 mt-1">
+            This is the base sale price.
+            {formData.user_type === 'agent'
+              ? ' Agent commission (10%) and Qarba fee (5%) will be added to this price.'
+              : ' Qarba fee (5%) will be added to this price.'}
+          </p>
         </FormField>
         <FormField label="Property Status">
-          <Select 
+          <Select
             name="property_status"
             value={formData.property_status}
             onChange={handleInputChange}
@@ -553,6 +662,13 @@ const AddForSell = () => {
           />
         </FormField>
       </div>
+
+      {/* Fee Breakdown */}
+      {formData.sale_price && (
+        <div className="mt-2 md:w-2/3">
+          <FeeBreakdown fees={fees} userType={formData.user_type} />
+        </div>
+      )}
 
       <div className="mt-8">
         <h3 className="text-xl font-normal text-[#014d98]">Address and Description</h3>
