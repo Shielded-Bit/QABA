@@ -1,11 +1,21 @@
-<!DOCTYPE html>
-<html>
-<body>
-    <h2>Welcome to QABA!</h2>
-    <p>Hi {{ user.first_name }},</p>
-    <p>Thank you for registering with QABA. To complete your email verification, please use the One-Time Password (OTP) below:</p>
-    <h3>{{ otp }}</h3>
-    <p>This OTP is valid for a short period. Please enter it on the verification page to activate your account.</p>
-    <p>If you did not register for an account with QABA, please disregard this email.</p>
-</body>
-</html>
+{% extends "email/base.html" %}
+
+{% block title %}Verify Your Email{% endblock %}
+{% block preheader %}Use the one-time password to verify your Qarba account.{% endblock %}
+
+{% block content %}
+<h1 style="margin: 0 0 18px; font-size: 24px; color: #10263f;">Welcome to Qarba</h1>
+<p style="margin: 0 0 16px;">Hi {{ user.first_name|default:user.get_full_name|default:user.email }},</p>
+<p style="margin: 0 0 16px;">Thanks for creating an account with Qarba. Enter the one-time password (OTP) below to verify your email address and activate your profile.</p>
+
+<div style="margin: 24px 0; text-align: center;">
+    <div style="display: inline-block; padding: 16px 32px; border-radius: 12px; background-color: #0f3964; color: #ffffff; font-size: 28px; letter-spacing: 6px; font-weight: 600;">
+        {{ otp }}
+    </div>
+</div>
+
+<p style="margin: 0 0 16px;">This code is valid for a short time. If it expires, you can request a new OTP from the login page.</p>
+<p style="margin: 0;">If you did not create a Qarba account, simply ignore this email.</p>
+{% endblock %}
+
+{% block footer_note %}{% endblock %}

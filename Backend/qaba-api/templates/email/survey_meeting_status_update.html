@@ -1,41 +1,40 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Property Survey Meeting Update</title>
-</head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h2 style="color: #2c5aa0;">Property Survey Meeting Update</h2>
-        
-        <p>Dear {{ user.first_name }},</p>
-        
-        <p>Your property survey meeting {{ status_message }}.</p>
-        
-        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
-            <h3 style="margin-top: 0; color: #2c5aa0;">Meeting Details:</h3>
-            <p><strong>Property Address:</strong> {{ property_address }}</p>
-            <p><strong>Date:</strong> {{ formatted_date }}</p>
-            <p><strong>Time:</strong> {{ formatted_time }}</p>
-            <p><strong>Status:</strong> {{ meeting.get_status_display }}</p>
+{% extends "email/base.html" %}
+
+{% block title %}Survey Meeting Update{% endblock %}
+{% block preheader %}There is an update on your Qarba property survey meeting.{% endblock %}
+
+{% block content %}
+<h1 style="margin: 0 0 18px; font-size: 24px; color: #10263f;">Survey meeting update</h1>
+<p style="margin: 0 0 16px;">Hi {{ user.first_name|default:user.get_full_name|default:user.email }},</p>
+<p style="margin: 0 0 16px;">There’s a new update regarding your property survey meeting: {{ status_message }}.</p>
+
+<table role="presentation" width="100%" style="margin: 24px 0;">
+    <tr>
+        <td style="background-color: #f4f8fc; border-radius: 14px; padding: 20px;">
+            <p style="margin: 0 0 10px;"><strong>Property address:</strong> {{ property_address }}</p>
+            <p style="margin: 0 0 10px;"><strong>Date:</strong> {{ formatted_date }}</p>
+            <p style="margin: 0 0 10px;"><strong>Time:</strong> {{ formatted_time }}</p>
+            <p style="margin: 0 0 10px;"><strong>Status:</strong> {{ meeting.get_status_display }}</p>
             {% if agent_assigned %}
-            <p><strong>Assigned Agent:</strong> {{ agent_assigned.get_full_name }}</p>
+            <p style="margin: 0;"><strong>Assigned agent:</strong> {{ agent_assigned.get_full_name }}</p>
             {% endif %}
-        </div>
-        
-        {% if new_status == "CONFIRMED" %}
-        <p>Great news! Your meeting has been confirmed. Our agent will meet you at the specified property address at the scheduled time.</p>
-        {% elif new_status == "CANCELLED" %}
-        <p>We're sorry to inform you that your meeting has been cancelled. If you'd like to reschedule, please submit a new meeting request.</p>
-        {% elif new_status == "RESCHEDULED" %}
-        <p>Your meeting has been rescheduled. Please check the new date and time above.</p>
-        {% elif new_status == "COMPLETED" %}
-        <p>Thank you for completing the property survey meeting. We hope it was helpful!</p>
-        {% endif %}
-                
-        <p>If you have any questions, please don't hesitate to contact us.</p>
-        
-        <p>Best regards,<br>The {{ site_name }} Team</p>
-    </div>
-</body>
-</html>
+        </td>
+    </tr>
+</table>
+
+{% if new_status == "CONFIRMED" %}
+<p style="margin: 0 0 16px;">Great news! Your meeting has been confirmed. Our agent will meet you at the scheduled time.</p>
+{% elif new_status == "CANCELLED" %}
+<p style="margin: 0 0 16px;">We’re sorry to let you know the meeting was cancelled. You can request another time from your dashboard.</p>
+{% elif new_status == "RESCHEDULED" %}
+<p style="margin: 0 0 16px;">The meeting has been rescheduled. Please review the updated date and time above.</p>
+{% elif new_status == "COMPLETED" %}
+<p style="margin: 0 0 16px;">Thanks for completing the survey meeting. We hope it was helpful.</p>
+{% endif %}
+
+<p style="margin: 0;">If you have any questions, please reach out—we’re here to assist.</p>
+{% endblock %}
+
+{% block footer_note %}
+<p style="margin: 16px 0 0;">Manage all your appointments from the Qarba dashboard.</p>
+{% endblock %}

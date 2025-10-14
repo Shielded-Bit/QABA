@@ -1,50 +1,40 @@
-<!-- offline_payment_notification.html -->
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Offline Payment Notification</title>
-    <style>
-        body { font-family: Arial, sans-serif; background: #f9f9f9; color: #222; }
-        .container { background: #fff; padding: 24px; border-radius: 8px; max-width: 600px; margin: 32px auto; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .header { font-size: 1.3em; margin-bottom: 16px; color: #2a7ae2; }
-        .details { margin: 16px 0; }
-        .details th { text-align: left; padding-right: 12px; }
-        .footer { margin-top: 32px; font-size: 0.95em; color: #888; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        {% if user.is_staff or user.user_type == 'ADMIN' %}
-            <div class="header">New Offline Payment Submitted</div>
-            <p>Hello Admin,</p>
-            <p>A new offline payment has been submitted and requires your attention:</p>
-        {% else %}
-            <div class="header">Offline Payment Received</div>
-            <p>Hello {{ user.get_full_name|default:user.email }},</p>
-            <p>We have received your offline payment for the property below. Our team will verify your payment and notify you once it is approved.</p>
-        {% endif %}
+{% extends "email/base.html" %}
 
-        <table class="details">
-            <tr><th>Property:</th><td>{{ property.property_name }}</td></tr>
-            <tr><th>Location:</th><td>{{ property.location }}, {{ property.city }}, {{ property.state }}</td></tr>
-            <tr><th>Amount:</th><td>{{ amount }}</td></tr>
-            <tr><th>Reference:</th><td>{{ reference }}</td></tr>
-            <tr><th>Transaction Ref:</th><td>{{ tx_ref }}</td></tr>
-            <tr><th>Payment Method:</th><td>{{ payment_method }}</td></tr>
-            <tr><th>Status:</th><td>{{ status }}</td></tr>
-        </table>
+{% block title %}Offline Payment Notification{% endblock %}
+{% block preheader %}An offline payment was just submitted on Qarba.{% endblock %}
 
-        {% if not (user.is_staff or user.user_type == 'ADMIN') %}
-            <p>If you have any questions, please contact our support team.</p>
-        {% else %}
-            <p>View this transaction in the admin dashboard for further action.</p>
-        {% endif %}
+{% block content %}
+{% if user.is_staff or user.user_type == 'ADMIN' %}
+<h1 style="margin: 0 0 18px; font-size: 24px; color: #10263f;">New offline payment submitted</h1>
+<p style="margin: 0 0 16px;">Hello Admin,</p>
+<p style="margin: 0 0 16px;">A client has shared an offline payment that requires verification.</p>
+{% else %}
+<h1 style="margin: 0 0 18px; font-size: 24px; color: #10263f;">We received your payment</h1>
+<p style="margin: 0 0 16px;">Hello {{ user.get_full_name|default:user.email }},</p>
+<p style="margin: 0 0 16px;">Thank you for submitting your offline payment. Our accounts team will review the details and update you shortly.</p>
+{% endif %}
 
-        <div class="footer">
-            Thank you,<br>
-            The QABA Team
-        </div>
-    </div>
-</body>
-</html> 
+<table role="presentation" width="100%" style="margin: 24px 0;">
+    <tr>
+        <td style="background-color: #f4f8fc; border-radius: 14px; padding: 20px;">
+            <p style="margin: 0 0 10px;"><strong>Property:</strong> {{ property.property_name }}</p>
+            <p style="margin: 0 0 10px;"><strong>Location:</strong> {{ property.location }}, {{ property.city }}, {{ property.state }}</p>
+            <p style="margin: 0 0 10px;"><strong>Amount:</strong> {{ amount }}</p>
+            <p style="margin: 0 0 10px;"><strong>Reference:</strong> {{ reference }}</p>
+            <p style="margin: 0 0 10px;"><strong>Transaction ref:</strong> {{ tx_ref }}</p>
+            <p style="margin: 0 0 10px;"><strong>Payment method:</strong> {{ payment_method }}</p>
+            <p style="margin: 0;"><strong>Status:</strong> {{ status }}</p>
+        </td>
+    </tr>
+</table>
+
+{% if user.is_staff or user.user_type == 'ADMIN' %}
+<p style="margin: 0 0 16px;">Please review this payment and update its status in the admin dashboard.</p>
+{% else %}
+<p style="margin: 0;">If you have any questions, reply to this email or reach out to the Qarba support team.</p>
+{% endif %}
+{% endblock %}
+
+{% block footer_note %}
+<p style="margin: 16px 0 0;">Thank you for choosing Qarba.</p>
+{% endblock %}

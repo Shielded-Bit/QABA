@@ -1,61 +1,16 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>We've Received Your Message</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        .container {
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            padding: 20px;
-            margin: 20px 0;
-        }
-        .header {
-            background-color: #003366;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 5px 5px 0 0;
-            margin-bottom: 20px;
-        }
-        .content {
-            padding: 15px;
-        }
-        .footer {
-            margin-top: 20px;
-            font-size: 12px;
-            color: #777;
-            border-top: 1px solid #eee;
-            padding-top: 10px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h2>We've Received Your Message</h2>
-        </div>
-        
-        <div class="content">
-            <p>Hello {{ name }},</p>
-            
-            <p>Thank you for contacting QABA Real Estate. We've received your message and will get back to you as soon as possible.</p>
-            
-            <p>This is an automated response, please do not reply to this email.</p>
-            
-            <p>Best regards,<br>
-            The QABA Team</p>
-        </div>
-        
-        <div class="footer">
-            <p>&copy; {% now "Y" %} QABA Real Estate. All rights reserved.</p>
-        </div>
-    </div>
-</body>
-</html>
+{% extends "email/base.html" %}
+
+{% block title %}We Received Your Message{% endblock %}
+{% block preheader %}Thanks for contacting Qarba Properties. Our team will reply shortly.{% endblock %}
+
+{% block content %}
+<h1 style="margin: 0 0 18px; font-size: 24px; color: #10263f;">Thank you for reaching out</h1>
+<p style="margin: 0 0 16px;">Hello {{ name }},</p>
+<p style="margin: 0 0 16px;">We appreciate you contacting Qarba Properties. Your message is safely with us and a member of our support team will respond as soon as possible.</p>
+<p style="margin: 0 0 16px;">If you need urgent assistance, you can explore quick answers in your dashboard or reply through our support centre.</p>
+<p style="margin: 0;">Warm regards,<br>The Qarba Team</p>
+{% endblock %}
+
+{% block footer_note %}
+<p style="margin: 16px 0 0;">This is an automated notification. Please do not reply directly to this email.</p>
+{% endblock %}

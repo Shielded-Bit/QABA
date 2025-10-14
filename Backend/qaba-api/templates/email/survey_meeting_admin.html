@@ -1,33 +1,34 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>New Property Survey Meeting Request</title>
-</head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h2 style="color: #dc3545;">New Property Survey Meeting Request</h2>
-        
-        <p>A new property survey meeting has been scheduled and requires attention.</p>
-        
-        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
-            <h3 style="margin-top: 0; color: #dc3545;">Meeting Details:</h3>
-            <p><strong>Client:</strong> {{ user.get_full_name }} ({{ user.email }})</p>
+{% extends "email/base.html" %}
+
+{% block title %}New Survey Meeting Request{% endblock %}
+{% block preheader %}A client scheduled a property survey meeting on Qarba.{% endblock %}
+
+{% block content %}
+<h1 style="margin: 0 0 18px; font-size: 24px; color: #10263f;">New survey meeting request</h1>
+<p style="margin: 0 0 16px;">Hello Admin,</p>
+<p style="margin: 0 0 16px;">A client just scheduled a property survey meeting that requires your action.</p>
+
+<table role="presentation" width="100%" style="margin: 24px 0;">
+    <tr>
+        <td style="background-color: #f4f8fc; border-radius: 14px; padding: 20px;">
+            <p style="margin: 0 0 10px;"><strong>Client:</strong> {{ user.get_full_name }} ({{ user.email }})</p>
             {% if user.phone_number %}
-            <p><strong>Phone:</strong> {{ user.phone_number }}</p>
+            <p style="margin: 0 0 10px;"><strong>Phone:</strong> {{ user.phone_number }}</p>
             {% endif %}
-            <p><strong>Property Address:</strong> {{ property_address }}</p>
-            <p><strong>Scheduled Date:</strong> {{ formatted_date }}</p>
-            <p><strong>Scheduled Time:</strong> {{ formatted_time }}</p>
+            <p style="margin: 0 0 10px;"><strong>Property address:</strong> {{ property_address }}</p>
+            <p style="margin: 0 0 10px;"><strong>Date:</strong> {{ formatted_date }}</p>
+            <p style="margin: 0 0 10px;"><strong>Time:</strong> {{ formatted_time }}</p>
             {% if message %}
-            <p><strong>Client Message:</strong> {{ message }}</p>
+            <p style="margin: 0 0 10px;"><strong>Client message:</strong> {{ message }}</p>
             {% endif %}
-            <p><strong>Status:</strong> {{ meeting.get_status_display }}</p>
-        </div>
-        
-        <p>Please assign an agent and confirm this meeting request.</p>
-                
-        <p>Best regards,<br>{{ site_name }} System</p>
-    </div>
-</body>
-</html>
+            <p style="margin: 0;"><strong>Current status:</strong> {{ meeting.get_status_display }}</p>
+        </td>
+    </tr>
+</table>
+
+<p style="margin: 0;">Please assign an agent and confirm the meeting from the admin dashboard.</p>
+{% endblock %}
+
+{% block footer_note %}
+<p style="margin: 16px 0 0;">Keep clients updated from your Qarba admin tools.</p>
+{% endblock %}

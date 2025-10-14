@@ -1,37 +1,26 @@
-   <!DOCTYPE html>
-   <html lang="en">
-   <head>
-       <meta charset="UTF-8">
-       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-       <title>Property Review Notification</title>
-       <style>
-           body {
-               font-family: Arial, sans-serif;
-               line-height: 1.6;
-           }
-           .container {
-               max-width: 600px;
-               margin: 0 auto;
-               padding: 20px;
-               border: 1px solid #ccc;
-               border-radius: 5px;
-           }
-           h1 {
-               color: #333;
-           }
-           p {
-               margin: 10px 0;
-           }
-       </style>
-   </head>
-   <body>
-       <div class="container">
-           <h1>New Property Pending Review</h1>
-           <p>A new property has been submitted for review:</p>
-           <p><strong>Property Name:</strong> {{ property_name }}</p>
-           <p><strong>Location:</strong> {{ location }}</p>
-           <p><strong>Listed By:</strong> {{ listed_by }}</p>
-           <p>Please review this property in the admin dashboard.</p>
-       </div>
-   </body>
-   </html>
+{% extends "email/base.html" %}
+
+{% block title %}Property Pending Review{% endblock %}
+{% block preheader %}A new property listing on Qarba needs your attention.{% endblock %}
+
+{% block content %}
+<h1 style="margin: 0 0 18px; font-size: 24px; color: #10263f;">New property pending review</h1>
+<p style="margin: 0 0 16px;">Hello Admin,</p>
+<p style="margin: 0 0 16px;">A new property has been submitted on the platform and is ready for your review.</p>
+
+<table role="presentation" width="100%" style="margin: 24px 0;">
+    <tr>
+        <td style="background-color: #f4f8fc; border-radius: 14px; padding: 20px;">
+            <p style="margin: 0 0 10px;"><strong>Property name:</strong> {{ property_name }}</p>
+            <p style="margin: 0 0 10px;"><strong>Location:</strong> {{ location }}</p>
+            <p style="margin: 0;"><strong>Listed by:</strong> {{ listed_by }}</p>
+        </td>
+    </tr>
+</table>
+
+<p style="margin: 0 0 16px;">Please sign in to the admin dashboard to complete the review process and publish or decline the listing.</p>
+{% endblock %}
+
+{% block footer_note %}
+<p style="margin: 16px 0 0;">Need support? Reach the Qarba operations team through your admin portal.</p>
+{% endblock %}
