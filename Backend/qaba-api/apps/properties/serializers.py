@@ -1,3 +1,5 @@
+from django.conf import settings
+
 from apps.users.models import Notification, User
 from apps.users.serializers import UserSerializer
 from core.utils.send_email import send_email
@@ -274,10 +276,14 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {"rent_price": "Rent price must be positive"}
                 )
-            qaba_fee = round(float(rent_price) * 0.05, 2)
+            qaba_fee = round(
+                float(rent_price) * settings.QABA_RENT_PERCENTAGE, 2
+            )
             agent_commission = 0
             if lister_type == User.UserType.AGENT:
-                agent_commission = round(float(rent_price) * 0.10, 2)
+                agent_commission = round(
+                    float(rent_price) * settings.AGENT_RENT_COMMISSION_PERCENTAGE, 2
+                )
             total_price = round(float(rent_price) + qaba_fee + agent_commission, 2)
             if total_price != attrs.get("total_price"):
                 raise serializers.ValidationError(
@@ -294,16 +300,29 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {"sale_price": "Sale price is required for sale listings"}
                 )
-        if lister_type == User.UserType.AGENT:
-            if (
-                not attrs.get("agent_commission")
-                and listing_type != Property.ListingType.RENT
-            ):
+            if sale_price <= 0:
+                raise serializers.ValidationError(
+                    {"sale_price": "Sale price must be positive"}
+                )
+            qaba_fee = round(
+                float(sale_price) * settings.QABA_SALE_PERCENTAGE, 2
+            )
+            agent_commission = 0
+            if lister_type == User.UserType.AGENT:
+                agent_commission = round(
+                    float(sale_price) * settings.AGENT_SALE_COMMISSION_PERCENTAGE, 2
+                )
+            total_price = round(float(sale_price) + qaba_fee + agent_commission, 2)
+            submitted_total = attrs.get("total_price")
+            if submitted_total is not None and total_price != submitted_total:
                 raise serializers.ValidationError(
                     {
-                        "agent_commission": "Agent commission is required for agent listings"
+                        "total_price": f"Total price is not correct. Expected {total_price}, got {submitted_total}"
                     }
                 )
+            attrs["qaba_fee"] = qaba_fee
+            attrs["agent_commission"] = agent_commission
+            attrs["total_price"] = total_price
 
         documents = attrs.get("documents", [])
         document_types = attrs.get("document_types", [])
@@ -462,23 +481,54 @@ class PropertyUpdateSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         request = self.context.get("request")
-        listing_type = attrs.get("listing_type")
+        listing_type = attrs.get(
+            "listing_type", getattr(self.instance, "listing_type", None)
+        )
         rent_price = attrs.get("rent_price")
+        sale_price = attrs.get("sale_price")
         lister_type = request.user.user_type
         if listing_type == Property.ListingType.RENT and rent_price:
             if rent_price <= 0:
                 raise serializers.ValidationError(
                     {"rent_price": "Rent price must be positive"}
                 )
-            qaba_fee = round(float(rent_price) * 0.05, 2)
+            qaba_fee = round(
+                float(rent_price) * settings.QABA_RENT_PERCENTAGE, 2
+            )
             agent_commission = 0
             if lister_type == User.UserType.AGENT:
-                agent_commission = round(float(rent_price) * 0.10, 2)
+                agent_commission = round(
+                    float(rent_price) * settings.AGENT_RENT_COMMISSION_PERCENTAGE, 2
+                )
             total_price = round(float(rent_price) + qaba_fee + agent_commission, 2)
             if total_price != attrs.get("total_price"):
                 raise serializers.ValidationError(
                     {
                         "total_price": f"Total price is not correct. Expected {total_price}, got {attrs.get('total_price')}"
+                    }
+                )
+            attrs["qaba_fee"] = qaba_fee
+            attrs["agent_commission"] = agent_commission
+            attrs["total_price"] = total_price
+        elif listing_type == Property.ListingType.SALE and sale_price:
+            if sale_price <= 0:
+                raise serializers.ValidationError(
+                    {"sale_price": "Sale price must be positive"}
+                )
+            qaba_fee = round(
+                float(sale_price) * settings.QABA_SALE_PERCENTAGE, 2
+            )
+            agent_commission = 0
+            if lister_type == User.UserType.AGENT:
+                agent_commission = round(
+                    float(sale_price) * settings.AGENT_SALE_COMMISSION_PERCENTAGE, 2
+                )
+            total_price = round(float(sale_price) + qaba_fee + agent_commission, 2)
+            submitted_total = attrs.get("total_price")
+            if submitted_total is not None and total_price != submitted_total:
+                raise serializers.ValidationError(
+                    {
+                        "total_price": f"Total price is not correct. Expected {total_price}, got {submitted_total}"
                     }
                 )
             attrs["qaba_fee"] = qaba_fee
