@@ -33,7 +33,7 @@ def send_email(
     context.update(
         {
             "site_name": (
-                settings.SITE_NAME if hasattr(settings, "SITE_NAME") else "QABA"
+                settings.SITE_NAME if hasattr(settings, "SITE_NAME") else "Qarba"
             ),
             "frontend_url": settings.FRONTEND_URL,
             "backend_url": (
@@ -127,7 +127,7 @@ def send_welcome_email(user):
     }
 
     return send_email(
-        subject="Welcome to QABA",
+        subject="Welcome to Qarba",
         recipients=user.email,
         template_name="welcome",
         context=context,
@@ -197,7 +197,7 @@ def send_contact_confirmation_email(email, name):
     """
     try:
         return send_email(
-            subject="We've received your message - QABA Real Estate",
+            subject="We've received your message - Qarba Properties",
             recipients=[email],
             template_name="contact_confirmation",
             context={"name": name},
@@ -255,7 +255,7 @@ def send_survey_meeting_notification(meeting, recipient_type="client"):
     from django.utils import timezone
 
     if recipient_type == "client":
-        subject = "Property Survey Meeting Scheduled - QABA Real Estate"
+        subject = "Property Survey Meeting Scheduled - Qarba Properties"
         recipients = [meeting.user.email]
         template_name = "survey_meeting_client"
     else:
@@ -311,7 +311,7 @@ def send_survey_meeting_status_update(meeting, old_status, new_status):
         "COMPLETED": "has been completed",
     }
 
-    subject = f"Property Survey Meeting {status_messages.get(new_status, 'Updated')} - QABA Real Estate"
+    subject = f"Property Survey Meeting {status_messages.get(new_status, 'Updated')} - Qarba Properties"
 
     scheduled_datetime = timezone.datetime.combine(
         meeting.scheduled_date, meeting.scheduled_time

@@ -152,7 +152,7 @@ REST_FRAMEWORK = {
 # drf-spectacular settings
 SPECTACULAR_SETTINGS = {
     "TITLE": "QABA API",
-    "DESCRIPTION": "QABA Real Estate Platform API documentation",
+    "DESCRIPTION": "QABA Properties Platform API documentation",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "AUTHENTICATION_CLASSES": (
