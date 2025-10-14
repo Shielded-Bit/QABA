@@ -3,6 +3,7 @@ from os import getenv
 from pathlib import Path
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -32,6 +33,25 @@ ALLOWED_HOSTS = getenv("ALLOWED_HOSTS", "127.0.0.1").split(",")
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = "users.User"
+
+# Pricing configuration
+def _get_percentage(env_name: str, default: str) -> float:
+    raw_value = getenv(env_name, default)
+    try:
+        value = float(raw_value)
+    except (TypeError, ValueError):
+        value = float(default)
+    return value / 100 if value > 1 else value
+
+
+QABA_RENT_PERCENTAGE = _get_percentage("QABA_RENT_PERCENTAGE", "0.05")
+AGENT_RENT_COMMISSION_PERCENTAGE = _get_percentage(
+    "AGENT_RENT_COMMISSION_PERCENTAGE", "0.10"
+)
+QABA_SALE_PERCENTAGE = _get_percentage("QABA_SALE_PERCENTAGE", "0.05")
+AGENT_SALE_COMMISSION_PERCENTAGE = _get_percentage(
+    "AGENT_SALE_COMMISSION_PERCENTAGE", "0.10"
+)
 
 # Application definition
 INSTALLED_APPS = [
