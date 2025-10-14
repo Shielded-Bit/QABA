@@ -11,7 +11,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 const FEE_RATES = {
   AGENT_FEE_RATE: 0.10,
   QARBA_FEE_RATE: 0.05,
-  LANDLORD_FEE_RATE: 0.05
+  LANDLORD_FEE_RATE: 0.00
 };
 
 // Helper functions
@@ -106,23 +106,128 @@ const FormInput = ({ type = "text", name, value, onChange, placeholder, classNam
   />
 );
 
-const FileUpload = ({ onChange, fileType, selectedFile }) => (
-  <div className="border-2 border-dashed border-gray-300 rounded-md p-6 flex items-center justify-center relative">
+const FileUpload = ({ onChange, fileType, selectedFile, onRemove }) => (
+  <div className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center relative hover:border-gray-400 transition-colors duration-200">
     <input
       type="file"
       accept={fileType === 'video' ? "video/*" : fileType === 'document' ? ".pdf,.doc,.docx,.xls,.xlsx" : "image/*"}
       onChange={(e) => onChange(e, fileType)}
       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
     />
-    <div className="text-gray-500 text-center pointer-events-none">
+    {selectedFile && onRemove && (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onRemove();
+        }}
+        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 z-10 shadow-md"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+        </svg>
+      </button>
+    )}
+    <div className="text-gray-500 text-center pointer-events-none text-sm">
       {selectedFile ? (
-        <p>Selected: {selectedFile.name}</p>
+        <div className="flex flex-col items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 mb-1 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+          </svg>
+          <p className="text-xs">{fileType === 'video' ? 'Video' : fileType === 'document' ? 'Document' : 'Image'} selected</p>
+        </div>
       ) : (
-        <p>Drag and drop {fileType === 'video' ? 'a video' : fileType === 'document' ? 'a document' : 'an image'} or click to upload</p>
+        <div className="flex flex-col items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 mb-1" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
+          </svg>
+          <p className="text-xs">Upload {fileType === 'video' ? 'video' : fileType === 'document' ? 'document' : 'image'}</p>
+        </div>
       )}
     </div>
   </div>
 );
+
+const ImageUploadBox = ({ images, onAddImage, onRemoveImage, maxImages = 5 }) => {
+  const handleFileSelect = (e) => {
+    onAddImage(e);
+    // Reset the input value to allow selecting the same file again
+    e.target.value = '';
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        {/* Display uploaded images */}
+        {images.map((image, index) => (
+          <div
+            key={index}
+            className="relative aspect-square border-2 border-gray-200 rounded-lg overflow-hidden group hover:border-red-400 transition-colors duration-200"
+          >
+            <img
+              src={URL.createObjectURL(image)}
+              alt={`Property ${index + 1}`}
+              className="w-full h-full object-cover"
+            />
+            {/* Remove button - always visible */}
+            <button
+              type="button"
+              onClick={() => onRemoveImage(index)}
+              className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600 shadow-md"
+            >
+              ×
+            </button>
+          </div>
+        ))}
+
+        {/* Add image boxes */}
+        {Array.from({ length: maxImages - images.length }, (_, index) => (
+          <div
+            key={`add-${index}`}
+            className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-[#014d98] hover:bg-blue-50 transition-all duration-200 group"
+            onClick={() => document.getElementById('image-upload-input').click()}
+          >
+            <div className="text-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-8 w-8 mx-auto mb-2 text-gray-400 group-hover:text-[#014d98] transition-colors duration-200"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                />
+              </svg>
+              <p className="text-xs text-gray-500 group-hover:text-[#014d98] transition-colors duration-200">
+                Add Image
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Hidden file input */}
+      <input
+        id="image-upload-input"
+        type="file"
+        accept="image/*"
+        onChange={handleFileSelect}
+        className="hidden"
+        multiple
+      />
+
+      {/* Upload instructions */}
+      <p className="text-sm text-gray-500 text-center">
+        Upload up to {maxImages} images. Click on the boxes above to add images.
+        {images.length > 0 && ` (${images.length}/${maxImages} uploaded)`}
+      </p>
+    </div>
+  );
+};
 
 // Fee breakdown component
 const FeeBreakdown = ({ fees, userType }) => {
@@ -143,7 +248,7 @@ const FeeBreakdown = ({ fees, userType }) => {
           </div>
         )}
         <div className="flex justify-between">
-          <span>Qarba Fee (5%):</span>
+          <span>Qarba Fee (0%):</span>
           <span>₦{formatNumberWithCommas(fees.qarbaFee.toString())}</span>
         </div>
         <div className="flex justify-between font-medium border-t border-gray-200 pt-2 mt-2">
@@ -177,8 +282,9 @@ const createProperty = async (data, mediaFiles, documents) => {
     });
 
     // Add media files
-    if (mediaFiles.image1) formData.append('images', mediaFiles.image1);
-    if (mediaFiles.image2) formData.append('images', mediaFiles.image2);
+    mediaFiles.images.forEach(image => {
+      formData.append('images', image);
+    });
     if (mediaFiles.video) formData.append('video', mediaFiles.video);
 
     // Add documents
@@ -293,8 +399,7 @@ const AddForSell = () => {
   const [amenities, setAmenities] = useState([]);
   const [isLoadingAmenities, setIsLoadingAmenities] = useState(false);
   const [mediaFiles, setMediaFiles] = useState({
-    image1: null,
-    image2: null,
+    images: [],
     video: null
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -340,7 +445,9 @@ const AddForSell = () => {
   // Calculate fees when price or user type changes
   useEffect(() => {
     if (formData.sale_price) {
+      console.log('Calculating fees for sale_price:', formData.sale_price, 'type:', typeof formData.sale_price);
       const calculatedFees = calculateFees(formData.user_type, formData.sale_price);
+      console.log('Calculated fees:', calculatedFees);
       setFees(calculatedFees);
       setFormData(prev => ({ ...prev, total_price: calculatedFees.totalPrice.toString() }));
     }
@@ -366,10 +473,12 @@ const AddForSell = () => {
     
     if (name === 'sale_price') {
       const formattedValue = formatNumberWithCommas(value);
+      const plainValue = convertToPlainNumber(formattedValue);
+      console.log('Sale price input change:', { input: value, formatted: formattedValue, plain: plainValue });
       setDisplayPrice(formattedValue);
       setFormData({
         ...formData,
-        [name]: convertToPlainNumber(formattedValue)
+        [name]: plainValue
       });
     } else {
       setFormData({
@@ -394,11 +503,33 @@ const AddForSell = () => {
   const handleFileChange = (e, fileType) => {
     const file = e.target.files[0];
     if (file) {
-      setMediaFiles({
-        ...mediaFiles,
-        [fileType]: file
-      });
+      if (fileType === 'video') {
+        setMediaFiles({
+          ...mediaFiles,
+          video: file
+        });
+      } else if (fileType === 'image') {
+        // For images, add to the images array
+        setMediaFiles({
+          ...mediaFiles,
+          images: [...mediaFiles.images, file]
+        });
+      }
     }
+  };
+
+  const removeImage = (index) => {
+    setMediaFiles({
+      ...mediaFiles,
+      images: mediaFiles.images.filter((_, i) => i !== index)
+    });
+  };
+
+  const removeVideo = () => {
+    setMediaFiles({
+      ...mediaFiles,
+      video: null
+    });
   };
 
   // New document upload handler using the modal
@@ -435,8 +566,7 @@ const AddForSell = () => {
       });
 
       setMediaFiles({
-        image1: null,
-        image2: null,
+        images: [],
         video: null
       });
 
@@ -495,9 +625,13 @@ const AddForSell = () => {
         formData_user_type: formData.user_type,
         listing_type: formData.listing_type,
         sale_price: formData.sale_price,
+        sale_price_type: typeof formData.sale_price,
         total_price: payload.total_price,
+        total_price_type: typeof payload.total_price,
         agent_commission: payload.agent_commission,
-        agentFee: fees.agentFee
+        agentFee: fees.agentFee,
+        fees_object: fees,
+        calculated_total: parseFloat(formData.sale_price) + fees.agentFee + fees.qarbaFee
       });
 
       const response = await createProperty(payload, mediaFiles, documents);
@@ -700,21 +834,26 @@ const AddForSell = () => {
           Showcase your property with high-quality images and a video. Clear visuals attract more buyers
           and increase engagement.
         </p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
-          <FileUpload 
-            onChange={handleFileChange} 
-            fileType="image1"
-            selectedFile={mediaFiles.image1} 
+
+        {/* Images Upload */}
+        <div className="mt-4">
+          <h4 className="text-lg font-medium text-[#014d98] mb-2">Property Images</h4>
+          <ImageUploadBox
+            images={mediaFiles.images}
+            onAddImage={(e) => handleFileChange(e, 'image')}
+            onRemoveImage={removeImage}
+            maxImages={5}
           />
-          <FileUpload 
-            onChange={handleFileChange} 
-            fileType="image2"
-            selectedFile={mediaFiles.image2} 
-          />
-          <FileUpload 
-            onChange={handleFileChange} 
+        </div>
+
+        {/* Video Upload */}
+        <div className="mt-6">
+          <h4 className="text-lg font-medium text-[#014d98] mb-2">Property Video</h4>
+          <FileUpload
+            onChange={handleFileChange}
             fileType="video"
-            selectedFile={mediaFiles.video} 
+            selectedFile={mediaFiles.video}
+            onRemove={removeVideo}
           />
         </div>
       </div>
