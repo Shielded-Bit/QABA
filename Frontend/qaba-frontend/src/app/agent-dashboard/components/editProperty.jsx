@@ -5,6 +5,124 @@ import { useParams, useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import axios from "axios";
 import Image from "next/image";
+import DocumentUploadModal from "../../components/DocumentUploadModal";
+
+// Constants and helper functions
+const PROPERTY_TYPES = [
+  { value: "HOUSE", label: "House" },
+  { value: "APARTMENT", label: "Apartment" },
+  { value: "DUPLEX", label: "Duplex" },
+  { value: "FULL_DETACHED", label: "Full Detached" },
+  { value: "SEMI_DETACHED", label: "Semi Detached" },
+  { value: "EMPTY_LAND", label: "Empty Land" },
+  { value: "LAND_WITH_BUILDING", label: "Land with Building" }
+];
+
+const RENT_FREQUENCIES = [
+  { value: "MONTHLY", label: "Monthly" },
+  { value: "YEARLY", label: "Yearly" },
+  { value: "WEEKLY", label: "Weekly" },
+  { value: "DAILY", label: "Daily" }
+];
+
+const PROPERTY_STATUSES = [
+  { value: "AVAILABLE", label: "Available" },
+  { value: "UNAVAILABLE", label: "Unavailable" },
+  { value: "PENDING", label: "Pending" }
+];
+
+const LISTING_TYPES = [
+  { value: "RENT", label: "Rent" },
+  { value: "SALE", label: "Sale" }
+];
+
+const AMENITIES = [
+  { value: "CAR_PARK", label: "Car Park" },
+  { value: "BIG_COMPOUND", label: "Big Compound" },
+  { value: "CCTV_CAMERA", label: "CCTV Camera" },
+  { value: "POP_CEILING", label: "POP Ceiling" },
+  { value: "TRAFFIC_LIGHT", label: "Traffic Light" },
+  { value: "HOUSE_SECURITY", label: "House Security" },
+  { value: "SWIMMING_POOL", label: "Swimming Pool" },
+  { value: "SECURITY_DOOR", label: "Security Door" },
+  { value: "BBOYS_QUARTERS", label: "Boys Quarters" },
+  { value: "GYM", label: "Gym" },
+  { value: "PARKING", label: "Parking" },
+  { value: "GARDEN", label: "Garden" },
+  { value: "OTHERS", label: "Others" }
+];
+
+// Helper functions
+const formatNumberWithCommas = (value) => {
+  const plainNumber = value.replace(/[^\d]/g, '');
+  return plainNumber ? plainNumber.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '';
+};
+
+const convertToPlainNumber = (formattedValue) => {
+  return formattedValue.replace(/[^\d]/g, '');
+};
+
+// FormField component
+const FormField = ({ label, children, required = false, className = "" }) => (
+  <div className={`space-y-2 ${className}`}>
+    <label className="block text-sm font-medium text-gray-700">
+      {label}
+      {required && <span className="text-red-500 ml-1">*</span>}
+    </label>
+    {children}
+  </div>
+);
+
+// Select component
+const Select = ({ name, value, onChange, children, className = "", ...props }) => (
+  <select
+    name={name}
+    value={value}
+    onChange={onChange}
+    className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${className}`}
+    {...props}
+  >
+    {children}
+  </select>
+);
+
+// Fee breakdown component
+const FeeBreakdown = ({ fees, userType, listingType }) => {
+  if (!fees.basePrice) return null;
+
+  return (
+    <div className="mt-4 p-4 bg-gray-50 rounded-md border border-gray-200">
+      <h4 className="text-lg font-medium text-[#014d98] mb-2">Fee Breakdown</h4>
+      <div className="space-y-2 text-sm">
+        <div className="flex justify-between font-medium">
+          <span>{listingType === 'RENT' ? 'Rent Price:' : 'Sale Price:'}</span>
+          <span>₦{formatNumberWithCommas(fees.basePrice.toString())}</span>
+        </div>
+        {fees.agentFee > 0 && (
+          <div className="flex justify-between">
+            <span>Agent Commission (10%):</span>
+            <span>₦{formatNumberWithCommas(fees.agentFee.toString())}</span>
+          </div>
+        )}
+        <div className="flex justify-between">
+          <span>Qarba Fee ({listingType === 'SALE' ? '0%' : '5%'}):</span>
+          <span>₦{formatNumberWithCommas(fees.qarbaFee.toString())}</span>
+        </div>
+        <div className="flex justify-between font-medium border-t border-gray-200 pt-2 mt-2">
+          <span>Total Price:</span>
+          <span className="text-[#014d98]">₦{formatNumberWithCommas(fees.totalPrice.toString())}</span>
+        </div>
+        {userType === 'agent' && (
+          <p className="text-xs text-gray-500 mt-1 italic">
+            {listingType === 'SALE' 
+              ? 'Agent commission will be added to the sale price.'
+              : 'Agent commission and Qarba fee are one-time payments added to the first payment only.'}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+};
 
 const EditProperty = () => {
   const params = useParams();
@@ -82,12 +200,13 @@ const EditProperty = () => {
   };
 
   // Calculate fees based on user type and price
-  const calculateFees = (userType, price) => {
+  const calculateFees = (userType, price, listingType) => {
     const parsedPrice = parseInt(price, 10) || 0;
 
     if (userType === 'agent') {
       const agentFee = Math.round(parsedPrice * 0.10); // 10%
-      const qarbaFee = Math.round(parsedPrice * 0.05); // 5%
+      // Qarba fee is 0% for sales, 5% for rent
+      const qarbaFee = listingType === 'SALE' ? 0 : Math.round(parsedPrice * 0.05);
       return {
         basePrice: parsedPrice,
         agentFee,
@@ -96,7 +215,8 @@ const EditProperty = () => {
         totalPrice: parsedPrice + agentFee + qarbaFee
       };
     } else {
-      const qarbaFee = Math.round(parsedPrice * 0.05); // 5%
+      // Qarba fee is 0% for sales, 5% for rent
+      const qarbaFee = listingType === 'SALE' ? 0 : Math.round(parsedPrice * 0.05);
       return {
         basePrice: parsedPrice,
         agentFee: 0,
@@ -107,22 +227,6 @@ const EditProperty = () => {
     }
   };
 
-  // Available amenities mapping
-  const amenitiesMapping = {
-    CAR_PARK: "Car Park",
-    BIG_COMPOUND: "Big Compound",
-    CCTV_CAMERA: "CCTV Camera",
-    POP_CEILING: "POP Ceiling",
-    TRAFFIC_LIGHT: "Traffic Light",
-    HOUSE_SECURITY: "House Security",
-    SWIMMING_POOL: "Swimming Pool",
-    SECURITY_DOOR: "Security Door",
-    BBOYS_QUARTERS: "Boys Quarters",
-    GYM: "Gym",
-    PARKING: "Parking",
-    GARDEN: "Garden",
-    OTHERS: "Others",
-  };
 
   // Fetch property data on component mount
   useEffect(() => {
@@ -215,10 +319,10 @@ const EditProperty = () => {
   // Calculate fees when price or user type changes
   useEffect(() => {
     if (formData.listing_type === 'RENT' && formData.rent_price) {
-      const calculatedFees = calculateFees(formData.user_type, formData.rent_price);
+      const calculatedFees = calculateFees(formData.user_type, formData.rent_price, formData.listing_type);
       setFees(calculatedFees);
     } else if (formData.listing_type === 'SALE' && formData.sale_price) {
-      const calculatedFees = calculateFees(formData.user_type, formData.sale_price);
+      const calculatedFees = calculateFees(formData.user_type, formData.sale_price, formData.listing_type);
       setFees(calculatedFees);
     }
   }, [formData.user_type, formData.rent_price, formData.sale_price, formData.listing_type]);
@@ -418,192 +522,190 @@ const EditProperty = () => {
       {/* Basic Property Information */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* User Type - Auto-detected based on authenticated user */}
-        <div>
-          <label className="block text-gray-700">What best describes you?</label>
+        <FormField label="What best describes you?">
           <input
             type="text"
             value={formData.user_type === 'agent' ? 'Agent' : 'Landlord'}
             disabled
-            className="w-full border border-gray-200 p-2 rounded-md bg-gray-50 text-gray-600 cursor-not-allowed"
+            className="w-full px-3 py-2 border border-gray-200 rounded-md bg-gray-50 text-gray-600 cursor-not-allowed"
             title="User type is automatically detected based on your account"
           />
           <p className="text-xs text-gray-500 mt-1">
             Automatically detected from your account type
           </p>
-        </div>
+        </FormField>
 
-        <div>
-          <label className="block text-gray-700">Property Name*</label>
+        <FormField label="Property Name" required>
           <input
             type="text"
             name="property_name"
             value={formData.property_name}
             onChange={handleInputChange}
-            className="w-full border border-gray-300 p-2 rounded-md"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             placeholder="e.g. Greenhood House"
           />
-        </div>
+        </FormField>
 
-        <div>
-          <label className="block text-gray-700">Property Type</label>
-          <select 
+        <FormField label="Property Type">
+          <Select
             name="property_type"
             value={formData.property_type}
             onChange={handleInputChange}
-            className="w-full border border-gray-300 p-2 rounded-md"
           >
-            <option value="HOUSE">House</option>
-            <option value="APARTMENT">Apartment</option>
-            <option value="LAND">Land</option>
-          </select> 
-        </div>
+            {PROPERTY_TYPES.map((type) => (
+              <option key={type.value} value={type.value}>
+                {type.label}
+              </option>
+            ))}
+          </Select>
+        </FormField>
 
-        <div>
-          <label className="block text-gray-700">Listing Type</label>
-          <select 
+        <FormField label="Listing Type">
+          <Select
             name="listing_type"
             value={formData.listing_type}
             onChange={handleInputChange}
-            className="w-full border border-gray-300 p-2 rounded-md"
-            disabled  // Disable changing listing type
+            disabled
           >
-            <option value="RENT">For Rent</option>
-            <option value="SALE">For Sale</option>
-          </select>
+            {LISTING_TYPES.map((type) => (
+              <option key={type.value} value={type.value}>
+                {type.label}
+              </option>
+            ))}
+          </Select>
           <p className="text-xs text-gray-500 mt-1">
             Listing type cannot be changed after creation
           </p>
-        </div>
+        </FormField>
       </div>
 
       {/* Price and Details Section */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
         {/* Conditional rendering based on property type */}
-        {formData.property_type !== "LAND" && (
+        {formData.property_type !== "EMPTY_LAND" && (
           <>
-            <div>
-              <label className="block text-gray-700">Bedrooms</label>
-              <select 
+            <FormField label="Bedrooms">
+              <Select
                 name="bedrooms"
                 value={formData.bedrooms}
                 onChange={handleInputChange}
-                className="w-full border border-gray-300 p-2 rounded-md"
               >
                 {[1, 2, 3, 4, 5].map(num => (
                   <option key={num} value={num}>{num === 5 ? "5+" : num}</option>
                 ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-gray-700">Bathrooms</label>
-              <select 
+              </Select>
+            </FormField>
+            <FormField label="Bathrooms">
+              <Select
                 name="bathrooms"
                 value={formData.bathrooms}
                 onChange={handleInputChange}
-                className="w-full border border-gray-300 p-2 rounded-md"
               >
                 {[1, 2, 3, 4, 5].map(num => (
                   <option key={num} value={num}>{num === 5 ? "5+" : num}</option>
                 ))}
-              </select>
-            </div>
+              </Select>
+            </FormField>
           </>
         )}
 
-        <div>
-          <label className="block text-gray-700">Square Footage</label>
+        <FormField label="Square Footage">
           <input
             type="number"
             name="area_sqft"
             value={formData.area_sqft}
             onChange={handleInputChange}
-            className="w-full border border-gray-300 p-2 rounded-md"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             placeholder="Enter square footage"
           />
-        </div>
+        </FormField>
         
         {/* Price fields based on listing type */}
         {formData.listing_type === "RENT" && (
           <>
-            <div>
-              <label className="block text-gray-700">Base Rent Price* (recurring payment)</label>
+            <FormField label="Base Rent Price (recurring payment)" required>
               <input
                 type="text"
                 name="rent_price"
                 value={displayRentPrice}
                 onChange={handleInputChange}
-                className="w-full border border-gray-300 p-2 rounded-md"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="e.g. 12,000,000"
               />
-              {formData.rent_price && fees.totalPrice > 0 && (
-                <p className="text-xs text-gray-600 mt-1">
-                  Initial payment: ₦{formatNumberWithCommas(fees.totalPrice.toString())}
-                  (includes ₦{formatNumberWithCommas(fees.totalFee.toString())} one-time fees)
-                </p>
-              )}
-            </div>
-            <div>
-              <label className="block text-gray-700">Rent Frequency</label>
-              <select
+              <p className="text-xs text-gray-500 mt-1">
+                This is the base rent price.
+                {formData.user_type === 'agent'
+                  ? ' Agent fee and Qarba fee are one-time payments added to the first payment only.' 
+                  : ' Qarba fee is a one-time payment added to the first payment only.'}
+              </p>
+            </FormField>
+            <FormField label="Rent Frequency">
+              <Select
                 name="rent_frequency"
                 value={formData.rent_frequency}
                 onChange={handleInputChange}
-                className="w-full border border-gray-300 p-2 rounded-md"
               >
-                <option value="MONTHLY">Monthly</option>
-                <option value="YEARLY">Yearly</option>
-                <option value="QUARTERLY">Quarterly</option>
-                <option value="WEEKLY">Weekly</option>
-              </select>
-            </div>
+                {RENT_FREQUENCIES.map((freq) => (
+                  <option key={freq.value} value={freq.value}>
+                    {freq.label}
+                  </option>
+                ))}
+              </Select>
+            </FormField>
           </>
         )}
 
         {formData.listing_type === "SALE" && (
-          <div>
-            <label className="block text-gray-700">Sale Price*</label>
+          <FormField label="Sale Price" required>
             <input
               type="text"
               name="sale_price"
               value={displaySalePrice}
               onChange={handleInputChange}
-              className="w-full border border-gray-300 p-2 rounded-md"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="e.g. 150,000,000"
             />
-            {formData.sale_price && fees.totalPrice > 0 && (
-              <p className="text-xs text-gray-600 mt-1">
-                Total payment: ₦{formatNumberWithCommas(fees.totalPrice.toString())}
-                (includes ₦{formatNumberWithCommas(fees.totalFee.toString())} one-time fees)
-              </p>
-            )}
-          </div>
+            <p className="text-xs text-gray-500 mt-1">
+              This is the base sale price.
+              {formData.user_type === 'agent'
+                ? ' Agent commission (10%) will be added to this price.'
+                : ' No additional fees will be added to this price.'}
+            </p>
+          </FormField>
         )}
       </div>
 
+      {/* Fee Breakdown */}
+      {(formData.rent_price || formData.sale_price) && (
+        <FeeBreakdown 
+          fees={fees} 
+          userType={formData.user_type} 
+          listingType={formData.listing_type}
+        />
+      )}
+
       {/* Description and Location */}
       <div className="mt-8">
-        <h3 className="text-xl font-normal text-[#014d98]">Address and Description</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-          <div>
-            <label className="block text-gray-700">Property Description*</label>
+        <h3 className="text-xl font-semibold text-[#014d98] mb-4">Address and Description</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FormField label="Property Description" required>
             <textarea
               name="description"
               value={formData.description}
               onChange={handleInputChange}
-              className="w-full border border-gray-300 p-2 rounded-md h-32"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-32 resize-none"
               placeholder="Describe your property's best features"
-            ></textarea>
-          </div>
-          <div>
-            <label className="block text-gray-700">Property Address*</label>
+            />
+          </FormField>
+          <FormField label="Property Address" required>
             <textarea
               name="location"
               value={formData.location}
               onChange={handleInputChange}
-              className="w-full border border-gray-300 p-2 rounded-md h-32"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-32 resize-none"
               placeholder="Provide the property address"
-            ></textarea>
-          </div>
+            />
+          </FormField>
         </div>
       </div>
 
@@ -696,39 +798,39 @@ const EditProperty = () => {
 
       {/* Features and Amenities */}
       <div className="mt-8">
-        <h3 className="text-xl font-normal text-[#014d98]">Features and Amenities</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
-          {Object.keys(amenitiesMapping).map((amenity) => (
-            <label key={amenity} className="flex items-center space-x-2">
+        <h3 className="text-xl font-semibold text-[#014d98] mb-4">Features and Amenities</h3>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {AMENITIES.map((amenity) => (
+            <label key={amenity.value} className="flex items-center space-x-2 cursor-pointer">
               <input
                 type="checkbox"
-                className="h-4 w-4"
-                checked={formData.amenities.includes(amenity)}
-                onChange={() => handleAmenityToggle(amenity)}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                checked={formData.amenities.includes(amenity.value)}
+                onChange={() => handleAmenityToggle(amenity.value)}
               />
-              <span>{amenitiesMapping[amenity]}</span>
+              <span className="text-sm text-gray-700">{amenity.label}</span>
             </label>
           ))}
         </div>
       </div>
 
       {/* Submit Buttons */}
-      <div className="mt-8 flex justify-end gap-4">
+      <div className="mt-8 flex flex-col sm:flex-row justify-end gap-4">
         <button
           type="button"
           onClick={() => handleSubmit(true)}
           disabled={submitting}
-          className="border-2 border-blue-500 text-blue-500 py-2 px-6 rounded-md hover:bg-blue-100 disabled:opacity-50"
+          className="px-6 py-3 border-2 border-[#014d98] text-[#014d98] rounded-lg font-semibold hover:bg-[#014d98] hover:text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {submitting ? 'Saving...' : 'Save as draft'}
+          {submitting ? 'Saving...' : 'Save as Draft'}
         </button>
         <button
           type="button"
           onClick={() => handleSubmit(false)}
           disabled={submitting}
-          className="bg-gradient-to-r from-blue-500 to-teal-500 text-white py-2 px-6 rounded-md hover:opacity-90 disabled:opacity-50"
+          className="px-6 py-3 bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white rounded-lg font-semibold hover:from-[#3ab7b1] hover:to-[#014d98] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {submitting ? 'Submitting...' : 'Submit for review'}
+          {submitting ? 'Submitting...' : 'Submit for Review'}
         </button>
       </div>
     </div>
