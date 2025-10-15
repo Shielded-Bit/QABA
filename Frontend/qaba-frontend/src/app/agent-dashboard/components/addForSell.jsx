@@ -10,7 +10,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 // Fee rates constants
 const FEE_RATES = {
   AGENT_FEE_RATE: 0.10,
-  QARBA_FEE_RATE: 0.05,
+  QARBA_FEE_RATE: 0.00,
   LANDLORD_FEE_RATE: 0.00
 };
 
@@ -767,8 +767,8 @@ const AddForSell = () => {
           <p className="text-xs text-gray-500 mt-1">
             This is the base sale price.
             {formData.user_type === 'agent'
-              ? ' Agent commission (10%) and Qarba fee (5%) will be added to this price.'
-              : ' Qarba fee (5%) will be added to this price.'}
+              ? ' Agent commission (10%) will be added to this price.'
+              : ' No additional fees will be added to this price.'}
           </p>
         </FormField>
         <FormField label="Property Status">
