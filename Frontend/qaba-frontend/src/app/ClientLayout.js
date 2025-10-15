@@ -10,11 +10,16 @@ import { PropertiesCacheProvider } from "../contexts/PropertiesCacheContext";
 import { ListingTypeCacheProvider } from "../contexts/ListingTypeCacheContext";
 import { LandingPageCacheProvider } from "../contexts/LandingPageCacheContext";
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import useTokenRefresh from "../hooks/useTokenRefresh";
 
 export default function ClientLayout({ children }) {
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
-  
+
+  // ✅ PROACTIVE TOKEN REFRESH: Automatically refreshes tokens 5 minutes before expiry
+  // This prevents "Authorization error" by keeping users logged in seamlessly
+  useTokenRefresh();
+
   useEffect(() => {
     setMounted(true);
   }, []);

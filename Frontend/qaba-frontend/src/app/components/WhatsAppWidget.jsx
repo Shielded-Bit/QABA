@@ -17,7 +17,7 @@ const WhatsAppWidget = () => {
 
   if (!isVisible) return null;
 
-  const phoneNumber = "+2347076647640";
+  const phoneNumber = "+2348155901163";
   const message = encodeURIComponent("Hello! I'm interested in your real estate services. Can you help me?");
   const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
 
