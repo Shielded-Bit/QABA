@@ -1,10 +1,12 @@
 /**
  * Axios Configuration with Global Interceptors
  * Handles automatic 401 error detection, token refresh, and request retry
+ * Now with PROACTIVE token refresh before requests
  */
 
 import axios from 'axios';
 import { handleSessionExpiration, getAuthToken, refreshAccessToken } from './authHandler';
+import { isTokenExpiringSoon } from './jwt';
 
 // Create axios instance
 const apiClient = axios.create({
@@ -16,14 +18,38 @@ const apiClient = axios.create({
 });
 
 // Request interceptor - Add auth token to all requests
+// PROACTIVE REFRESH: Check if token is expiring soon BEFORE making request
 apiClient.interceptors.request.use(
-  (config) => {
+  async (config) => {
     const token = getAuthToken();
-    
+
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      // ✅ PROACTIVE CHECK: Is token expiring in less than 5 minutes?
+      if (isTokenExpiringSoon(token, 5)) {
+        console.log('Token expiring soon - refreshing proactively before request');
+
+        try {
+          const newToken = await refreshAccessToken();
+
+          if (newToken) {
+            // Use the new token for this request
+            config.headers.Authorization = `Bearer ${newToken}`;
+            console.log('✅ Token refreshed proactively - using new token');
+          } else {
+            // Refresh failed - use old token and let response interceptor handle it
+            config.headers.Authorization = `Bearer ${token}`;
+            console.warn('⚠️ Proactive refresh failed - proceeding with old token');
+          }
+        } catch (error) {
+          console.error('Error during proactive token refresh:', error);
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+      } else {
+        // Token is still fresh - use it normally
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
-    
+
     return config;
   },
   (error) => {

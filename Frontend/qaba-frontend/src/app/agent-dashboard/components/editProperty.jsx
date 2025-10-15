@@ -11,9 +11,21 @@ const EditProperty = () => {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  
+
   // API base URL
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/api/v1";
+
+  // Get authenticated user type from localStorage (matching AddForRent)
+  const getAuthenticatedUserType = () => {
+    if (typeof window !== 'undefined') {
+      const userType = localStorage.getItem('user_type');
+      // Convert LANDLORD to landlord and AGENT to agent for form compatibility
+      if (userType === 'LANDLORD') return 'landlord';
+      if (userType === 'AGENT') return 'agent';
+      return 'landlord'; // Default fallback
+    }
+    return 'landlord';
+  };
   
   // Form state with minimal required fields
   const [formData, setFormData] = useState({
@@ -29,7 +41,7 @@ const EditProperty = () => {
     rent_price: "",
     sale_price: "",
     amenities: [],
-    user_type: "owner",
+    user_type: getAuthenticatedUserType(), // Set based on authenticated user, not property data
     // Fields from your API example
     listing_status: "DRAFT",
     property_status: "AVAILABLE",
@@ -40,15 +52,25 @@ const EditProperty = () => {
   const [displayRentPrice, setDisplayRentPrice] = useState('');
   const [displaySalePrice, setDisplaySalePrice] = useState('');
 
-  // Media files state - simplified
+  // Fee calculation state
+  const [fees, setFees] = useState({
+    basePrice: 0,
+    agentFee: 0,
+    qarbaFee: 0,
+    totalFee: 0,
+    totalPrice: 0
+  });
+
+  // Media files state - matching AddForRent structure
   const [mediaFiles, setMediaFiles] = useState({
-    images: [],
+    image1: null,
+    image2: null,
     video: null
   });
 
   // Existing images from the property
   const [existingImages, setExistingImages] = useState([]);
-  
+
   // Track images to delete
   const [imagesToDelete, setImagesToDelete] = useState([]);
 
@@ -57,6 +79,32 @@ const EditProperty = () => {
     if (!value) return '';
     const plainNumber = value.toString().replace(/[^\d]/g, '');
     return plainNumber ? plainNumber.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '';
+  };
+
+  // Calculate fees based on user type and price
+  const calculateFees = (userType, price) => {
+    const parsedPrice = parseInt(price, 10) || 0;
+
+    if (userType === 'agent') {
+      const agentFee = Math.round(parsedPrice * 0.10); // 10%
+      const qarbaFee = Math.round(parsedPrice * 0.05); // 5%
+      return {
+        basePrice: parsedPrice,
+        agentFee,
+        qarbaFee,
+        totalFee: agentFee + qarbaFee,
+        totalPrice: parsedPrice + agentFee + qarbaFee
+      };
+    } else {
+      const qarbaFee = Math.round(parsedPrice * 0.05); // 5%
+      return {
+        basePrice: parsedPrice,
+        agentFee: 0,
+        qarbaFee,
+        totalFee: qarbaFee,
+        totalPrice: parsedPrice + qarbaFee
+      };
+    }
   };
 
   // Available amenities mapping
@@ -101,7 +149,8 @@ const EditProperty = () => {
         // Handle data structure to get property
         const data = response.data.property || response.data.data || response.data;
         
-        // Populate form data
+        // Populate form data - use authenticated user type, not stored property data
+        const authenticatedUserType = getAuthenticatedUserType();
         setFormData({
           property_name: data.property_name || "",
           description: data.description || "",
@@ -114,10 +163,10 @@ const EditProperty = () => {
           rent_frequency: data.rent_frequency || "MONTHLY",
           rent_price: data.rent_price !== undefined ? data.rent_price : "",
           sale_price: data.sale_price !== undefined ? data.sale_price : "",
-          amenities: Array.isArray(data.amenities) 
+          amenities: Array.isArray(data.amenities)
             ? data.amenities.map(amenity => typeof amenity === 'string' ? amenity : amenity.name)
             : [],
-          user_type: data.user_type || "owner",
+          user_type: authenticatedUserType, // Always use authenticated user type
           listing_status: data.listing_status || "DRAFT",
           property_status: data.property_status || "AVAILABLE",
           lister_type: data.lister_type || "LANDLOARD"
@@ -132,9 +181,15 @@ const EditProperty = () => {
           setDisplaySalePrice(formatNumberWithCommas(data.sale_price));
         }
         
-        // Set existing images
+        // Set existing images - extract URLs properly
         if (data.images && data.images.length > 0) {
-          setExistingImages(data.images);
+          const imageUrls = data.images.map(img => {
+            // Handle both string URLs and objects with image_url property
+            if (typeof img === 'string') return img;
+            if (img && img.image_url) return img.image_url;
+            return null;
+          }).filter(Boolean);
+          setExistingImages(imageUrls);
         }
         
         toast.success('Property data loaded successfully');
@@ -148,6 +203,25 @@ const EditProperty = () => {
     
     fetchPropertyData();
   }, [params.id, API_BASE_URL, router]);
+
+  // Ensure user type stays in sync with authenticated user (matching AddForRent)
+  useEffect(() => {
+    const currentAuthUserType = getAuthenticatedUserType();
+    if (formData.user_type !== currentAuthUserType) {
+      setFormData(prev => ({ ...prev, user_type: currentAuthUserType }));
+    }
+  }, [formData.user_type]);
+
+  // Calculate fees when price or user type changes
+  useEffect(() => {
+    if (formData.listing_type === 'RENT' && formData.rent_price) {
+      const calculatedFees = calculateFees(formData.user_type, formData.rent_price);
+      setFees(calculatedFees);
+    } else if (formData.listing_type === 'SALE' && formData.sale_price) {
+      const calculatedFees = calculateFees(formData.user_type, formData.sale_price);
+      setFees(calculatedFees);
+    }
+  }, [formData.user_type, formData.rent_price, formData.sale_price, formData.listing_type]);
 
   // Handle input changes
   const handleInputChange = (e) => {
@@ -197,24 +271,15 @@ const EditProperty = () => {
     });
   };
 
-  // Handle file uploads
+  // Handle file uploads - matching AddForRent structure
   const handleFileChange = (e, fileType) => {
-    if (fileType === 'images') {
-      if (e.target.files.length > 0) {
-        setMediaFiles({
-          ...mediaFiles,
-          images: [...mediaFiles.images, e.target.files[0]]
-        });
-        toast.success('Image selected successfully');
-      }
-    } else if (fileType === 'video') {
-      if (e.target.files[0]) {
-        setMediaFiles({
-          ...mediaFiles,
-          video: e.target.files[0]
-        });
-        toast.success('Video selected successfully');
-      }
+    const file = e.target.files[0];
+    if (file) {
+      setMediaFiles({
+        ...mediaFiles,
+        [fileType]: file
+      });
+      toast.success(`${fileType.charAt(0).toUpperCase() + fileType.slice(1)} selected successfully`);
     }
   };
 
@@ -253,19 +318,25 @@ const EditProperty = () => {
       // Create FormData for sending files
       const formDataForApi = new FormData();
       
-      // Set listing status based on isDraft
+      // Set listing status based on isDraft and calculate total_price
       const updatedFormData = {
         ...formData,
         listing_status: isDraft ? "DRAFT" : "PENDING", // Use PENDING for review
         bedrooms: parseInt(formData.bedrooms),
         bathrooms: parseInt(formData.bathrooms),
         area_sqft: formData.area_sqft ? parseFloat(formData.area_sqft) : 0,
+        total_price: fees.totalPrice.toString() // Add calculated total_price
       };
       
       // Add all form data to FormData
       Object.keys(updatedFormData).forEach(key => {
-        if (Array.isArray(updatedFormData[key])) {
-          // Handle arrays like amenities
+        if (key === 'amenities' && Array.isArray(updatedFormData[key])) {
+          // Handle amenities array - send each amenity key separately
+          updatedFormData[key].forEach(value => {
+            formDataForApi.append('amenities', value);
+          });
+        } else if (Array.isArray(updatedFormData[key])) {
+          // Handle other arrays
           updatedFormData[key].forEach(value => {
             formDataForApi.append(key, value);
           });
@@ -278,12 +349,15 @@ const EditProperty = () => {
       imagesToDelete.forEach(url => {
         formDataForApi.append('images_to_delete', url);
       });
-      
-      // Add new images
-      mediaFiles.images.forEach(image => {
-        formDataForApi.append('images', image);
-      });
-      
+
+      // Add new images - matching AddForRent format
+      if (mediaFiles.image1) {
+        formDataForApi.append('images', mediaFiles.image1);
+      }
+      if (mediaFiles.image2) {
+        formDataForApi.append('images', mediaFiles.image2);
+      }
+
       // Add video if selected
       if (mediaFiles.video) {
         formDataForApi.append('video', mediaFiles.video);
@@ -330,7 +404,7 @@ const EditProperty = () => {
   }
 
   return (
-    <div className="rounded-lg py-6 md:px-6 pl-12">
+    <div className="rounded-lg py-6 md:px-3">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-normal text-[#014d98]">Edit Property</h2>
         <button
@@ -343,6 +417,21 @@ const EditProperty = () => {
 
       {/* Basic Property Information */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* User Type - Auto-detected based on authenticated user */}
+        <div>
+          <label className="block text-gray-700">What best describes you?</label>
+          <input
+            type="text"
+            value={formData.user_type === 'agent' ? 'Agent' : 'Landlord'}
+            disabled
+            className="w-full border border-gray-200 p-2 rounded-md bg-gray-50 text-gray-600 cursor-not-allowed"
+            title="User type is automatically detected based on your account"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Automatically detected from your account type
+          </p>
+        </div>
+
         <div>
           <label className="block text-gray-700">Property Name*</label>
           <input
@@ -437,7 +526,7 @@ const EditProperty = () => {
         {formData.listing_type === "RENT" && (
           <>
             <div>
-              <label className="block text-gray-700">Rent Price*</label>
+              <label className="block text-gray-700">Base Rent Price* (recurring payment)</label>
               <input
                 type="text"
                 name="rent_price"
@@ -446,10 +535,16 @@ const EditProperty = () => {
                 className="w-full border border-gray-300 p-2 rounded-md"
                 placeholder="e.g. 12,000,000"
               />
+              {formData.rent_price && fees.totalPrice > 0 && (
+                <p className="text-xs text-gray-600 mt-1">
+                  Initial payment: ₦{formatNumberWithCommas(fees.totalPrice.toString())}
+                  (includes ₦{formatNumberWithCommas(fees.totalFee.toString())} one-time fees)
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-gray-700">Rent Frequency</label>
-              <select 
+              <select
                 name="rent_frequency"
                 value={formData.rent_frequency}
                 onChange={handleInputChange}
@@ -475,6 +570,12 @@ const EditProperty = () => {
               className="w-full border border-gray-300 p-2 rounded-md"
               placeholder="e.g. 150,000,000"
             />
+            {formData.sale_price && fees.totalPrice > 0 && (
+              <p className="text-xs text-gray-600 mt-1">
+                Total payment: ₦{formatNumberWithCommas(fees.totalPrice.toString())}
+                (includes ₦{formatNumberWithCommas(fees.totalFee.toString())} one-time fees)
+              </p>
+            )}
           </div>
         )}
       </div>
@@ -533,23 +634,47 @@ const EditProperty = () => {
         </div>
       )}
 
-      {/* Upload New Media - Simplified */}
+      {/* Upload New Media - Matching AddForRent */}
       <div className="mt-8">
         <h3 className="text-xl font-normal text-[#014d98]">Upload New Media</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-          {/* Images */}
+        <p className="text-sm text-gray-600 mt-2">
+          Add new images or video to your property listing. You can upload up to 2 images and 1 video.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+          {/* Image 1 */}
           <div className="border-2 border-dashed border-gray-300 rounded-md p-6 flex items-center justify-center relative">
             <input
               type="file"
               accept="image/*"
-              onChange={(e) => handleFileChange(e, 'images')}
+              onChange={(e) => handleFileChange(e, 'image1')}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
             />
-            <div className="text-gray-500 text-center">
-              <p>Add images (selected: {mediaFiles.images.length})</p>
+            <div className="text-gray-500 text-center pointer-events-none">
+              {mediaFiles.image1 ? (
+                <p>Selected: {mediaFiles.image1.name}</p>
+              ) : (
+                <p>Drag and drop Image 1 or click to upload</p>
+              )}
             </div>
           </div>
-          
+
+          {/* Image 2 */}
+          <div className="border-2 border-dashed border-gray-300 rounded-md p-6 flex items-center justify-center relative">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => handleFileChange(e, 'image2')}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            />
+            <div className="text-gray-500 text-center pointer-events-none">
+              {mediaFiles.image2 ? (
+                <p>Selected: {mediaFiles.image2.name}</p>
+              ) : (
+                <p>Drag and drop Image 2 or click to upload</p>
+              )}
+            </div>
+          </div>
+
           {/* Video */}
           <div className="border-2 border-dashed border-gray-300 rounded-md p-6 flex items-center justify-center relative">
             <input
@@ -558,8 +683,12 @@ const EditProperty = () => {
               onChange={(e) => handleFileChange(e, 'video')}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
             />
-            <div className="text-gray-500 text-center">
-              <p>{mediaFiles.video ? `Selected: ${mediaFiles.video.name}` : 'Add video'}</p>
+            <div className="text-gray-500 text-center pointer-events-none">
+              {mediaFiles.video ? (
+                <p>Selected: {mediaFiles.video.name}</p>
+              ) : (
+                <p>Drag and drop Video or click to upload</p>
+              )}
             </div>
           </div>
         </div>

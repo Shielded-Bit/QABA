@@ -82,6 +82,11 @@ const SignIn = () => {
     setToast({ message, type, isVisible: true });
   };
 
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   // Check for session expiration message
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -90,7 +95,7 @@ const SignIn = () => {
         showToast(expiredMessage, 'error');
         sessionStorage.removeItem('session_expired_message');
       }
-      
+
       // Check URL for expiration reason
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.get('reason') === 'expired') {
@@ -251,11 +256,18 @@ const SignIn = () => {
       }
 
       // Show success toast
-      showToast("Sign in successful! Redirecting to dashboard...", 'success');
+      showToast("Sign in successful! Redirecting...", 'success');
 
-      // Redirect based on role after a short delay
+      // Check if there's a saved redirect URL
+      const redirectUrl = localStorage.getItem('redirect_after_login');
+
+      // Redirect based on saved URL or role after a short delay
       setTimeout(() => {
-        if (userType === "AGENT" || userType === "LANDLORD") {
+        if (redirectUrl) {
+          // Clear the saved redirect URL and go back to the original page
+          localStorage.removeItem('redirect_after_login');
+          router.push(redirectUrl);
+        } else if (userType === "AGENT" || userType === "LANDLORD") {
           // Landlord and Agent use the same dashboard
           router.push("/agent-dashboard");
         } else if (userType === "CLIENT") {
@@ -340,11 +352,18 @@ const SignIn = () => {
           }
 
           // Show success toast
-          showToast('Sign in successful! Redirecting to dashboard...', 'success');
+          showToast('Sign in successful! Redirecting...', 'success');
 
-          // Redirect based on user type
+          // Check if there's a saved redirect URL
+          const redirectUrl = localStorage.getItem('redirect_after_login');
+
+          // Redirect based on saved URL or user type
           setTimeout(() => {
-            if (userType === 'AGENT' || userType === 'LANDLORD') {
+            if (redirectUrl) {
+              // Clear the saved redirect URL and go back to the original page
+              localStorage.removeItem('redirect_after_login');
+              router.push(redirectUrl);
+            } else if (userType === 'AGENT' || userType === 'LANDLORD') {
               router.push('/agent-dashboard');
             } else if (userType === 'CLIENT') {
               router.push('/dashboard/all-listed-properties');

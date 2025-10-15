@@ -1,6 +1,11 @@
 /**
  * Global Authentication Handler
  * Handles session expiration, token clearing, token refresh, and user redirection
+ *
+ * ✅ NOW WITH PROACTIVE TOKEN REFRESH:
+ * - Tokens are refreshed 5 minutes BEFORE expiry (via useTokenRefresh hook)
+ * - This handler provides backup reactive refresh (after 401 errors)
+ * - Together they ensure users never see "Authorization error"
  */
 
 let isHandlingExpiration = false; // Prevent multiple simultaneous redirects
@@ -53,25 +58,31 @@ export const clearAllUserData = () => {
 /**
  * Attempt to refresh the access token using the refresh token
  * Implements singleton pattern to prevent multiple simultaneous refresh attempts
+ *
+ * NOTE: This is called both proactively (by useTokenRefresh hook)
+ * and reactively (by axios interceptor on 401 errors)
+ *
  * @returns {Promise<string|null>} New access token or null if refresh failed
  */
 export const refreshAccessToken = async () => {
-  // If already refreshing, return the same promise
+  // If already refreshing, return the same promise (prevents race conditions)
   if (isRefreshing && refreshPromise) {
+    console.log('Token refresh already in progress - waiting for completion');
     return refreshPromise;
   }
-  
+
   // Check if we have a refresh token
   const refreshToken = typeof window !== 'undefined' ? localStorage.getItem('refresh_token') : null;
-  
+
   if (!refreshToken) {
-    console.warn('No refresh token available - cannot refresh access token');
+    console.warn('❌ No refresh token available - cannot refresh access token');
     return null;
   }
-  
+
   // Mark as refreshing and create promise
   isRefreshing = true;
-  
+  console.log('🔄 Starting token refresh...');
+
   refreshPromise = (async () => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/token/refresh/`, {
@@ -83,23 +94,39 @@ export const refreshAccessToken = async () => {
       });
 
       if (!response.ok) {
-        console.error('Token refresh failed with status:', response.status);
+        // Only log out on auth errors (401/403), not network errors (500)
+        if (response.status === 401 || response.status === 403) {
+          console.error('❌ Token refresh failed - refresh token invalid or expired');
+        } else {
+          console.error(`⚠️ Token refresh failed with status ${response.status} - network or server error`);
+        }
         return null;
       }
 
       const data = await response.json();
       const newAccessToken = data.access || data.data?.access;
+      const newRefreshToken = data.refresh || data.data?.refresh; // Some APIs rotate refresh tokens
 
       if (newAccessToken) {
         // Store the new access token
         localStorage.setItem('access_token', newAccessToken);
+
+        // Update refresh token if API provides a new one (token rotation)
+        if (newRefreshToken) {
+          localStorage.setItem('refresh_token', newRefreshToken);
+          console.log('✅ Token refresh successful (with refresh token rotation)');
+        } else {
+          console.log('✅ Token refresh successful');
+        }
+
         return newAccessToken;
       }
 
-      console.error('Token refresh response did not contain access token');
+      console.error('❌ Token refresh response did not contain access token');
       return null;
     } catch (error) {
-      console.error('Error refreshing token:', error);
+      // Network errors should not log user out
+      console.error('⚠️ Error refreshing token (network error):', error.message);
       return null;
     } finally {
       // Reset refresh state
@@ -107,7 +134,7 @@ export const refreshAccessToken = async () => {
       refreshPromise = null;
     }
   })();
-  
+
   return refreshPromise;
 };
 
