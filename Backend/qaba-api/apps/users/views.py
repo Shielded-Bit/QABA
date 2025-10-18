@@ -628,12 +628,16 @@ class ContactFormView(APIView):
                 name = f"{request.user.first_name} {request.user.last_name}"
                 email = request.user.email
                 user_type = request.user.get_user_type_display()
-                phone = request.user.phone_number or "Not provided"
+                phone = (
+                    request.user.phone_number
+                    or serializer.validated_data.get("phone")
+                    or "Not provided"
+                )
             else:
                 name = serializer.validated_data.get("name")
                 email = serializer.validated_data.get("email")
                 user_type = "Anonymous"
-                phone = "Not provided"
+                phone = serializer.validated_data.get("phone") or "Not provided"
 
             subject = serializer.validated_data["subject"]
             message = serializer.validated_data["message"]
