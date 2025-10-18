@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 
-const PropertyVerifications = ({ propertyId }) => {
+const PropertyVerifications = ({ propertyId, isVerified = false }) => {
   const [verifications, setVerifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -20,7 +20,8 @@ const PropertyVerifications = ({ propertyId }) => {
         
         // Mock data until backend is ready
         setTimeout(() => {
-          setVerifications([
+          // Only show Qarba verification if isVerified is true
+          const verificationsData = isVerified ? [
             {
               id: 1,
               agency: 'Qarba ',
@@ -48,7 +49,8 @@ const PropertyVerifications = ({ propertyId }) => {
             //   isPrimary: false,
             //   verificationDetails: 'Verification pending.'
             // }
-          ]);
+          ] : [];
+          setVerifications(verificationsData);
           setLoading(false);
         }, 500); // Simulate API delay
         
@@ -62,8 +64,13 @@ const PropertyVerifications = ({ propertyId }) => {
     if (propertyId) {
       fetchVerifications();
     }
-  }, [propertyId]);
+  }, [propertyId, isVerified]);
   
+  // Don't show anything while loading if not verified
+  if (loading && !isVerified) {
+    return null;
+  }
+
   if (loading) {
     return (
       <div className="p-4 border border-gray-200 rounded-lg bg-white shadow-sm">
@@ -77,7 +84,7 @@ const PropertyVerifications = ({ propertyId }) => {
       </div>
     );
   }
-  
+
   if (error) {
     return (
       <div className="p-4 border border-red-100 rounded-lg bg-red-50 text-red-600">
@@ -85,7 +92,12 @@ const PropertyVerifications = ({ propertyId }) => {
       </div>
     );
   }
-  
+
+  // Hide entire section if not verified
+  if (!isVerified) {
+    return null;
+  }
+
   const primaryVerification = verifications.find(v => v.isPrimary && v.verified);
   const otherVerifications = verifications.filter(v => !v.isPrimary);
   

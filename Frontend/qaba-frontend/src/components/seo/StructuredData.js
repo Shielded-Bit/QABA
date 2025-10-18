@@ -17,7 +17,7 @@ export const organizationStructuredData = {
   "contactPoint": [
     {
       "@type": "ContactPoint",
-      "telephone": "+234-707-664-7640",
+      "telephone": "+234-815-590-1163",
       "contactType": "customer service",
       "availableLanguage": ["English"]
     },
