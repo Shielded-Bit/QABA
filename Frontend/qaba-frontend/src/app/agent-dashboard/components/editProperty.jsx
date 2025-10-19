@@ -6,23 +6,42 @@ import { toast } from "react-hot-toast";
 import axios from "axios";
 import Image from "next/image";
 import DocumentUploadModal from "../../components/DocumentUploadModal";
+import ConfirmationModal from "./ConfirmationModal";
 
 // Constants and helper functions
 const PROPERTY_TYPES = [
   { value: "HOUSE", label: "House" },
   { value: "APARTMENT", label: "Apartment" },
+  { value: "SELF_CONTAIN", label: "Self Contain" },
+  { value: "ONE_BEDROOM_FLAT", label: "One Bedroom Flat" },
+  { value: "TWO_BEDROOM_FLAT", label: "Two Bedroom Flat" },
+  { value: "THREE_BEDROOM_FLAT", label: "Three Bedroom Flat" },
+  { value: "FOUR_BEDROOM_FLAT", label: "Four Bedroom Flat" },
   { value: "DUPLEX", label: "Duplex" },
   { value: "FULL_DETACHED", label: "Full Detached" },
   { value: "SEMI_DETACHED", label: "Semi Detached" },
+  { value: "WAREHOUSE", label: "Warehouse" },
   { value: "EMPTY_LAND", label: "Empty Land" },
   { value: "LAND_WITH_BUILDING", label: "Land with Building" }
+];
+
+const DOCUMENT_TYPES = [
+  { value: "DEED", label: "Deed" },
+  { value: "TITLE", label: "Title Certificate" },
+  { value: "PERMIT", label: "Building Permit" },
+  { value: "SURVEY", label: "Survey Plan" },
+  { value: "LAND_USE", label: "Land Use Approval" },
+  { value: "TAX", label: "Tax Receipt" },
+  { value: "FLOOR_PLAN", label: "Floor Plan" },
+  { value: "UTILITY", label: "Utility Bills" },
+  { value: "OTHER", label: "Other Document" }
 ];
 
 const RENT_FREQUENCIES = [
   { value: "MONTHLY", label: "Monthly" },
   { value: "YEARLY", label: "Yearly" },
-  { value: "WEEKLY", label: "Weekly" },
-  { value: "DAILY", label: "Daily" }
+  { value: "QUARTERLY", label: "Quarterly" },
+  { value: "WEEKLY", label: "Weekly" }
 ];
 
 const PROPERTY_STATUSES = [
@@ -34,22 +53,6 @@ const PROPERTY_STATUSES = [
 const LISTING_TYPES = [
   { value: "RENT", label: "Rent" },
   { value: "SALE", label: "Sale" }
-];
-
-const AMENITIES = [
-  { value: "CAR_PARK", label: "Car Park" },
-  { value: "BIG_COMPOUND", label: "Big Compound" },
-  { value: "CCTV_CAMERA", label: "CCTV Camera" },
-  { value: "POP_CEILING", label: "POP Ceiling" },
-  { value: "TRAFFIC_LIGHT", label: "Traffic Light" },
-  { value: "HOUSE_SECURITY", label: "House Security" },
-  { value: "SWIMMING_POOL", label: "Swimming Pool" },
-  { value: "SECURITY_DOOR", label: "Security Door" },
-  { value: "BBOYS_QUARTERS", label: "Boys Quarters" },
-  { value: "GYM", label: "Gym" },
-  { value: "PARKING", label: "Parking" },
-  { value: "GARDEN", label: "Garden" },
-  { value: "OTHERS", label: "Others" }
 ];
 
 // Helper functions
@@ -87,42 +90,181 @@ const Select = ({ name, value, onChange, children, className = "", ...props }) =
 );
 
 // Fee breakdown component
-const FeeBreakdown = ({ fees, userType, listingType }) => {
+const FeeBreakdown = ({ fees, userType, listingType, rentFrequency, serviceCharge, cautionFee }) => {
   if (!fees.basePrice) return null;
+
+  const parsedServiceCharge = parseFloat(serviceCharge) || 0;
+  const parsedCautionFee = parseFloat(cautionFee) || 0;
+  const totalPrice = fees.totalPrice + parsedServiceCharge + parsedCautionFee;
 
   return (
     <div className="mt-4 p-4 bg-gray-50 rounded-md border border-gray-200">
       <h4 className="text-lg font-medium text-[#014d98] mb-2">Fee Breakdown</h4>
       <div className="space-y-2 text-sm">
         <div className="flex justify-between font-medium">
-          <span>{listingType === 'RENT' ? 'Rent Price:' : 'Sale Price:'}</span>
+          <span>{listingType === 'RENT' ? `Base Price (recurring ${rentFrequency?.toLowerCase() || 'monthly'}):` : 'Sale Price:'}</span>
           <span>₦{formatNumberWithCommas(fees.basePrice.toString())}</span>
         </div>
         {fees.agentFee > 0 && (
           <div className="flex justify-between">
-            <span>Agent Commission (10%):</span>
+            <span>Agent {listingType === 'SALE' ? 'Commission' : 'Fee'} (10%, one-time):</span>
             <span>₦{formatNumberWithCommas(fees.agentFee.toString())}</span>
           </div>
         )}
         <div className="flex justify-between">
-          <span>Qarba Fee ({listingType === 'SALE' ? '0%' : '5%'}):</span>
+          <span>Qarba Fee ({listingType === 'SALE' ? '0%' : '0%'}, one-time):</span>
           <span>₦{formatNumberWithCommas(fees.qarbaFee.toString())}</span>
         </div>
+        {parsedServiceCharge > 0 && (
+          <div className="flex justify-between">
+            <span>Service Charge:</span>
+            <span>₦{formatNumberWithCommas(parsedServiceCharge.toString())}</span>
+          </div>
+        )}
+        {parsedCautionFee > 0 && (
+          <div className="flex justify-between">
+            <span>Caution Fee:</span>
+            <span>₦{formatNumberWithCommas(parsedCautionFee.toString())}</span>
+          </div>
+        )}
         <div className="flex justify-between font-medium border-t border-gray-200 pt-2 mt-2">
-          <span>Total Price:</span>
-          <span className="text-[#014d98]">₦{formatNumberWithCommas(fees.totalPrice.toString())}</span>
+          <span>{listingType === 'RENT' ? `Initial Payment (first ${rentFrequency?.toLowerCase() || 'month'}):` : 'Total Price:'}</span>
+          <span className="text-[#014d98]">₦{formatNumberWithCommas(totalPrice.toString())}</span>
         </div>
-        {userType === 'agent' && (
+        {listingType === 'RENT' && (
           <p className="text-xs text-gray-500 mt-1 italic">
-            {listingType === 'SALE' 
-              ? 'Agent commission will be added to the sale price.'
-              : 'Agent commission and Qarba fee are one-time payments added to the first payment only.'}
+            After initial payment, tenant will pay ₦{formatNumberWithCommas(fees.basePrice.toString())} {rentFrequency?.toLowerCase() || 'monthly'}.
           </p>
         )}
       </div>
     </div>
   );
 };
+
+// ImageUploadBox component - matching AddForRent and AddForSell
+const ImageUploadBox = ({ images, onAddImage, onRemoveImage, maxImages = 5, inputId = "image-upload-input" }) => {
+  const handleFileSelect = (e) => {
+    onAddImage(e);
+    // Reset the input value to allow selecting the same file again
+    e.target.value = '';
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        {/* Display uploaded images */}
+        {images.map((image, index) => (
+          <div
+            key={index}
+            className="relative aspect-square border-2 border-gray-200 rounded-lg overflow-hidden group hover:border-red-400 transition-colors duration-200"
+          >
+            <img
+              src={URL.createObjectURL(image)}
+              alt={`Property ${index + 1}`}
+              className="w-full h-full object-cover"
+            />
+            {/* Remove button - always visible */}
+            <button
+              type="button"
+              onClick={() => onRemoveImage(index)}
+              className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600 shadow-md"
+            >
+              ×
+            </button>
+          </div>
+        ))}
+
+        {/* Add image boxes */}
+        {Array.from({ length: maxImages - images.length }, (_, index) => (
+          <div
+            key={`add-${index}`}
+            className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-[#014d98] hover:bg-blue-50 transition-all duration-200 group"
+            onClick={() => document.getElementById(inputId).click()}
+          >
+            <div className="text-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-8 w-8 mx-auto mb-2 text-gray-400 group-hover:text-[#014d98] transition-colors duration-200"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                />
+              </svg>
+              <p className="text-xs text-gray-500 group-hover:text-[#014d98] transition-colors duration-200">
+                Add Image
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Hidden file input */}
+      <input
+        id={inputId}
+        type="file"
+        accept="image/*"
+        onChange={handleFileSelect}
+        className="hidden"
+        multiple
+      />
+
+      {/* Upload instructions */}
+      <p className="text-sm text-gray-500 text-center">
+        Upload up to {maxImages} images. Click on the boxes above to add images.
+        {images.length > 0 && ` (${images.length}/${maxImages} uploaded)`}
+      </p>
+    </div>
+  );
+};
+
+// FileUploadBox for video
+const FileUploadBox = ({ label, onChange, file, onRemove }) => (
+  <div className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center relative hover:border-gray-400 transition-colors duration-200">
+    <input
+      type="file"
+      accept={label.toLowerCase().includes("video") ? "video/*" : "image/*"}
+      onChange={onChange}
+      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+    />
+    {file && onRemove && (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onRemove();
+        }}
+        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 z-10 shadow-md"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+        </svg>
+      </button>
+    )}
+    <div className="text-gray-500 text-center pointer-events-none text-sm">
+      {file ? (
+        <div className="flex flex-col items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 mb-1 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+          </svg>
+          <p className="text-xs">{label} selected</p>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 mb-1" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
+          </svg>
+          <p className="text-xs">Upload {label.toLowerCase()}</p>
+        </div>
+      )}
+    </div>
+  </div>
+);
 
 const EditProperty = () => {
   const params = useParams();
@@ -158,17 +300,23 @@ const EditProperty = () => {
     rent_frequency: "MONTHLY",
     rent_price: "",
     sale_price: "",
+    service_charge: "",
+    caution_fee: "",
     amenities: [],
     user_type: getAuthenticatedUserType(), // Set based on authenticated user, not property data
     // Fields from your API example
     listing_status: "DRAFT",
     property_status: "AVAILABLE",
-    lister_type: "LANDLOARD"
+    lister_type: "LANDLOARD",
+    state: "",
+    city: ""
   });
 
   // Formatted price display states
   const [displayRentPrice, setDisplayRentPrice] = useState('');
   const [displaySalePrice, setDisplaySalePrice] = useState('');
+  const [displayServiceCharge, setDisplayServiceCharge] = useState('');
+  const [displayCautionFee, setDisplayCautionFee] = useState('');
 
   // Fee calculation state
   const [fees, setFees] = useState({
@@ -179,10 +327,9 @@ const EditProperty = () => {
     totalPrice: 0
   });
 
-  // Media files state - matching AddForRent structure
+  // Media files state - matching AddForRent and AddForSell structure
   const [mediaFiles, setMediaFiles] = useState({
-    image1: null,
-    image2: null,
+    images: [],
     video: null
   });
 
@@ -192,6 +339,20 @@ const EditProperty = () => {
   // Track images to delete
   const [imagesToDelete, setImagesToDelete] = useState([]);
 
+  // Documents state - matching AddForSell
+  const [documents, setDocuments] = useState([]);
+
+  // Document modal state
+  const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
+
+  // Confirmation modal state - matching AddForRent and AddForSell
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [submissionType, setSubmissionType] = useState(null);
+
+  // Amenities state - matching AddForRent and AddForSell
+  const [amenities, setAmenities] = useState([]);
+  const [isLoadingAmenities, setIsLoadingAmenities] = useState(false);
+
   // Format number with commas for better readability
   const formatNumberWithCommas = (value) => {
     if (!value) return '';
@@ -199,14 +360,13 @@ const EditProperty = () => {
     return plainNumber ? plainNumber.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '';
   };
 
-  // Calculate fees based on user type and price
+  // Calculate fees based on user type and price - matching AddForRent and AddForSell
   const calculateFees = (userType, price, listingType) => {
     const parsedPrice = parseInt(price, 10) || 0;
 
     if (userType === 'agent') {
       const agentFee = Math.round(parsedPrice * 0.10); // 10%
-      // Qarba fee is 0% for sales, 5% for rent
-      const qarbaFee = listingType === 'SALE' ? 0 : Math.round(parsedPrice * 0.05);
+      const qarbaFee = Math.round(parsedPrice * 0.00); // 0% for both rent and sale
       return {
         basePrice: parsedPrice,
         agentFee,
@@ -215,8 +375,7 @@ const EditProperty = () => {
         totalPrice: parsedPrice + agentFee + qarbaFee
       };
     } else {
-      // Qarba fee is 0% for sales, 5% for rent
-      const qarbaFee = listingType === 'SALE' ? 0 : Math.round(parsedPrice * 0.05);
+      const qarbaFee = Math.round(parsedPrice * 0.00); // 0% for both rent and sale
       return {
         basePrice: parsedPrice,
         agentFee: 0,
@@ -267,22 +426,34 @@ const EditProperty = () => {
           rent_frequency: data.rent_frequency || "MONTHLY",
           rent_price: data.rent_price !== undefined ? data.rent_price : "",
           sale_price: data.sale_price !== undefined ? data.sale_price : "",
+          service_charge: data.service_charge !== undefined ? data.service_charge : "",
+          caution_fee: data.caution_fee !== undefined ? data.caution_fee : "",
           amenities: Array.isArray(data.amenities)
-            ? data.amenities.map(amenity => typeof amenity === 'string' ? amenity : amenity.name)
+            ? data.amenities.map(amenity => typeof amenity === 'object' && amenity.id ? amenity.id : amenity)
             : [],
           user_type: authenticatedUserType, // Always use authenticated user type
           listing_status: data.listing_status || "DRAFT",
           property_status: data.property_status || "AVAILABLE",
-          lister_type: data.lister_type || "LANDLOARD"
+          lister_type: data.lister_type || "LANDLOARD",
+          state: data.state || "",
+          city: data.city || ""
         });
         
         // Format price displays
         if (data.rent_price) {
           setDisplayRentPrice(formatNumberWithCommas(data.rent_price));
         }
-        
+
         if (data.sale_price) {
           setDisplaySalePrice(formatNumberWithCommas(data.sale_price));
+        }
+
+        if (data.service_charge) {
+          setDisplayServiceCharge(formatNumberWithCommas(data.service_charge));
+        }
+
+        if (data.caution_fee) {
+          setDisplayCautionFee(formatNumberWithCommas(data.caution_fee));
         }
         
         // Set existing images - extract URLs properly
@@ -327,15 +498,44 @@ const EditProperty = () => {
     }
   }, [formData.user_type, formData.rent_price, formData.sale_price, formData.listing_type]);
 
+  // Fetch amenities on component mount - matching AddForRent and AddForSell
+  useEffect(() => {
+    const fetchAmenities = async () => {
+      try {
+        setIsLoadingAmenities(true);
+        const accessToken = localStorage.getItem('access_token');
+
+        if (!accessToken) {
+          throw new Error('No access token found');
+        }
+
+        const response = await axios.get(`${API_BASE_URL}/amenities`, {
+          headers: { 'Authorization': `Bearer ${accessToken}` }
+        });
+
+        setAmenities(response.data.success ? response.data.data : []);
+      } catch (error) {
+        console.error("Error fetching amenities:", error.response?.data || error.message);
+        if (error.response?.status === 404) {
+          console.error("API endpoint not found. Please check if the API URL and endpoint path are correct.");
+        }
+      } finally {
+        setIsLoadingAmenities(false);
+      }
+    };
+
+    fetchAmenities();
+  }, [API_BASE_URL]);
+
   // Handle input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    
+
     // Special handling for price fields
     if (name === 'rent_price') {
       const formattedValue = formatNumberWithCommas(value);
       setDisplayRentPrice(formattedValue);
-      
+
       setFormData({
         ...formData,
         [name]: formattedValue.replace(/[^\d]/g, '')
@@ -343,7 +543,23 @@ const EditProperty = () => {
     } else if (name === 'sale_price') {
       const formattedValue = formatNumberWithCommas(value);
       setDisplaySalePrice(formattedValue);
-      
+
+      setFormData({
+        ...formData,
+        [name]: formattedValue.replace(/[^\d]/g, '')
+      });
+    } else if (name === 'service_charge') {
+      const formattedValue = formatNumberWithCommas(value);
+      setDisplayServiceCharge(formattedValue);
+
+      setFormData({
+        ...formData,
+        [name]: formattedValue.replace(/[^\d]/g, '')
+      });
+    } else if (name === 'caution_fee') {
+      const formattedValue = formatNumberWithCommas(value);
+      setDisplayCautionFee(formattedValue);
+
       setFormData({
         ...formData,
         [name]: formattedValue.replace(/[^\d]/g, '')
@@ -356,35 +572,66 @@ const EditProperty = () => {
     }
   };
 
-  // Handle amenities selection
-  const handleAmenityToggle = (amenity) => {
+  // Handle amenities selection - matching AddForRent and AddForSell
+  const handleAmenityToggle = (amenityId) => {
     setFormData(prevState => {
       const currentAmenities = [...prevState.amenities];
-      
-      if (currentAmenities.includes(amenity)) {
+
+      if (currentAmenities.includes(amenityId)) {
         return {
           ...prevState,
-          amenities: currentAmenities.filter(item => item !== amenity)
+          amenities: currentAmenities.filter(id => id !== amenityId)
         };
       } else {
         return {
           ...prevState,
-          amenities: [...currentAmenities, amenity]
+          amenities: [...currentAmenities, amenityId]
         };
       }
     });
   };
 
-  // Handle file uploads - matching AddForRent structure
+  // Handle adding new images - matching AddForRent and AddForSell
+  const handleAddImage = (e) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const newImages = Array.from(files).slice(0, 5 - mediaFiles.images.length);
+      setMediaFiles({
+        ...mediaFiles,
+        images: [...mediaFiles.images, ...newImages]
+      });
+      toast.success(`${newImages.length} image(s) selected successfully`);
+    }
+  };
+
+  // Handle removing new image
+  const removeImage = (index) => {
+    setMediaFiles({
+      ...mediaFiles,
+      images: mediaFiles.images.filter((_, i) => i !== index)
+    });
+    toast.success('Image removed');
+  };
+
+  // Handle video upload
   const handleFileChange = (e, fileType) => {
     const file = e.target.files[0];
     if (file) {
       setMediaFiles({
         ...mediaFiles,
-        [fileType]: file
+        video: file
       });
-      toast.success(`${fileType.charAt(0).toUpperCase() + fileType.slice(1)} selected successfully`);
+      toast.success('Video selected successfully');
     }
+  };
+
+  // Handle removing video
+  const removeVideo = () => {
+    setMediaFiles({
+      ...mediaFiles,
+      video: null
+    });
+    toast.success('Video removed');
   };
 
   // Handle removing existing image
@@ -394,11 +641,26 @@ const EditProperty = () => {
     toast.success('Image marked for deletion');
   };
 
-  // Submit form - handles both draft and review
-  const handleSubmit = async (isDraft = false) => {
+  // Handle document upload - matching AddForSell
+  const handleDocumentUpload = ({ file, type }) => {
+    setDocuments([...documents, { file, type }]);
+    setIsDocumentModalOpen(false);
+    toast.success('Document added successfully');
+  };
+
+  // Handle removing document
+  const removeDocument = (index) => {
+    setDocuments(documents.filter((_, i) => i !== index));
+    toast.success('Document removed');
+  };
+
+  // Initiate submit - matching AddForRent and AddForSell
+  const initiateSubmit = (isDraftSubmission) => {
+    setSubmissionType(isDraftSubmission ? 'draft' : 'review');
+
     // Validate required fields
     const requiredFields = ['property_name', 'description', 'location'];
-    
+
     // Add price field validation based on listing type
     if (formData.listing_type === 'RENT') {
       requiredFields.push('rent_price');
@@ -406,7 +668,7 @@ const EditProperty = () => {
       requiredFields.push('sale_price');
     }
 
-    const missingFields = requiredFields.filter(field => 
+    const missingFields = requiredFields.filter(field =>
       !formData[field] || String(formData[field]).trim() === ''
     );
 
@@ -414,6 +676,18 @@ const EditProperty = () => {
       toast.error(`Please fill in the following required fields: ${missingFields.join(', ')}`);
       return;
     }
+
+    setConfirmModalOpen(true);
+  };
+
+  // Confirm submit - matching AddForRent and AddForSell
+  const confirmSubmit = () => {
+    setConfirmModalOpen(false);
+    handleSubmit(submissionType === 'draft');
+  };
+
+  // Submit form - handles both draft and review
+  const handleSubmit = async (isDraft = false) => {
 
     try {
       setSubmitting(true);
@@ -429,15 +703,16 @@ const EditProperty = () => {
         bedrooms: parseInt(formData.bedrooms),
         bathrooms: parseInt(formData.bathrooms),
         area_sqft: formData.area_sqft ? parseFloat(formData.area_sqft) : 0,
-        total_price: fees.totalPrice.toString() // Add calculated total_price
+        total_price: fees.totalPrice.toString(), // Add calculated total_price
+        submit_for_review: !isDraft // Explicitly set submit_for_review
       };
-      
+
       // Add all form data to FormData
       Object.keys(updatedFormData).forEach(key => {
         if (key === 'amenities' && Array.isArray(updatedFormData[key])) {
-          // Handle amenities array - send each amenity key separately
-          updatedFormData[key].forEach(value => {
-            formDataForApi.append('amenities', value);
+          // Handle amenities array - send as amenities_ids to match AddForRent and AddForSell
+          updatedFormData[key].forEach(id => {
+            formDataForApi.append('amenities_ids', id);
           });
         } else if (Array.isArray(updatedFormData[key])) {
           // Handle other arrays
@@ -454,18 +729,21 @@ const EditProperty = () => {
         formDataForApi.append('images_to_delete', url);
       });
 
-      // Add new images - matching AddForRent format
-      if (mediaFiles.image1) {
-        formDataForApi.append('images', mediaFiles.image1);
-      }
-      if (mediaFiles.image2) {
-        formDataForApi.append('images', mediaFiles.image2);
-      }
+      // Add new images - matching AddForRent and AddForSell format
+      mediaFiles.images.forEach(image => {
+        formDataForApi.append('images', image);
+      });
 
       // Add video if selected
       if (mediaFiles.video) {
         formDataForApi.append('video', mediaFiles.video);
       }
+
+      // Add documents - matching AddForSell
+      documents.forEach(doc => {
+        formDataForApi.append('documents', doc.file);
+        formDataForApi.append('document_types', doc.type);
+      });
       
       const accessToken = localStorage.getItem('access_token');
       
@@ -609,7 +887,7 @@ const EditProperty = () => {
           </>
         )}
 
-        <FormField label="Square Footage">
+        <FormField label="Square Footage (Optional)">
           <input
             type="number"
             name="area_sqft"
@@ -619,7 +897,29 @@ const EditProperty = () => {
             placeholder="Enter square footage"
           />
         </FormField>
-        
+
+        <FormField label="State">
+          <input
+            type="text"
+            name="state"
+            value={formData.state}
+            onChange={handleInputChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            placeholder="e.g. Lagos"
+          />
+        </FormField>
+
+        <FormField label="City">
+          <input
+            type="text"
+            name="city"
+            value={formData.city}
+            onChange={handleInputChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            placeholder="e.g. Ikeja"
+          />
+        </FormField>
+
         {/* Price fields based on listing type */}
         {formData.listing_type === "RENT" && (
           <>
@@ -652,36 +952,95 @@ const EditProperty = () => {
                 ))}
               </Select>
             </FormField>
+            <FormField label="Service Charge (Optional)">
+              <input
+                type="text"
+                name="service_charge"
+                value={displayServiceCharge}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="50,000"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Service charge if applicable
+              </p>
+            </FormField>
+            <FormField label="Caution Fee (Optional)">
+              <input
+                type="text"
+                name="caution_fee"
+                value={displayCautionFee}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="100,000"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Caution/security deposit if applicable
+              </p>
+            </FormField>
           </>
         )}
 
         {formData.listing_type === "SALE" && (
-          <FormField label="Sale Price" required>
-            <input
-              type="text"
-              name="sale_price"
-              value={displaySalePrice}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="e.g. 150,000,000"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              This is the base sale price.
-              {formData.user_type === 'agent'
-                ? ' Agent commission (10%) will be added to this price.'
-                : ' No additional fees will be added to this price.'}
-            </p>
-          </FormField>
+          <>
+            <FormField label="Sale Price" required>
+              <input
+                type="text"
+                name="sale_price"
+                value={displaySalePrice}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="e.g. 150,000,000"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                This is the base sale price.
+                {formData.user_type === 'agent'
+                  ? ' Agent commission (10%) will be added to this price.'
+                  : ' No additional fees will be added to this price.'}
+              </p>
+            </FormField>
+            <FormField label="Service Charge (Optional)">
+              <input
+                type="text"
+                name="service_charge"
+                value={displayServiceCharge}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="50,000"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Service charge if applicable
+              </p>
+            </FormField>
+            <FormField label="Caution Fee (Optional)">
+              <input
+                type="text"
+                name="caution_fee"
+                value={displayCautionFee}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="100,000"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Caution/security deposit if applicable
+              </p>
+            </FormField>
+          </>
         )}
       </div>
 
       {/* Fee Breakdown */}
       {(formData.rent_price || formData.sale_price) && (
-        <FeeBreakdown 
-          fees={fees} 
-          userType={formData.user_type} 
-          listingType={formData.listing_type}
-        />
+        <div className="mt-2 md:w-2/3">
+          <FeeBreakdown
+            fees={fees}
+            userType={formData.user_type}
+            listingType={formData.listing_type}
+            rentFrequency={formData.rent_frequency}
+            serviceCharge={formData.service_charge}
+            cautionFee={formData.caution_fee}
+          />
+        </div>
       )}
 
       {/* Description and Location */}
@@ -736,103 +1095,162 @@ const EditProperty = () => {
         </div>
       )}
 
-      {/* Upload New Media - Matching AddForRent */}
+      {/* Upload New Media - Matching AddForRent and AddForSell */}
       <div className="mt-8">
         <h3 className="text-xl font-normal text-[#014d98]">Upload New Media</h3>
         <p className="text-sm text-gray-600 mt-2">
-          Add new images or video to your property listing. You can upload up to 2 images and 1 video.
+          Showcase your property with high-quality images and a video.
         </p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
-          {/* Image 1 */}
-          <div className="border-2 border-dashed border-gray-300 rounded-md p-6 flex items-center justify-center relative">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => handleFileChange(e, 'image1')}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            />
-            <div className="text-gray-500 text-center pointer-events-none">
-              {mediaFiles.image1 ? (
-                <p>Selected: {mediaFiles.image1.name}</p>
-              ) : (
-                <p>Drag and drop Image 1 or click to upload</p>
-              )}
-            </div>
-          </div>
 
-          {/* Image 2 */}
-          <div className="border-2 border-dashed border-gray-300 rounded-md p-6 flex items-center justify-center relative">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => handleFileChange(e, 'image2')}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            />
-            <div className="text-gray-500 text-center pointer-events-none">
-              {mediaFiles.image2 ? (
-                <p>Selected: {mediaFiles.image2.name}</p>
-              ) : (
-                <p>Drag and drop Image 2 or click to upload</p>
-              )}
-            </div>
-          </div>
+        {/* Images Upload */}
+        <div className="mt-4">
+          <h4 className="text-lg font-medium text-[#014d98] mb-2">Property Images</h4>
+          <ImageUploadBox
+            images={mediaFiles.images}
+            onAddImage={handleAddImage}
+            onRemoveImage={removeImage}
+            maxImages={5}
+            inputId="image-upload-input-edit"
+          />
+        </div>
 
-          {/* Video */}
-          <div className="border-2 border-dashed border-gray-300 rounded-md p-6 flex items-center justify-center relative">
-            <input
-              type="file"
-              accept="video/*"
-              onChange={(e) => handleFileChange(e, 'video')}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            />
-            <div className="text-gray-500 text-center pointer-events-none">
-              {mediaFiles.video ? (
-                <p>Selected: {mediaFiles.video.name}</p>
-              ) : (
-                <p>Drag and drop Video or click to upload</p>
-              )}
-            </div>
-          </div>
+        {/* Video Upload */}
+        <div className="mt-6">
+          <h4 className="text-lg font-medium text-[#014d98] mb-2">Property Video</h4>
+          <FileUploadBox
+            label="Video"
+            onChange={(e) => handleFileChange(e, 'video')}
+            file={mediaFiles.video}
+            onRemove={removeVideo}
+          />
         </div>
       </div>
 
-      {/* Features and Amenities */}
-      <div className="mt-8">
-        <h3 className="text-xl font-semibold text-[#014d98] mb-4">Features and Amenities</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {AMENITIES.map((amenity) => (
-            <label key={amenity.value} className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="checkbox"
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                checked={formData.amenities.includes(amenity.value)}
-                onChange={() => handleAmenityToggle(amenity.value)}
-              />
-              <span className="text-sm text-gray-700">{amenity.label}</span>
-            </label>
-          ))}
+      {/* Property Documents - Matching AddForSell */}
+      {formData.listing_type === "SALE" && (
+        <div className="mt-8">
+          <h3 className="text-xl font-normal text-[#014d98]">Property Documents</h3>
+          <p className="text-sm text-gray-600 mt-2">
+            Upload important property documents such as deeds, title certificates, permits, etc.
+          </p>
+
+          <div className="flex justify-end mt-4">
+            <button
+              type="button"
+              onClick={() => setIsDocumentModalOpen(true)}
+              className="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600"
+            >
+              <span className="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                </svg>
+                Upload Document
+              </span>
+            </button>
+          </div>
+
+          {/* Display uploaded documents */}
+          {documents.length > 0 && (
+            <div className="mt-4">
+              <h4 className="text-lg font-medium text-[#014d98] mb-3">Uploaded Documents</h4>
+              <div className="mt-2 border rounded-md divide-y">
+                {documents.map((doc, index) => {
+                  const docType = DOCUMENT_TYPES.find(type => type.value === doc.type);
+                  return (
+                    <div key={index} className="flex items-center justify-between p-3">
+                      <div className="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                        </svg>
+                        <div>
+                          <p className="font-medium">{docType ? docType.label : doc.type}</p>
+                          <p className="text-sm text-gray-500">{doc.file.name}</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => removeDocument(index)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
+      )}
+
+      {/* Features and Amenities - Matching AddForRent and AddForSell */}
+      <div className="mt-8">
+        <h3 className="text-xl font-normal text-[#014d98]">Features and Amenities</h3>
+        {isLoadingAmenities ? (
+          <div className="text-center py-4">
+            <p>Loading amenities...</p>
+          </div>
+        ) : amenities.length === 0 ? (
+          <div className="text-center py-4">
+            <p>No amenities available. Please try refreshing the page.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+            {amenities.map((amenity) => (
+              <label key={amenity.id} className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4"
+                  checked={formData.amenities.includes(amenity.id)}
+                  onChange={() => handleAmenityToggle(amenity.id)}
+                />
+                <span>{amenity.icon} {amenity.name}</span>
+              </label>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Submit Buttons */}
       <div className="mt-8 flex flex-col sm:flex-row justify-end gap-4">
         <button
           type="button"
-          onClick={() => handleSubmit(true)}
+          onClick={() => initiateSubmit(true)}
           disabled={submitting}
-          className="px-6 py-3 border-2 border-[#014d98] text-[#014d98] rounded-lg font-semibold hover:bg-[#014d98] hover:text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="border-2 border-blue-500 text-blue-500 py-2 px-6 rounded-md hover:bg-blue-100 disabled:opacity-50"
         >
-          {submitting ? 'Saving...' : 'Save as Draft'}
+          {submitting ? 'Saving...' : 'Save as draft'}
         </button>
         <button
           type="button"
-          onClick={() => handleSubmit(false)}
+          onClick={() => initiateSubmit(false)}
           disabled={submitting}
-          className="px-6 py-3 bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white rounded-lg font-semibold hover:from-[#3ab7b1] hover:to-[#014d98] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="bg-gradient-to-r from-blue-500 to-teal-500 text-white py-2 px-6 rounded-md hover:opacity-90 disabled:opacity-50"
         >
-          {submitting ? 'Submitting...' : 'Submit for Review'}
+          {submitting ? 'Submitting...' : 'Submit for review'}
         </button>
       </div>
+
+      {/* Modals - Matching AddForRent and AddForSell */}
+      <DocumentUploadModal
+        isOpen={isDocumentModalOpen}
+        onClose={() => setIsDocumentModalOpen(false)}
+        onUpload={handleDocumentUpload}
+        documentTypes={DOCUMENT_TYPES}
+      />
+
+      <ConfirmationModal
+        isOpen={confirmModalOpen}
+        onClose={() => setConfirmModalOpen(false)}
+        onConfirm={confirmSubmit}
+        title={submissionType === 'draft' ? "Save as Draft?" : "Submit Property?"}
+        message={
+          submissionType === 'draft'
+            ? "Are you sure you want to save this property as a draft? You can edit it later."
+            : "Are you sure you want to submit this property for review? Please verify that all information is correct."
+        }
+      />
     </div>
   );
 };
