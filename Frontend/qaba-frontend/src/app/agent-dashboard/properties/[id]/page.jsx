@@ -613,8 +613,7 @@ export default function PropertyDetail() {
                   />
                 ) : (
                   <span className="text-white text-2xl md:text-3xl font-bold">
-                    {property.listed_by.first_name?.charAt(0).toUpperCase()}
-                    {property.listed_by.last_name?.charAt(0).toUpperCase()}
+                    {property.listed_by.first_name?.charAt(0).toUpperCase() || 'U'}
                   </span>
                 )}
               </div>

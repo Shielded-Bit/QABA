@@ -16,9 +16,6 @@ const ListedByCard = ({ agent }) => {
     const full = agent.name || '';
     if (full && typeof full === 'string') {
       const parts = full.split(' ');
-      if (parts.length >= 2) {
-        return parts[0].charAt(0).toUpperCase() + parts[parts.length - 1].charAt(0).toUpperCase();
-      }
       return parts[0].charAt(0).toUpperCase();
     }
     return 'U';

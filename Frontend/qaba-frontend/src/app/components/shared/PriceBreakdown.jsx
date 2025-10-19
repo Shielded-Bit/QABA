@@ -75,27 +75,11 @@ const PriceBreakdown = ({ property }) => {
         {/* Total Amount */}
         <div className="flex justify-between items-center py-2 bg-blue-50 px-4 rounded-lg">
           <span className="font-semibold text-blue-900">Total Amount</span>
-          <div className="text-right">
-            <span className="font-bold text-xl text-blue-900">
-              ₦{formatPrice(totalPrice || basePrice)}
-            </span>
-            {isRent && (
-              <div className="text-blue-600 text-sm">
-                / {frequency}
-              </div>
-            )}
-          </div>
+          <span className="font-bold text-xl text-blue-900">
+            ₦{formatPrice(totalPrice || basePrice)}
+          </span>
         </div>
       </div>
-      
-      {/* Simple note */}
-      {(agentCommission || qarbaFee) && (
-        <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-          <p className="text-gray-600 text-sm">
-            All fees are included in the total amount shown above.
-          </p>
-        </div>
-      )}
     </div>
   );
 };
