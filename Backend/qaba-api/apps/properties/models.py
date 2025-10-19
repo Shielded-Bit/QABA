@@ -126,6 +126,16 @@ class Property(models.Model):
         blank=True,
         help_text="Qaba fee percentage",
     )
+    service_charge = models.FloatField(
+        null=True,
+        blank=True,
+        help_text="Optional service charge applied to the property",
+    )
+    caution_fee = models.FloatField(
+        null=True,
+        blank=True,
+        help_text="Optional caution fee required for the property",
+    )
     total_price = models.FloatField(
         null=True,
         blank=True,

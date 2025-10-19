@@ -103,6 +103,9 @@ class PropertyListSerializer(serializers.ModelSerializer):
             "sale_price",
             "rent_price",
             "rent_frequency",
+            "service_charge",
+            "caution_fee",
+            "total_price",
             "property_type",
             "property_type_display",
             "listing_type",
@@ -235,6 +238,8 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
             "video",
             "rent_frequency",
             "rent_price",
+            "service_charge",
+            "caution_fee",
             "total_price",
             "agent_commission",
             "qaba_fee",
@@ -264,6 +269,20 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
         rent_frequency = attrs.get("rent_frequency")
         request = self.context.get("request")
         lister_type = request.user.user_type
+        service_charge = attrs.get("service_charge")
+        caution_fee = attrs.get("caution_fee")
+
+        if service_charge is not None and service_charge < 0:
+            raise serializers.ValidationError(
+                {"service_charge": "Service charge cannot be negative"}
+            )
+        if caution_fee is not None and caution_fee < 0:
+            raise serializers.ValidationError(
+                {"caution_fee": "Caution fee cannot be negative"}
+            )
+
+        service_charge_value = float(service_charge) if service_charge is not None else 0.0
+        caution_fee_value = float(caution_fee) if caution_fee is not None else 0.0
 
         if listing_type == Property.ListingType.RENT:
             if not all([rent_price, rent_frequency]):
@@ -284,11 +303,19 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
                 agent_commission = round(
                     float(rent_price) * settings.AGENT_RENT_COMMISSION_PERCENTAGE, 2
                 )
-            total_price = round(float(rent_price) + qaba_fee + agent_commission, 2)
-            if total_price != attrs.get("total_price"):
+            total_price = round(
+                float(rent_price)
+                + qaba_fee
+                + agent_commission
+                + service_charge_value
+                + caution_fee_value,
+                2,
+            )
+            submitted_total = attrs.get("total_price")
+            if submitted_total is not None and total_price != submitted_total:
                 raise serializers.ValidationError(
                     {
-                        "total_price": f"Total price is not correct. Expected {total_price}, got {attrs.get('total_price')}"
+                        "total_price": f"Total price is not correct. Expected {total_price}, got {submitted_total}"
                     }
                 )
             attrs["qaba_fee"] = qaba_fee
@@ -312,7 +339,14 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
                 agent_commission = round(
                     float(sale_price) * settings.AGENT_SALE_COMMISSION_PERCENTAGE, 2
                 )
-            total_price = round(float(sale_price) + qaba_fee + agent_commission, 2)
+            total_price = round(
+                float(sale_price)
+                + qaba_fee
+                + agent_commission
+                + service_charge_value
+                + caution_fee_value,
+                2,
+            )
             submitted_total = attrs.get("total_price")
             if submitted_total is not None and total_price != submitted_total:
                 raise serializers.ValidationError(
@@ -473,6 +507,8 @@ class PropertyUpdateSerializer(serializers.ModelSerializer):
             "video",
             "rent_frequency",
             "rent_price",
+            "service_charge",
+            "caution_fee",
             "total_price",
             "agent_commission",
             "qaba_fee",
@@ -487,43 +523,115 @@ class PropertyUpdateSerializer(serializers.ModelSerializer):
         rent_price = attrs.get("rent_price")
         sale_price = attrs.get("sale_price")
         lister_type = request.user.user_type
-        if listing_type == Property.ListingType.RENT and rent_price:
-            if rent_price <= 0:
+        service_charge_value = None
+        caution_fee_value = None
+
+        if "service_charge" in attrs:
+            service_charge = attrs["service_charge"]
+            if service_charge is not None and service_charge < 0:
+                raise serializers.ValidationError(
+                    {"service_charge": "Service charge cannot be negative"}
+                )
+            service_charge_value = (
+                float(service_charge) if service_charge is not None else 0.0
+            )
+        else:
+            existing_service = getattr(self.instance, "service_charge", None)
+            service_charge_value = (
+                float(existing_service) if existing_service is not None else 0.0
+            )
+
+        if "caution_fee" in attrs:
+            caution_fee = attrs["caution_fee"]
+            if caution_fee is not None and caution_fee < 0:
+                raise serializers.ValidationError(
+                    {"caution_fee": "Caution fee cannot be negative"}
+                )
+            caution_fee_value = float(caution_fee) if caution_fee is not None else 0.0
+        else:
+            existing_caution = getattr(self.instance, "caution_fee", None)
+            caution_fee_value = (
+                float(existing_caution) if existing_caution is not None else 0.0
+            )
+
+        current_rent_price = (
+            float(rent_price)
+            if rent_price is not None
+            else (
+                float(getattr(self.instance, "rent_price"))
+                if getattr(self.instance, "rent_price", None) is not None
+                else None
+            )
+        )
+        current_sale_price = (
+            float(sale_price)
+            if sale_price is not None
+            else (
+                float(getattr(self.instance, "sale_price"))
+                if getattr(self.instance, "sale_price", None) is not None
+                else None
+            )
+        )
+
+        if listing_type == Property.ListingType.RENT and current_rent_price is not None:
+            if rent_price is not None and rent_price <= 0:
                 raise serializers.ValidationError(
                     {"rent_price": "Rent price must be positive"}
                 )
             qaba_fee = round(
-                float(rent_price) * settings.QABA_RENT_PERCENTAGE, 2
+                float(current_rent_price) * settings.QABA_RENT_PERCENTAGE, 2
             )
             agent_commission = 0
             if lister_type == User.UserType.AGENT:
                 agent_commission = round(
-                    float(rent_price) * settings.AGENT_RENT_COMMISSION_PERCENTAGE, 2
+                    float(current_rent_price)
+                    * settings.AGENT_RENT_COMMISSION_PERCENTAGE,
+                    2,
                 )
-            total_price = round(float(rent_price) + qaba_fee + agent_commission, 2)
-            if total_price != attrs.get("total_price"):
+            total_price = round(
+                float(current_rent_price)
+                + qaba_fee
+                + agent_commission
+                + service_charge_value
+                + caution_fee_value,
+                2,
+            )
+            submitted_total = attrs.get("total_price")
+            if submitted_total is not None and total_price != submitted_total:
                 raise serializers.ValidationError(
                     {
-                        "total_price": f"Total price is not correct. Expected {total_price}, got {attrs.get('total_price')}"
+                        "total_price": f"Total price is not correct. Expected {total_price}, got {submitted_total}"
                     }
                 )
             attrs["qaba_fee"] = qaba_fee
             attrs["agent_commission"] = agent_commission
             attrs["total_price"] = total_price
-        elif listing_type == Property.ListingType.SALE and sale_price:
-            if sale_price <= 0:
+        elif (
+            listing_type == Property.ListingType.SALE
+            and current_sale_price is not None
+        ):
+            if sale_price is not None and sale_price <= 0:
                 raise serializers.ValidationError(
                     {"sale_price": "Sale price must be positive"}
                 )
             qaba_fee = round(
-                float(sale_price) * settings.QABA_SALE_PERCENTAGE, 2
+                float(current_sale_price) * settings.QABA_SALE_PERCENTAGE, 2
             )
             agent_commission = 0
             if lister_type == User.UserType.AGENT:
                 agent_commission = round(
-                    float(sale_price) * settings.AGENT_SALE_COMMISSION_PERCENTAGE, 2
+                    float(current_sale_price)
+                    * settings.AGENT_SALE_COMMISSION_PERCENTAGE,
+                    2,
                 )
-            total_price = round(float(sale_price) + qaba_fee + agent_commission, 2)
+            total_price = round(
+                float(current_sale_price)
+                + qaba_fee
+                + agent_commission
+                + service_charge_value
+                + caution_fee_value,
+                2,
+            )
             submitted_total = attrs.get("total_price")
             if submitted_total is not None and total_price != submitted_total:
                 raise serializers.ValidationError(
@@ -719,6 +827,8 @@ class PropertyDetailSerializer(PropertyListSerializer):
             "documents",
             "agent_commission",
             "qaba_fee",
+            "service_charge",
+            "caution_fee",
             "total_price",
             "listed_by_name",
             "reviews",

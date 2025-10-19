@@ -44,7 +44,7 @@ def _get_percentage(env_name: str, default: str) -> float:
     return value / 100 if value > 1 else value
 
 
-QABA_RENT_PERCENTAGE = _get_percentage("QABA_RENT_PERCENTAGE", "0.05")
+QABA_RENT_PERCENTAGE = _get_percentage("QABA_RENT_PERCENTAGE", "0.00")
 AGENT_RENT_COMMISSION_PERCENTAGE = _get_percentage(
     "AGENT_RENT_COMMISSION_PERCENTAGE", "0.10"
 )

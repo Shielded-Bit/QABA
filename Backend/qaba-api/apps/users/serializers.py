@@ -328,7 +328,7 @@ class ContactFormSerializer(serializers.Serializer):
 
     name = serializers.CharField(max_length=100, required=False)
     email = serializers.EmailField(required=False)
-    phone = serializers.CharField(max_length=15, required=False)
+    phone = serializers.CharField(max_length=15, required=False, allow_blank=True)
     subject = serializers.CharField(max_length=200)
     message = serializers.CharField(max_length=2000)
 

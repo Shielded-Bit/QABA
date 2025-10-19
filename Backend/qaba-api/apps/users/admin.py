@@ -102,11 +102,7 @@ class UserAdmin(BaseUserAdmin):
         (
             _("Verification"),
             {
-                "fields": (
-                    "is_email_verified",
-                    "email_verification_token",
-                    "password_reset_token",
-                )
+                "fields": ("is_email_verified",)
             },
         ),
         (
