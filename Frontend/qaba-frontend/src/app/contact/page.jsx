@@ -85,7 +85,7 @@ const ContactPage = () => {
     {
       icon: <FaClock className="text-[#3ab7b1] text-xl" />,
       title: "Business Hours",
-      content: "Monday - Friday: 9:00 AM - 6:00 PM",
+      content: "Monday - Saturday: 9:00 AM - 6:00 PM",
       action: null
     }
   ];

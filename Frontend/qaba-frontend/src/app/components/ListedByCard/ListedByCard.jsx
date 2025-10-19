@@ -6,15 +6,22 @@ const ListedByCard = ({ agent }) => {
   const filledStars = Math.floor(agent.rating);
   const emptyStars = 5 - filledStars;
 
-  // Get first name and first letter
+  // Get first name and initials
   const getFirstName = () => {
     const full = agent.name || '';
     return (full && typeof full === 'string') ? full.split(' ')[0] : (agent.first_name || '');
   };
 
-  const getFirstLetter = () => {
-    const firstName = getFirstName();
-    return firstName ? firstName.charAt(0).toUpperCase() : 'U';
+  const getInitials = () => {
+    const full = agent.name || '';
+    if (full && typeof full === 'string') {
+      const parts = full.split(' ');
+      if (parts.length >= 2) {
+        return parts[0].charAt(0).toUpperCase() + parts[parts.length - 1].charAt(0).toUpperCase();
+      }
+      return parts[0].charAt(0).toUpperCase();
+    }
+    return 'U';
   };
 
   return (
@@ -32,8 +39,8 @@ const ListedByCard = ({ agent }) => {
             />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-[#014d98] to-[#3ab7b1] flex items-center justify-center">
-              <span className="text-white text-2xl font-bold">
-                {getFirstLetter()}
+              <span className="text-white text-xl font-bold">
+                {getInitials()}
               </span>
             </div>
           )}

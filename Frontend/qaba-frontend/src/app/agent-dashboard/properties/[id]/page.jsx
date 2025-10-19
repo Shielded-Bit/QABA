@@ -263,11 +263,13 @@ export default function PropertyDetail() {
   const basePrice = property.rent_price || property.sale_price || 0;
   const propertyType = property.listing_type === "SALE" ? "Buy" : "Rent";
   const rentFrequency = property.rent_frequency || 'Monthly';
-  
+
   // Calculate fees based on property data
   const agentFee = property.agent_commission || (basePrice * 0.1);
   const qarbaFee = property.qaba_fee || (basePrice * 0.05);
-  const totalPrice = property.total_price || (parseFloat(basePrice) + parseFloat(agentFee) + parseFloat(qarbaFee));
+  const serviceCharge = property.service_charge || 0;
+  const cautionFee = property.caution_fee || 0;
+  const totalPrice = property.total_price || (parseFloat(basePrice) + parseFloat(agentFee) + parseFloat(qarbaFee) + parseFloat(serviceCharge) + parseFloat(cautionFee));
 
   // Add status indicator badge
   const getStatusBadge = () => {
@@ -384,20 +386,44 @@ export default function PropertyDetail() {
                     {propertyType === "Rent" ? `Recurring ${rentFrequency.toLowerCase()}` : "One-time payment"}
                   </p>
                 </div>
-                
+
+                {agentFee > 0 && (
+                  <div className="bg-white p-3 rounded shadow-sm">
+                    <p className="text-sm text-gray-500">Agent Fee (10%)</p>
+                    <p className="font-bold">₦ {formatCurrency(agentFee)}</p>
+                    <p className="text-xs text-gray-500">One-time payment</p>
+                  </div>
+                )}
+
+                {qarbaFee > 0 && (
+                  <div className="bg-white p-3 rounded shadow-sm">
+                    <p className="text-sm text-gray-500">Qarba Fee</p>
+                    <p className="font-bold">₦ {formatCurrency(qarbaFee)}</p>
+                    <p className="text-xs text-gray-500">One-time payment</p>
+                  </div>
+                )}
+
                 <div className="bg-white p-3 rounded shadow-sm">
-                  <p className="text-sm text-gray-500">Agent Fee (10%)</p>
-                  <p className="font-bold">₦ {formatCurrency(agentFee)}</p>
-                  <p className="text-xs text-gray-500">One-time payment</p>
+                  <p className="text-sm text-gray-500">Service Charge</p>
+                  <p className="font-bold">
+                    {serviceCharge > 0 ? `₦ ${formatCurrency(serviceCharge)}` : 'Not set'}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {serviceCharge > 0 ? 'Additional fee' : 'No service charge applied'}
+                  </p>
                 </div>
-                
+
                 <div className="bg-white p-3 rounded shadow-sm">
-                  <p className="text-sm text-gray-500">Qarba Fee (5%)</p>
-                  <p className="font-bold">₦ {formatCurrency(qarbaFee)}</p>
-                  <p className="text-xs text-gray-500">One-time payment</p>
+                  <p className="text-sm text-gray-500">Caution Fee</p>
+                  <p className="font-bold">
+                    {cautionFee > 0 ? `₦ ${formatCurrency(cautionFee)}` : 'Not set'}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {cautionFee > 0 ? 'Security deposit' : 'No caution fee required'}
+                  </p>
                 </div>
               </div>
-              
+
               <div className="mt-4 bg-blue-50 p-3 rounded">
                 <div className="flex justify-between items-center">
                   <p className="font-medium">Initial Payment:</p>
@@ -566,6 +592,52 @@ export default function PropertyDetail() {
                   </span>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Listed By Section */}
+        {property.listed_by && (
+          <div className="mt-8 pt-8 border-t border-gray-200">
+            <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6">Listed By</h2>
+            <div className="flex items-center gap-4">
+              {/* Profile Image or Initials */}
+              <div className="relative w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden bg-gradient-to-r from-blue-900 to-green-400 flex items-center justify-center">
+                {property.listed_by.profile?.profile_photo_url ? (
+                  <Image
+                    src={property.listed_by.profile.profile_photo_url}
+                    alt={`${property.listed_by.first_name} ${property.listed_by.last_name}`}
+                    fill
+                    style={{ objectFit: "cover" }}
+                    unoptimized={true}
+                  />
+                ) : (
+                  <span className="text-white text-2xl md:text-3xl font-bold">
+                    {property.listed_by.first_name?.charAt(0).toUpperCase()}
+                    {property.listed_by.last_name?.charAt(0).toUpperCase()}
+                  </span>
+                )}
+              </div>
+
+              {/* Agent Details */}
+              <div>
+                <h3 className="text-lg md:text-xl font-bold">
+                  {property.listed_by.first_name} {property.listed_by.last_name}
+                </h3>
+                <p className="text-sm md:text-base text-gray-600">
+                  {property.listed_by.user_type === 'AGENT' ? 'Real Estate Agent' : 'Landlord'}
+                </p>
+                {property.listed_by.phone_number && (
+                  <p className="text-sm md:text-base text-gray-600 mt-1">
+                    📞 {property.listed_by.phone_number}
+                  </p>
+                )}
+                {property.listed_by.email && (
+                  <p className="text-sm md:text-base text-gray-600 mt-1">
+                    ✉️ {property.listed_by.email}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         )}
