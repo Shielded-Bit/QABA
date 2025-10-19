@@ -10,6 +10,7 @@ from .models import (
     ClientProfile,
     LandlordProfile,
     Notification,
+    OTP,
     PropertySurveyMeeting,
     User,
 )
@@ -134,6 +135,10 @@ class BaseUserRegistrationSerializer(serializers.ModelSerializer):
             "last_name": {"required": True},
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._existing_user = None
+
     def validate(self, attrs):
         if attrs.get("password") != attrs.get("password_confirm"):
             raise serializers.ValidationError(
@@ -142,19 +147,51 @@ class BaseUserRegistrationSerializer(serializers.ModelSerializer):
         return attrs
 
     def validate_email(self, value):
-        if User.objects.filter(email=value).exists():
+        try:
+            existing_user = User.objects.get(email=value)
+        except User.DoesNotExist:
+            return value
+
+        if existing_user.is_email_verified:
             raise serializers.ValidationError("User with this email already exists")
+        self._existing_user = existing_user
+
         return value
 
     def create(self, validated_data):
+        password = validated_data.pop("password")
         validated_data.pop("password_confirm", None)
+        user_type = validated_data.get("user_type", User.UserType.CLIENT)
+
+        existing_user = getattr(self, "_existing_user", None)
+
+        if existing_user:
+            # Reset and update the existing unverified account
+            existing_user.first_name = validated_data["first_name"]
+            existing_user.last_name = validated_data["last_name"]
+            existing_user.user_type = user_type
+            existing_user.is_active = False
+            existing_user.is_email_verified = False
+            existing_user.set_password(password)
+            existing_user.save(
+                update_fields=[
+                    "first_name",
+                    "last_name",
+                    "user_type",
+                    "is_active",
+                    "is_email_verified",
+                    "password",
+                ]
+            )
+            OTP.objects.filter(user=existing_user).delete()
+            return existing_user
 
         user = User.objects.create_user(
             email=validated_data["email"],
-            password=validated_data["password"],
+            password=password,
             first_name=validated_data["first_name"],
             last_name=validated_data["last_name"],
-            user_type=validated_data.get("user_type", User.UserType.CLIENT),
+            user_type=user_type,
             is_active=False,
         )
 
