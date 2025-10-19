@@ -4,14 +4,13 @@ from django.conf import settings
 from django.contrib.auth import authenticate
 from django.utils import timezone
 from rest_framework import serializers
-from rest_framework.validators import UniqueValidator
 
 from .models import (
+    OTP,
     AgentProfile,
     ClientProfile,
     LandlordProfile,
     Notification,
-    OTP,
     PropertySurveyMeeting,
     User,
 )
