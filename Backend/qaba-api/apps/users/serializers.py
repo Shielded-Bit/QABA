@@ -4,6 +4,7 @@ from django.conf import settings
 from django.contrib.auth import authenticate
 from django.utils import timezone
 from rest_framework import serializers
+from rest_framework.validators import UniqueValidator
 
 from .models import (
     AgentProfile,
@@ -113,6 +114,10 @@ class LandlordProfileSerializer(serializers.ModelSerializer):
 
 
 class BaseUserRegistrationSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(
+        required=True,
+        validators=[],  # handled manually to allow reuse of unverified accounts
+    )
     password = serializers.CharField(
         write_only=True, required=True, style={"input_type": "password"}
     )
