@@ -519,8 +519,8 @@ const PropertyDetails = ({ params }) => {
 
             {/* Property Verification */}
             <div className="bg-white rounded-lg shadow-sm p-6">
-              
-              <PropertyVerifications propertyId={property.id} />
+
+              <PropertyVerifications propertyId={property.id} isVerified={property.is_verified} />
             </div>
           </div>
         </div>

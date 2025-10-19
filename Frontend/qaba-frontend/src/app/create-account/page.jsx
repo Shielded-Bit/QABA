@@ -4,12 +4,11 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import EmailSuccessModal from '../components/modal/EmailSuccessModal.jsx';
 import EmailFailedModal from '../components/modal/EmailFailedModal.jsx';
-import RoleSelection from '../components/shared/RoleSelection';
 import SignInWithGoogle from '../components/shared/SignInWithGoogle';
 import PasswordInput from '../components/shared/PasswordInput';
 import TextInput from '../components/shared/TextInput';
-import { register, sendVerificationEmail } from '../../app/utils/auth/api.js'; // Import unified register
-import EmailVerificationModal from '../components/modal/ EmailVerificationModal.jsx';
+import { register } from '../../app/utils/auth/api.js'; // Import unified register
+import OTPVerificationModal from '../components/modal/OTPVerificationModal.jsx';
 
 // Image assets used in the UI
 const bgpict = [
@@ -42,6 +41,7 @@ const PASSWORD_RULES = {
 
 const Register = () => {
   // State variables
+  const [step, setStep] = useState(1); // Step 1: Role Selection, Step 2: Registration Form
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     firstname: "",
@@ -49,7 +49,7 @@ const Register = () => {
     email: "",
     password: "",
     confirmPassword: "",
-    role: "agent", // Default role
+    role: "", // No default role - user must select
   });
   const [errors, setErrors] = useState({});
   const [showModal, setShowModal] = useState(false);
@@ -135,6 +135,16 @@ const Register = () => {
       ...formData,
       role: e.target.value,
     });
+  };
+
+  // Handle continuing from role selection to form
+  const handleContinueFromRoleSelection = () => {
+    if (!formData.role) {
+      setErrors({ role: "Please select a role to continue" });
+      return;
+    }
+    setErrors({});
+    setStep(2);
   };
 
   // Get strength color and label
@@ -356,6 +366,176 @@ const Register = () => {
     );
   };
 
+  // Role selection cards
+  const roleOptions = [
+    {
+      value: 'client',
+      label: 'Client',
+      desc: 'Looking to rent or buy properties',
+      icon: '🏠'
+    },
+    {
+      value: 'agent',
+      label: 'Agent',
+      desc: 'Real estate professional helping clients',
+      icon: '👔'
+    },
+    {
+      value: 'landlord',
+      label: 'Landlord',
+      desc: 'Property owner listing for rent or sale',
+      icon: '🔑'
+    },
+  ];
+
+  // Step 1: Role Selection Screen
+  if (step === 1) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-800 py-10">
+        <div className="flex w-full max-w-6xl bg-white rounded-lg shadow-lg overflow-hidden">
+          {/* Large Screens Section */}
+          <div className="hidden lg:flex w-full">
+            {/* Left Image Section */}
+            <div className="lg:w-1/2 relative">
+              <Image src={bgpict[0].src} alt={bgpict[0].alt} layout="fill" objectFit="cover" className="custom-rounded" />
+            </div>
+
+            {/* Right Role Selection Section */}
+            <div className="w-full lg:w-1/2 p-8 sm:p-12 bg-white ml-16">
+              <h2 className="text-4xl font-bold text-gradient py-2">Join Qarba</h2>
+              <p className="mt-2 text-sm font-bold text-gray-900">First, select your role</p>
+
+              {/* Role Cards */}
+              <div className="mt-8 space-y-4">
+                {roleOptions.map((role) => (
+                  <button
+                    key={role.value}
+                    onClick={() => {
+                      handleRoleChange({ target: { value: role.value } });
+                    }}
+                    className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all duration-300 hover:shadow-lg ${
+                      formData.role === role.value
+                        ? 'border-[#3ab7b1] bg-gradient-to-r from-[#014d98]/5 to-[#3ab7b1]/5 shadow-md'
+                        : 'border-gray-200 hover:border-[#3ab7b1]/50'
+                    }`}
+                  >
+                    <div className="text-4xl">{role.icon}</div>
+                    <div className="flex-1 text-left">
+                      <h3 className="text-xl font-bold text-gray-900">{role.label}</h3>
+                      <p className="text-sm text-gray-600">{role.desc}</p>
+                    </div>
+                    {formData.role === role.value && (
+                      <div className="text-[#3ab7b1]">
+                        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {/* Error Message */}
+              {errors.role && (
+                <p className="text-red-500 text-sm mt-4">{errors.role}</p>
+              )}
+
+              {/* Continue Button */}
+              <button
+                onClick={handleContinueFromRoleSelection}
+                disabled={!formData.role}
+                className="mt-8 w-full rounded-md bg-gradient-to-r from-[#014d98] to-[#3ab7b1] px-4 py-3 text-white transition-all duration-300 hover:from-[#3ab7b1] hover:to-[#014d98] disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+              >
+                Continue
+              </button>
+
+              {/* Sign In Link */}
+              <p className="mt-6 text-center text-sm text-gray-600">
+                Already have an account?{' '}
+                <a href="/signin" className="text-[#014d98] hover:text-[#3ab7b1] font-semibold">
+                  Sign In
+                </a>
+              </p>
+            </div>
+          </div>
+
+          {/* Mobile and Small Screens Section */}
+          <div className="lg:hidden w-full">
+            {/* Image Section */}
+            <div className="relative w-full h-64">
+              <Image
+                src={bgpict[0].src}
+                alt={bgpict[0].alt}
+                layout="fill"
+                objectFit="cover"
+                className="rounded-bl-[2.5rem] rounded-br-[2.5rem]"
+              />
+            </div>
+
+            {/* Role Selection Section */}
+            <div className="p-8 bg-white rounded-tl-[3.5rem] rounded-tr-[3.5rem]">
+              <h2 className="text-4xl font-bold text-transparent bg-clip-text text-gradient py-2">Join Qarba</h2>
+              <p className="mt-2 text-sm font-bold text-gray-900">First, select your role</p>
+
+              {/* Role Cards */}
+              <div className="mt-8 space-y-4">
+                {roleOptions.map((role) => (
+                  <button
+                    key={role.value}
+                    onClick={() => {
+                      handleRoleChange({ target: { value: role.value } });
+                    }}
+                    className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all duration-300 ${
+                      formData.role === role.value
+                        ? 'border-[#3ab7b1] bg-gradient-to-r from-[#014d98]/5 to-[#3ab7b1]/5 shadow-md'
+                        : 'border-gray-200'
+                    }`}
+                  >
+                    <div className="text-4xl">{role.icon}</div>
+                    <div className="flex-1 text-left">
+                      <h3 className="text-xl font-bold text-gray-900">{role.label}</h3>
+                      <p className="text-sm text-gray-600">{role.desc}</p>
+                    </div>
+                    {formData.role === role.value && (
+                      <div className="text-[#3ab7b1]">
+                        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {/* Error Message */}
+              {errors.role && (
+                <p className="text-red-500 text-sm mt-4">{errors.role}</p>
+              )}
+
+              {/* Continue Button */}
+              <button
+                onClick={handleContinueFromRoleSelection}
+                disabled={!formData.role}
+                className="mt-8 w-full bg-gradient-to-r from-[#014d98] to-[#3ab7b1] px-4 py-3 rounded-md text-white transition-all duration-300 hover:from-[#3ab7b1] hover:to-[#014d98] disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+              >
+                Continue
+              </button>
+
+              {/* Sign In Link */}
+              <p className="mt-6 text-center text-sm text-gray-600">
+                Already have an account?{' '}
+                <a href="/signin" className="text-[#014d98] hover:text-[#3ab7b1] font-semibold">
+                  Sign In
+                </a>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Step 2: Registration Form
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-800 py-10">
       <div className="flex w-full max-w-6xl bg-white rounded-lg shadow-lg overflow-hidden">
@@ -367,9 +547,24 @@ const Register = () => {
           </div>
 
           {/* Right Form Section */}
-          <div className="w-full lg:w-1/2 p-8 sm:p-12 bg-white ml-16">
+          <div className="w-full lg:w-1/2 p-8 sm:p-12 bg-white ml-16 relative">
+            {/* Back Button - Top Right */}
+            <button
+              onClick={() => setStep(1)}
+              className="absolute top-8 right-8 text-gray-600 hover:text-gray-900 flex items-center gap-2 transition-colors"
+            >
+              <span>←</span> Back
+            </button>
+
+            {/* Role Badge */}
+            <div className="mb-4">
+              <span className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white">
+                Registering as: {formData.role.charAt(0).toUpperCase() + formData.role.slice(1)}
+              </span>
+            </div>
+
             <h2 className="text-4xl font-bold text-gradient py-2">Create an account</h2>
-            <p className="mt-2 text-sm font-bold text-gray-900">Register to buy and rent with us</p>
+            <p className="mt-2 text-sm font-bold text-gray-900">Choose your preferred signup method</p>
             <form className="mt-9" onSubmit={handleSubmit}>
               {errors.general && <p className="text-red-500 mb-4">{errors.general}</p>}
               <div className="mb-5 pt-1 flex space-x-4">
@@ -401,18 +596,17 @@ const Register = () => {
               </div>
               <PasswordCriteria />
               <div className="mb-5">
-                <PasswordInput 
-                  id="confirmPassword" 
-                  showPassword={showPassword} 
-                  togglePasswordVisibility={togglePasswordVisibility} 
-                  value={formData.confirmPassword} 
+                <PasswordInput
+                  id="confirmPassword"
+                  showPassword={showPassword}
+                  togglePasswordVisibility={togglePasswordVisibility}
+                  value={formData.confirmPassword}
                   handleChange={handleChange}
-                  placeholder="Confirm Password" 
-                  bgpict={bgpict} 
+                  placeholder="Confirm Password"
+                  bgpict={bgpict}
                 />
                 {getErrorMessage('confirmPassword')}
               </div>
-              <RoleSelection formData={formData} handleRoleChange={handleRoleChange} />
               <button 
                 type="submit" 
                 className="mt-10 w-full rounded-md bg-gradient-to-r from-[#014d98] to-[#3ab7b1] px-4 py-2 text-white transition-all duration-300 hover:from-[#3ab7b1] hover:to-[#014d98] disabled:opacity-50 disabled:cursor-not-allowed" 
@@ -449,9 +643,24 @@ const Register = () => {
           </div>
 
           {/* Form Section */}
-          <div className="p-8 bg-white rounded-tl-[3.5rem] rounded-tr-[3.5rem]">
+          <div className="p-8 bg-white rounded-tl-[3.5rem] rounded-tr-[3.5rem] relative">
+            {/* Back Button - Top Right */}
+            <button
+              onClick={() => setStep(1)}
+              className="absolute top-8 right-8 text-gray-600 hover:text-gray-900 flex items-center gap-2 transition-colors"
+            >
+              <span>←</span> Back
+            </button>
+
+            {/* Role Badge */}
+            <div className="mb-4">
+              <span className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white">
+                Registering as: {formData.role.charAt(0).toUpperCase() + formData.role.slice(1)}
+              </span>
+            </div>
+
             <h2 className="text-4xl font-bold text-transparent bg-clip-text text-gradient py-2">Create an account</h2>
-            <p className="mt-2 text-sm font-bold text-gray-900">Register to buy and rent with us</p>
+            <p className="mt-2 text-sm font-bold text-gray-900">Choose your preferred signup method</p>
             <form className="mt-9" onSubmit={handleSubmit}>
               {errors.general && <p className="text-red-500 mb-4">{errors.general}</p>}
               <div className="mb-5 pt-1">
@@ -481,19 +690,16 @@ const Register = () => {
               </div>
               <PasswordCriteria />
               <div className="mb-5 pt-1">
-                <PasswordInput 
-                  id="confirmPassword" 
-                  showPassword={showPassword} 
-                  togglePasswordVisibility={togglePasswordVisibility} 
-                  value={formData.confirmPassword} 
-                  handleChange={handleChange} 
+                <PasswordInput
+                  id="confirmPassword"
+                  showPassword={showPassword}
+                  togglePasswordVisibility={togglePasswordVisibility}
+                  value={formData.confirmPassword}
+                  handleChange={handleChange}
                   placeholder="Confirm Password"
-                  bgpict={bgpict} 
+                  bgpict={bgpict}
                 />
                 {getErrorMessage('confirmPassword')}
-              </div>
-              <div className="mb-5 pt-1">
-                <RoleSelection formData={formData} handleRoleChange={handleRoleChange} />
               </div>
               <button 
                 type="submit" 
@@ -517,7 +723,7 @@ const Register = () => {
           </div>
         </div>
       </div>
-      <EmailVerificationModal showModal={showModal} setShowModal={setShowModal} email={formData.email} />
+      <OTPVerificationModal showModal={showModal} setShowModal={setShowModal} email={formData.email} />
       <EmailSuccessModal showModal={showSuccessModal} setShowModal={setShowSuccessModal} />
       <EmailFailedModal showModal={showFailedModal} setShowModal={setShowFailedModal} />
     </div>

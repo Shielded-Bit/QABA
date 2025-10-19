@@ -67,8 +67,8 @@ const ContactPage = () => {
     {
       icon: <FaWhatsapp className="text-[#3ab7b1] text-xl" />,
       title: "WhatsApp",
-      content: "+234 707 664 7640",
-      action: "https://wa.me/2347076647640"
+      content: "+234 815 590 1163",
+      action: "https://wa.me/2348155901163"
     },
     {
       icon: <FaEnvelope className="text-[#3ab7b1] text-xl" />,
@@ -291,7 +291,7 @@ const ContactPage = () => {
               Call Us Now
             </a>
             <a 
-              href="https://wa.me/2347076647640" 
+              href="https://wa.me/2348155901163" 
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center px-8 py-3 border-2 border-[#014d98] text-base font-medium rounded-md text-[#014d98] bg-white hover:bg-gray-50 transition"

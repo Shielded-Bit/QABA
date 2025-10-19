@@ -6,35 +6,46 @@ const ListedByCard = ({ agent }) => {
   const filledStars = Math.floor(agent.rating);
   const emptyStars = 5 - filledStars;
 
+  // Get first name and first letter
+  const getFirstName = () => {
+    const full = agent.name || '';
+    return (full && typeof full === 'string') ? full.split(' ')[0] : (agent.first_name || '');
+  };
+
+  const getFirstLetter = () => {
+    const firstName = getFirstName();
+    return firstName ? firstName.charAt(0).toUpperCase() : 'U';
+  };
+
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-lg hover:border-blue-300 transition-all duration-300 w-full relative z-0">
       <div className="flex items-start gap-4">
-        {/* Profile Picture */}
+        {/* Profile Picture or Initial */}
         <div className="w-16 h-16 rounded-xl overflow-hidden relative ring-2 ring-gray-100">
-          <Image
-            src={agent.image}
-            alt={agent.name}
-            layout="fill"
-            objectFit="cover"
-            className="rounded-xl"
-          />
+          {agent.image ? (
+            <Image
+              src={agent.image}
+              alt={agent.name}
+              layout="fill"
+              objectFit="cover"
+              className="rounded-xl"
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-[#014d98] to-[#3ab7b1] flex items-center justify-center">
+              <span className="text-white text-2xl font-bold">
+                {getFirstLetter()}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Main Details */}
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
-            {(() => {
-              const full = agent.name || '';
-              const firstName = (full && typeof full === 'string') ? full.split(' ')[0] : (agent.first_name || '');
-              return (
-                <>
-                  <h3 className="text-gray-900 font-bold text-lg">{firstName}</h3>
-                  {agent.verified && (
-                    <FaCheckCircle className="text-blue-500 text-sm" title="Verified User" />
-                  )}
-                </>
-              );
-            })()}
+            <h3 className="text-gray-900 font-bold text-lg">{getFirstName()}</h3>
+            {agent.verified && (
+              <FaCheckCircle className="text-blue-500 text-sm" title="Verified User" />
+            )}
           </div>
           
           <p className="text-gray-600 text-sm font-medium flex items-center gap-2">
