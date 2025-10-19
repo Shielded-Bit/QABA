@@ -96,14 +96,14 @@ const PropertyDetails = ({ params }) => {
             phone: listedBy.phone_number,
             userType: listedBy.user_type,
             company: listedBy.user_type === "AGENT" ? "Real Estate Agent" : "Property Owner",
-            image: listedBy.agentprofile?.profile_photo_url || "/assets/images/default-user.png",
+            image: listedBy.profile?.profile_photo_url || null,
             rating: 4,
-            country: listedBy.agentprofile?.country,
-            state: listedBy.agentprofile?.state,
-            city: listedBy.agentprofile?.city,
-            address: listedBy.agentprofile?.address,
-            location: listedBy.agentprofile ? 
-              `${listedBy.agentprofile.city || ''}, ${listedBy.agentprofile.state || ''}`.trim() : 
+            country: listedBy.profile?.country,
+            state: listedBy.profile?.state,
+            city: listedBy.profile?.city,
+            address: listedBy.profile?.address,
+            location: listedBy.profile ?
+              `${listedBy.profile.city || ''}, ${listedBy.profile.state || ''}`.trim() :
               "Nigeria"
           };
         }
