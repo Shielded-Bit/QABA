@@ -55,7 +55,6 @@ class User(AbstractUser):
         max_length=10, choices=UserType.choices, default=UserType.CLIENT
     )
     is_email_verified = models.BooleanField(default=False)
-    password_reset_token = models.CharField(max_length=100, blank=True)
 
     USERNAME_FIELD = "email"
 
