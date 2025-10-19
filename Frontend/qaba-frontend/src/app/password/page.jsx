@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { resetPassword } from '../../app/utils/auth/api.js';
-import PasswordResetModal from '../components/modal/PasswordResetModal';
+import PasswordResetOTPModal from '../components/modal/PasswordResetOTPModal';
 
 const bgpict = [
   {
@@ -24,10 +24,15 @@ const SignIn = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await resetPassword(email);
-      setShowModal(true);
+      const response = await resetPassword(email);
+      if (response.success) {
+        setShowModal(true);
+      } else {
+        alert(response.message || 'Failed to send OTP. Please try again.');
+      }
     } catch (error) {
-      console.error('Failed to reset password:', error);
+      console.error('Failed to send OTP:', error);
+      alert('Failed to send OTP. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -81,10 +86,10 @@ const SignIn = () => {
                 {loading ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Sending Reset Link...
+                    Sending OTP...
                   </>
                 ) : (
-                  'Reset password'
+                  'Send OTP'
                 )}
               </button>
             </form>
@@ -146,10 +151,10 @@ const SignIn = () => {
                 {loading ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Sending Reset Link...
+                    Sending OTP...
                   </>
                 ) : (
-                  'Reset password'
+                  'Send OTP'
                 )}
               </button>
             </form>
@@ -170,8 +175,8 @@ const SignIn = () => {
         </div>
       </div>
 
-      {/* Password Reset Modal */}
-      <PasswordResetModal showModal={showModal} setShowModal={setShowModal} email={email} />
+      {/* Password Reset OTP Modal */}
+      <PasswordResetOTPModal showModal={showModal} setShowModal={setShowModal} email={email} />
     </div>
   );
 };

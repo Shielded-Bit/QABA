@@ -22,8 +22,8 @@ const PROPERTY_TYPES = [
 
 const FEE_RATES = {
   AGENT_FEE_RATE: 0.10,
-  QARBA_FEE_RATE: 0.05,
-  LANDLORD_FEE_RATE: 0.05
+  QARBA_FEE_RATE: 0.00,
+  LANDLORD_FEE_RATE: 0.00
 };
 
 // Utility functions consolidated
@@ -285,7 +285,7 @@ const FeeBreakdown = ({ fees, frequency }) => {
           </div>
         )}
         <div className="flex justify-between">
-          <span>Qarba Fee ({fees.agentFee > 0 ? '5%' : '5%'}, one-time):</span>
+          <span>Qarba Fee ({fees.agentFee > 0 ? '0%' : '0%'}, one-time):</span>
           <span>₦{formatUtils.formatNumberWithCommas(fees.qarbaFee.toString())}</span>
         </div>
         <div className="flex justify-between font-medium border-t border-gray-200 pt-2 mt-2">

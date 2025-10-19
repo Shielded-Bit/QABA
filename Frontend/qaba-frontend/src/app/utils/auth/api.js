@@ -32,7 +32,12 @@ export const register = async (data) => {
       },
     });
 
-    return response.data;
+    // Return success response with the data
+    return {
+      success: true,
+      data: response.data,
+      message: response.data.message || 'Registration successful'
+    };
   } catch (error) {
     return handleApiError(error);
   }
@@ -68,7 +73,24 @@ export const signIn = async (data) => {
   }
 };
 
-// Verify an email
+// Verify an email with OTP
+export const verifyOTP = async (email, otp) => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/auth/verify-email/`, {
+      email,
+      otp
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
+
+// Legacy email verification (if needed)
 export const verifyEmail = async (token) => {
   try {
     const response = await axios.get(`${API_BASE_URL}/auth/verify-email`, {
@@ -81,7 +103,7 @@ export const verifyEmail = async (token) => {
     throw new Error('Failed to verify email');
   }
 };
-// Reset password
+// Request password reset (sends OTP to email)
 export const resetPassword = async (email) => {
   try {
     const response = await axios.post(`${API_BASE_URL}/auth/password-reset/`, { email }, {
@@ -89,9 +111,35 @@ export const resetPassword = async (email) => {
         'Content-Type': 'application/json',
       },
     });
-    return response.data;
+    return {
+      success: true,
+      data: response.data,
+      message: response.data.message || 'OTP sent successfully'
+    };
   } catch (error) {
-    throw new Error('Failed to reset password');
+    return handleApiError(error);
+  }
+};
+
+// Confirm password reset with OTP
+export const confirmPasswordReset = async (email, otp, newPassword) => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/auth/password-reset/confirm/`, {
+      email,
+      otp,
+      new_password: newPassword
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    return {
+      success: true,
+      data: response.data,
+      message: response.data.message || 'Password reset successfully'
+    };
+  } catch (error) {
+    return handleApiError(error);
   }
 };
 

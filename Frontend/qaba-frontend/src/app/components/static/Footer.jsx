@@ -106,7 +106,7 @@ const Footer = () => {
       <div className="mx-auto mt-16 mb-8 border-t pt-4 px-0 flex flex-col md:flex-row items-center justify-between text-gray-600 text-sm">
         <p>© 2024 All Rights Reserved</p>
         <div className="flex space-x-4 mt-4 md:mt-0">
-          <a href="#" className="h-8 w-8 flex items-center justify-center rounded-full border border-[#014d98]/20 hover:border-[#014d98] transition-colors">
+          <a href="https://www.facebook.com/profile.php?id=61580250481421" className="h-8 w-8 flex items-center justify-center rounded-full border border-[#014d98]/20 hover:border-[#014d98] transition-colors">
             <FaFacebookF className="text-[#014d98]" />
           </a>
           <a href="#" className="h-8 w-8 flex items-center justify-center rounded-full border border-[#014d98]/20 hover:border-[#014d98] transition-colors">
@@ -115,7 +115,7 @@ const Footer = () => {
           <a href="#" className="h-8 w-8 flex items-center justify-center rounded-full border border-[#014d98]/20 hover:border-[#014d98] transition-colors">
             <FaTwitter className="text-[#014d98]" />
           </a>
-          <a href="#" className="h-8 w-8 flex items-center justify-center rounded-full border border-[#014d98]/20 hover:border-[#014d98] transition-colors">
+          <a href="https://www.linkedin.com/company/108523508/admin/dashboard/" className="h-8 w-8 flex items-center justify-center rounded-full border border-[#014d98]/20 hover:border-[#014d98] transition-colors">
             <FaLinkedin className="text-[#014d98]" />
           </a>
         </div>
