@@ -230,8 +230,12 @@ const ImageUploadBox = ({ images, onAddImage, onRemoveImage, maxImages = 5 }) =>
 };
 
 // Fee breakdown component
-const FeeBreakdown = ({ fees, userType }) => {
+const FeeBreakdown = ({ fees, userType, serviceCharge, cautionFee }) => {
   if (!fees.basePrice) return null;
+
+  const parsedServiceCharge = parseFloat(serviceCharge) || 0;
+  const parsedCautionFee = parseFloat(cautionFee) || 0;
+  const totalPrice = fees.totalPrice + parsedServiceCharge + parsedCautionFee;
 
   return (
     <div className="mt-4 p-4 bg-gray-50 rounded-md border border-gray-200">
@@ -251,9 +255,21 @@ const FeeBreakdown = ({ fees, userType }) => {
           <span>Qarba Fee (0%):</span>
           <span>₦{formatNumberWithCommas(fees.qarbaFee.toString())}</span>
         </div>
+        {parsedServiceCharge > 0 && (
+          <div className="flex justify-between">
+            <span>Service Charge:</span>
+            <span>₦{formatNumberWithCommas(parsedServiceCharge.toString())}</span>
+          </div>
+        )}
+        {parsedCautionFee > 0 && (
+          <div className="flex justify-between">
+            <span>Caution Fee:</span>
+            <span>₦{formatNumberWithCommas(parsedCautionFee.toString())}</span>
+          </div>
+        )}
         <div className="flex justify-between font-medium border-t border-gray-200 pt-2 mt-2">
           <span>Total Price:</span>
-          <span className="text-[#014d98]">₦{formatNumberWithCommas(fees.totalPrice.toString())}</span>
+          <span className="text-[#014d98]">₦{formatNumberWithCommas(totalPrice.toString())}</span>
         </div>
         {userType === 'agent' && (
           <p className="text-xs text-gray-500 mt-1 italic">
@@ -379,6 +395,8 @@ const AddForSell = () => {
     bathrooms: 1,
     area_sqft: 0,
     sale_price: "",
+    service_charge: "",
+    caution_fee: "",
     total_price: "",
     property_status: "New",
     amenities_ids: [],
@@ -395,6 +413,8 @@ const AddForSell = () => {
 
   // Other states
   const [displayPrice, setDisplayPrice] = useState('');
+  const [displayServiceCharge, setDisplayServiceCharge] = useState('');
+  const [displayCautionFee, setDisplayCautionFee] = useState('');
   const [fees, setFees] = useState({ basePrice: 0, agentFee: 0, qarbaFee: 0, totalFee: 0, totalPrice: 0 });
   const [amenities, setAmenities] = useState([]);
   const [isLoadingAmenities, setIsLoadingAmenities] = useState(false);
@@ -470,7 +490,7 @@ const AddForSell = () => {
   // Handlers
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    
+
     if (name === 'sale_price') {
       const formattedValue = formatNumberWithCommas(value);
       const plainValue = convertToPlainNumber(formattedValue);
@@ -479,6 +499,20 @@ const AddForSell = () => {
       setFormData({
         ...formData,
         [name]: plainValue
+      });
+    } else if (name === 'service_charge') {
+      const formattedValue = formatNumberWithCommas(value);
+      setDisplayServiceCharge(formattedValue);
+      setFormData({
+        ...formData,
+        [name]: convertToPlainNumber(formattedValue)
+      });
+    } else if (name === 'caution_fee') {
+      const formattedValue = formatNumberWithCommas(value);
+      setDisplayCautionFee(formattedValue);
+      setFormData({
+        ...formData,
+        [name]: convertToPlainNumber(formattedValue)
       });
     } else {
       setFormData({
@@ -557,6 +591,8 @@ const AddForSell = () => {
         bathrooms: 1,
         area_sqft: 0,
         sale_price: "",
+        service_charge: "",
+        caution_fee: "",
         total_price: "",
         property_status: "New",
         amenities_ids: [],
@@ -572,6 +608,8 @@ const AddForSell = () => {
 
       setDocuments([]);
       setDisplayPrice('');
+      setDisplayServiceCharge('');
+      setDisplayCautionFee('');
       setFees({ basePrice: 0, agentFee: 0, qarbaFee: 0, totalFee: 0, totalPrice: 0 });
     }
   };
@@ -771,6 +809,28 @@ const AddForSell = () => {
               : ' No additional fees will be added to this price.'}
           </p>
         </FormField>
+        <FormField label="Service Charge (Optional)">
+          <FormInput
+            name="service_charge"
+            value={displayServiceCharge}
+            onChange={handleInputChange}
+            placeholder="50,000"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Service charge if applicable
+          </p>
+        </FormField>
+        <FormField label="Caution Fee (Optional)">
+          <FormInput
+            name="caution_fee"
+            value={displayCautionFee}
+            onChange={handleInputChange}
+            placeholder="100,000"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Caution/security deposit if applicable
+          </p>
+        </FormField>
         <FormField label="Property Status">
           <Select
             name="property_status"
@@ -800,7 +860,12 @@ const AddForSell = () => {
       {/* Fee Breakdown */}
       {formData.sale_price && (
         <div className="mt-2 md:w-2/3">
-          <FeeBreakdown fees={fees} userType={formData.user_type} />
+          <FeeBreakdown
+            fees={fees}
+            userType={formData.user_type}
+            serviceCharge={formData.service_charge}
+            cautionFee={formData.caution_fee}
+          />
         </div>
       )}
 

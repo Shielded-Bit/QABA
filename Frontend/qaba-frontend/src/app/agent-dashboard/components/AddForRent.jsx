@@ -267,9 +267,13 @@ const ErrorModal = ({ isOpen, onClose, message }) => {
 };
 
 // Updated Fee breakdown component with clearer recurring vs one-time fee explanation
-const FeeBreakdown = ({ fees, frequency }) => {
+const FeeBreakdown = ({ fees, frequency, serviceCharge, cautionFee }) => {
   if (!fees.basePrice) return null;
-  
+
+  const parsedServiceCharge = parseFloat(serviceCharge) || 0;
+  const parsedCautionFee = parseFloat(cautionFee) || 0;
+  const totalInitialPayment = fees.totalPrice + parsedServiceCharge + parsedCautionFee;
+
   return (
     <div className="mt-4 p-4 bg-gray-50 rounded-md border border-gray-200">
       <h4 className="text-lg font-medium text-[#014d98] mb-2">Fee Breakdown</h4>
@@ -288,9 +292,21 @@ const FeeBreakdown = ({ fees, frequency }) => {
           <span>Qarba Fee ({fees.agentFee > 0 ? '0%' : '0%'}, one-time):</span>
           <span>₦{formatUtils.formatNumberWithCommas(fees.qarbaFee.toString())}</span>
         </div>
+        {parsedServiceCharge > 0 && (
+          <div className="flex justify-between">
+            <span>Service Charge:</span>
+            <span>₦{formatUtils.formatNumberWithCommas(parsedServiceCharge.toString())}</span>
+          </div>
+        )}
+        {parsedCautionFee > 0 && (
+          <div className="flex justify-between">
+            <span>Caution Fee:</span>
+            <span>₦{formatUtils.formatNumberWithCommas(parsedCautionFee.toString())}</span>
+          </div>
+        )}
         <div className="flex justify-between font-medium border-t border-gray-200 pt-2 mt-2">
           <span>Initial Payment (first {frequency.toLowerCase()}):</span>
-          <span className="text-[#014d98]">₦{formatUtils.formatNumberWithCommas(fees.totalPrice.toString())}</span>
+          <span className="text-[#014d98]">₦{formatUtils.formatNumberWithCommas(totalInitialPayment.toString())}</span>
         </div>
         <p className="text-xs text-gray-500 mt-1 italic">
           After initial payment, tenant will pay ₦{formatUtils.formatNumberWithCommas(fees.basePrice.toString())} {frequency.toLowerCase()}.
@@ -332,14 +348,18 @@ const AddForRent = () => {
     area_sqft: 0,
     rent_frequency: "MONTHLY",
     rent_price: "",
+    service_charge: "",
+    caution_fee: "",
     total_price: "",
-    amenities_ids: [], 
+    amenities_ids: [],
     user_type: getAuthenticatedUserType(), // Set based on authenticated user
     state: "",
     city: ""
   });
 
   const [displayPrice, setDisplayPrice] = useState('');
+  const [displayServiceCharge, setDisplayServiceCharge] = useState('');
+  const [displayCautionFee, setDisplayCautionFee] = useState('');
   const [fees, setFees] = useState({ basePrice: 0, agentFee: 0, qarbaFee: 0, totalFee: 0, totalPrice: 0 });
   const [amenities, setAmenities] = useState([]);
   const [mediaFiles, setMediaFiles] = useState({ images: [], video: null });
@@ -404,10 +424,18 @@ const AddForRent = () => {
   // Input handlers
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    
+
     if (name === 'rent_price') {
       const formattedValue = formatUtils.formatNumberWithCommas(value);
       setDisplayPrice(formattedValue);
+      setFormData({ ...formData, [name]: formatUtils.convertToPlainNumber(formattedValue) });
+    } else if (name === 'service_charge') {
+      const formattedValue = formatUtils.formatNumberWithCommas(value);
+      setDisplayServiceCharge(formattedValue);
+      setFormData({ ...formData, [name]: formatUtils.convertToPlainNumber(formattedValue) });
+    } else if (name === 'caution_fee') {
+      const formattedValue = formatUtils.formatNumberWithCommas(value);
+      setDisplayCautionFee(formattedValue);
       setFormData({ ...formData, [name]: formatUtils.convertToPlainNumber(formattedValue) });
     } else {
       setFormData({ ...formData, [name]: value });
@@ -473,12 +501,14 @@ const AddForRent = () => {
       setFormData({
         property_name: "", description: "", property_type: "HOUSE", listing_type: "RENT",
         submit_for_review: false, location: "", bedrooms: 1, bathrooms: 1, area_sqft: 0,
-        rent_frequency: "MONTHLY", rent_price: "", total_price: "", amenities_ids: [], user_type: "landlord",
+        rent_frequency: "MONTHLY", rent_price: "", service_charge: "", caution_fee: "", total_price: "", amenities_ids: [], user_type: "landlord",
         state: "",
         city: ""
       });
       setMediaFiles({ images: [], video: null });
       setDisplayPrice('');
+      setDisplayServiceCharge('');
+      setDisplayCautionFee('');
       setFees({ basePrice: 0, agentFee: 0, qarbaFee: 0, totalFee: 0, totalPrice: 0 });
     }
   };
@@ -664,10 +694,38 @@ const AddForRent = () => {
             placeholder="12,000,000"
           />
           <p className="text-xs text-gray-500 mt-1">
-            This is the base price that will be paid {formData.rent_frequency.toLowerCase()}. 
-            {formData.user_type === 'agent' 
-              ? ' Agent fee and Qarba fee are one-time payments added to the first payment only.' 
+            This is the base price that will be paid {formData.rent_frequency.toLowerCase()}.
+            {formData.user_type === 'agent'
+              ? ' Agent fee and Qarba fee are one-time payments added to the first payment only.'
               : ' Qarba fee is a one-time payment added to the first payment only.'}
+          </p>
+        </div>
+        <div>
+          <label className="block text-gray-700">Service Charge (Optional)</label>
+          <input
+            type="text"
+            name="service_charge"
+            value={displayServiceCharge}
+            onChange={handleInputChange}
+            className="w-full border border-gray-300 p-2 rounded-md"
+            placeholder="50,000"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Service charge if applicable
+          </p>
+        </div>
+        <div>
+          <label className="block text-gray-700">Caution Fee (Optional)</label>
+          <input
+            type="text"
+            name="caution_fee"
+            value={displayCautionFee}
+            onChange={handleInputChange}
+            className="w-full border border-gray-300 p-2 rounded-md"
+            placeholder="100,000"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Caution/security deposit if applicable
           </p>
         </div>
       </div>
@@ -675,7 +733,12 @@ const AddForRent = () => {
       {/* Fee Breakdown */}
       {formData.rent_price && (
         <div className="mt-2 md:w-2/3">
-          <FeeBreakdown fees={fees} frequency={formData.rent_frequency} />
+          <FeeBreakdown
+            fees={fees}
+            frequency={formData.rent_frequency}
+            serviceCharge={formData.service_charge}
+            cautionFee={formData.caution_fee}
+          />
         </div>
       )}
 
