@@ -16,6 +16,7 @@ import PriceBreakdown from '@/app/components/shared/PriceBreakdown';
 import PropertyVerifications from '@/app/components/PropertyVerifications';
 import ScheduleVisitModal from '@/app/components/modal/ScheduleVisitModal';
 import EnquiryModal from '@/app/components/modal/EnquiryModal';
+import WatermarkedImage from '@/app/components/WatermarkedImage';
 import 'swiper/css';
 import 'swiper/css/pagination';
 import PropertyDetailsSkeleton from "./PropertyDetailsSkeleton";
@@ -267,27 +268,25 @@ const PropertyDetails = ({ params }) => {
           <div className="flex flex-col sm:flex-row gap-6">
             <div className="w-full sm:w-1/2">
               <div className="relative h-60 sm:h-96">
-                <Image
+                <WatermarkedImage
                   className="rounded-lg"
                   src={getImageUrl(images[currentImageIndex])}
                   alt={`Property Image ${currentImageIndex + 1}`}
                   fill
                   style={{ objectFit: "cover" }}
                   priority
-                  unoptimized={true}
                 />
               </div>
             </div>
 
             <div className="hidden sm:block w-full sm:w-1/2">
               <div className="relative h-60 sm:h-96">
-                <Image
+                <WatermarkedImage
                   className="rounded-lg"
                   src={getImageUrl(images[(currentImageIndex + 1) % images.length])}
                   alt="Secondary property image"
                   fill
                   style={{ objectFit: "cover" }}
-                  unoptimized={true}
                 />
               </div>
             </div>
@@ -308,13 +307,12 @@ const PropertyDetails = ({ params }) => {
                   className={`border ${currentImageIndex === index ? 'ring-2 ring-blue-500 w-14 h-14' : 'w-10 h-10'} rounded-lg flex-shrink-0 transition-all`}
                 >
                   <div className="relative w-full h-full">
-                    <Image
+                    <WatermarkedImage
                       className="rounded-lg"
                       src={getImageUrl(img)}
                       alt={`Thumbnail ${index + 1}`}
                       fill
                       style={{ objectFit: "cover" }}
-                      unoptimized={true}
                     />
                   </div>
                 </button>
@@ -433,16 +431,27 @@ const PropertyDetails = ({ params }) => {
                 <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-900 to-green-600">
                   Property Video Tour
                 </h3>
-                <div className="w-full aspect-video rounded-lg overflow-hidden">
-                  <video 
+                <div className="relative w-full aspect-video rounded-lg overflow-hidden">
+                  <video
                     controls
+                    controlsList="nodownload"
+                    onContextMenu={(e) => e.preventDefault()}
                     className="w-full h-full object-cover"
                     src={property.video.video_url}
                     poster={property.thumbnail || (images[0] && getImageUrl(images[0]))}
                   >
                     Your browser does not support the video tag.
                   </video>
+                  {/* CSS Watermark - prevents easy screenshots */}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="text-white/70 text-4xl sm:text-6xl" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.3)' }}>
+                      Qarba Properties
+                    </div>
+                  </div>
                 </div>
+                <p className="text-xs text-gray-500 mt-2 italic">
+                  Note: Video downloads are disabled to protect content.
+                </p>
               </div>
             )}
           </div>
@@ -578,18 +587,16 @@ const PropertyDetails = ({ params }) => {
                         <ListingCard
                           id={listing.id}
                           title={listing.property_name}
-                          price={listing.listing_type === 'SALE' 
-                            ? `₦${parseFloat(listing.sale_price).toLocaleString()}` 
+                          price={listing.listing_type === 'SALE'
+                            ? `₦${parseFloat(listing.sale_price).toLocaleString()}`
                             : `₦${parseFloat(listing.rent_price).toLocaleString()}${listing.rent_frequency ? ` / ${listing.rent_frequency_display}` : ''}`
                           }
                           description={listing.description || `${listing.bedrooms} bedroom ${listing.property_type_display.toLowerCase()} in ${listing.city}, ${listing.state}`}
                           image={listing.thumbnail}
                           type={listing.listing_type.toLowerCase()}
-                          location={`${listing.city}, ${listing.state}`}
-                          propertyType={listing.property_type_display}
-                          bedrooms={listing.bedrooms}
-                          bathrooms={listing.bathrooms}
-                          status={listing.property_status_display}
+                          propertyStatus={listing.property_status_display}
+                          propertyTypeDisplay={listing.property_type_display}
+                          amenities={listing.amenities || []}
                         />
                       </SwiperSlide>
                     ))}
@@ -603,18 +610,16 @@ const PropertyDetails = ({ params }) => {
                       key={listing.id}
                       id={listing.id}
                       title={listing.property_name}
-                      price={listing.listing_type === 'SALE' 
-                        ? `₦${parseFloat(listing.sale_price).toLocaleString()}` 
+                      price={listing.listing_type === 'SALE'
+                        ? `₦${parseFloat(listing.sale_price).toLocaleString()}`
                         : `₦${parseFloat(listing.rent_price).toLocaleString()}${listing.rent_frequency ? ` / ${listing.rent_frequency_display}` : ''}`
                       }
                       description={listing.description || `${listing.bedrooms} bedroom ${listing.property_type_display.toLowerCase()} in ${listing.city}, ${listing.state}`}
                       image={listing.thumbnail}
                       type={listing.listing_type.toLowerCase()}
-                      location={`${listing.city}, ${listing.state}`}
-                      propertyType={listing.property_type_display}
-                      bedrooms={listing.bedrooms}
-                      bathrooms={listing.bathrooms}
-                      status={listing.property_status_display}
+                      propertyStatus={listing.property_status_display}
+                      propertyTypeDisplay={listing.property_type_display}
+                      amenities={listing.amenities || []}
                     />
                   ))}
                 </div>

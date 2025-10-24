@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Bookmark } from 'lucide-react';
 import axios from 'axios';
+import WatermarkedImage from '../WatermarkedImage';
 
 const ListingCard = ({
   id,
@@ -139,15 +140,12 @@ const ListingCard = ({
       {/* Image */}
       <div className="relative p-4">
         <div className="h-64 relative">
-          <Image
+          <WatermarkedImage
             className="w-full h-full rounded-lg object-cover"
             src={image && image.trim() !== '' ? image : '/proper.png'}
             alt={title || 'Property'}
             fill
             style={{ objectFit: 'cover' }}
-            onError={(e) => {
-              e.target.src = '/proper.png';
-            }}
           />
         </div>
         
