@@ -1,5 +1,3 @@
-import uuid
-
 from cloudinary.models import CloudinaryField
 from django.conf import settings
 from django.db import models
@@ -66,7 +64,6 @@ class Property(models.Model):
         MONTHLY = "MONTHLY", "Monthly"
         YEARLY = "YEARLY", "Yearly"
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     property_name = models.CharField(max_length=255)
     slug = models.SlugField(max_length=255, unique=True, blank=True, null=True)
     description = models.TextField()
