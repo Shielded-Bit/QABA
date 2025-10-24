@@ -136,6 +136,11 @@ class Property(models.Model):
         blank=True,
         help_text="Optional caution fee required for the property",
     )
+    legal_fee = models.FloatField(
+        null=True,
+        blank=True,
+        help_text="Optional legal fee applied to the property",
+    )
     total_price = models.FloatField(
         null=True,
         blank=True,

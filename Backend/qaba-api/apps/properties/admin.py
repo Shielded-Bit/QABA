@@ -202,6 +202,7 @@ class PropertyAdmin(admin.ModelAdmin):
                     "rent_frequency",
                     "agent_commission",  # Add commission
                     "qaba_fee",  # Add fee
+                    "legal_fee",
                     "total_price",  # Add total price
                 ),
                 "description": "Enter sale price for sales listings, or rent price and frequency for rental listings.",
