@@ -5,6 +5,9 @@ import { useParams, useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import axios from "axios";
 import Image from "next/image";
+import { ImCancelCircle } from "react-icons/im";
+import { BiImageAdd } from "react-icons/bi";
+import { RiVideoAddFill } from "react-icons/ri";
 import DocumentUploadModal from "../../components/DocumentUploadModal";
 import ConfirmationModal from "./ConfirmationModal";
 
@@ -55,6 +58,9 @@ const LISTING_TYPES = [
   { value: "SALE", label: "Sale" }
 ];
 
+const MAX_VIDEO_SIZE_MB = 20; // Maximum video size in MB
+const MAX_VIDEO_SIZE_BYTES = MAX_VIDEO_SIZE_MB * 1024 * 1024;
+
 // Helper functions
 const formatNumberWithCommas = (value) => {
   const plainNumber = value.replace(/[^\d]/g, '');
@@ -63,6 +69,14 @@ const formatNumberWithCommas = (value) => {
 
 const convertToPlainNumber = (formattedValue) => {
   return formattedValue.replace(/[^\d]/g, '');
+};
+
+const formatFileSize = (bytes) => {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
 };
 
 // FormField component
@@ -167,9 +181,9 @@ const ImageUploadBox = ({ images, onAddImage, onRemoveImage, maxImages = 5, inpu
             <button
               type="button"
               onClick={() => onRemoveImage(index)}
-              className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600 shadow-md"
+              className="absolute top-2 right-2 text-red-500 hover:text-red-600 cursor-pointer transition-colors duration-200"
             >
-              ×
+              <ImCancelCircle size={24} />
             </button>
           </div>
         ))}
@@ -182,20 +196,7 @@ const ImageUploadBox = ({ images, onAddImage, onRemoveImage, maxImages = 5, inpu
             onClick={() => document.getElementById(inputId).click()}
           >
             <div className="text-center">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-8 w-8 mx-auto mb-2 text-gray-400 group-hover:text-[#014d98] transition-colors duration-200"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                />
-              </svg>
+              <BiImageAdd className="h-12 w-12 mx-auto mb-2 text-gray-400 group-hover:text-[#014d98] transition-colors duration-200" />
               <p className="text-xs text-gray-500 group-hover:text-[#014d98] transition-colors duration-200">
                 Add Image
               </p>
@@ -225,41 +226,46 @@ const ImageUploadBox = ({ images, onAddImage, onRemoveImage, maxImages = 5, inpu
 
 // FileUploadBox for video
 const FileUploadBox = ({ label, onChange, file, onRemove }) => (
-  <div className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center relative hover:border-gray-400 transition-colors duration-200">
-    <input
-      type="file"
-      accept={label.toLowerCase().includes("video") ? "video/*" : "image/*"}
-      onChange={onChange}
-      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-    />
-    {file && onRemove && (
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onRemove();
-        }}
-        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 z-10 shadow-md"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-        </svg>
-      </button>
-    )}
-    <div className="text-gray-500 text-center pointer-events-none text-sm">
+  <div className="w-full max-w-2xl">
+    <div className="relative border-2 border-gray-200 rounded-lg overflow-hidden group hover:border-[#014d98] transition-colors duration-200" style={{ aspectRatio: '16/9' }}>
       {file ? (
-        <div className="flex flex-col items-center">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 mb-1 text-green-500" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-          </svg>
-          <p className="text-xs">{label} selected</p>
-        </div>
+        <>
+          {/* Video Preview */}
+          <video
+            src={URL.createObjectURL(file)}
+            className="w-full h-full object-cover"
+            controls
+          />
+          {/* Remove button */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemove();
+            }}
+            className="absolute top-2 right-2 text-red-500 hover:text-red-600 z-10 cursor-pointer transition-colors duration-200"
+          >
+            <ImCancelCircle size={32} />
+          </button>
+          {/* File info overlay */}
+          <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 text-white p-2 text-xs">
+            <p className="font-medium truncate">{file.name}</p>
+            <p className="text-gray-300">Size: {formatFileSize(file.size)} / Max: {MAX_VIDEO_SIZE_MB}MB</p>
+          </div>
+        </>
       ) : (
-        <div className="flex flex-col items-center">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 mb-1" viewBox="0 0 20 20" fill="currentColor">
-            <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
-          </svg>
-          <p className="text-xs">Upload {label.toLowerCase()}</p>
+        <div className="absolute inset-0 flex items-center justify-center cursor-pointer bg-gray-50 group-hover:bg-blue-50 transition-colors duration-200">
+          <input
+            type="file"
+            accept="video/*"
+            onChange={onChange}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+          />
+          <div className="text-center">
+            <RiVideoAddFill className="h-20 w-20 mx-auto mb-3 text-gray-400 group-hover:text-[#014d98] transition-colors duration-200" />
+            <p className="text-gray-600 group-hover:text-[#014d98] font-medium transition-colors duration-200">Click to upload video</p>
+            <p className="text-xs text-gray-400 mt-1">Maximum file size: {MAX_VIDEO_SIZE_MB}MB</p>
+          </div>
         </div>
       )}
     </div>
@@ -617,6 +623,14 @@ const EditProperty = () => {
   const handleFileChange = (e, fileType) => {
     const file = e.target.files[0];
     if (file) {
+      // Validate video size
+      if (file.size > MAX_VIDEO_SIZE_BYTES) {
+        toast.error(
+          `Video file is too large. Maximum size is ${MAX_VIDEO_SIZE_MB}MB. Your video is ${formatFileSize(file.size)}.`
+        );
+        e.target.value = ''; // Reset input
+        return;
+      }
       setMediaFiles({
         ...mediaFiles,
         video: file
@@ -703,7 +717,7 @@ const EditProperty = () => {
         bedrooms: parseInt(formData.bedrooms),
         bathrooms: parseInt(formData.bathrooms),
         area_sqft: formData.area_sqft ? parseFloat(formData.area_sqft) : 0,
-        total_price: fees.totalPrice.toString(), // Add calculated total_price
+        total_price: (fees.totalPrice + (parseFloat(formData.service_charge) || 0) + (parseFloat(formData.caution_fee) || 0)).toString(), // Add calculated total_price
         submit_for_review: !isDraft // Explicitly set submit_for_review
       };
 
@@ -1085,9 +1099,9 @@ const EditProperty = () => {
                 <button
                   type="button"
                   onClick={() => handleRemoveExistingImage(imageUrl)}
-                  className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
+                  className="absolute top-2 right-2 text-red-500 hover:text-red-600 cursor-pointer transition-colors duration-200"
                 >
-                  X
+                  <ImCancelCircle size={24} />
                 </button>
               </div>
             ))}
@@ -1138,7 +1152,7 @@ const EditProperty = () => {
             <button
               type="button"
               onClick={() => setIsDocumentModalOpen(true)}
-              className="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600"
+              className="bg-gradient-to-r from-blue-500 to-teal-500 text-white py-2 px-4 rounded-md hover:opacity-90"
             >
               <span className="flex items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
@@ -1218,7 +1232,7 @@ const EditProperty = () => {
           type="button"
           onClick={() => initiateSubmit(true)}
           disabled={submitting}
-          className="border-2 border-blue-500 text-blue-500 py-2 px-6 rounded-md hover:bg-blue-100 disabled:opacity-50"
+          className="border-2 border-teal-500 text-teal-500 py-2 px-6 rounded-md hover:bg-teal-50 disabled:opacity-50"
         >
           {submitting ? 'Saving...' : 'Save as draft'}
         </button>
