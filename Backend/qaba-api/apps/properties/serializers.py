@@ -1,8 +1,7 @@
-from django.conf import settings
-
 from apps.users.models import Notification, User
 from apps.users.serializers import UserSerializer
 from core.utils.send_email import send_email
+from django.conf import settings
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
@@ -100,6 +99,7 @@ class PropertyListSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "property_name",
+            "slug",
             "sale_price",
             "rent_price",
             "rent_frequency",
@@ -223,6 +223,7 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
         model = Property
         fields = [
             "property_name",
+            "slug",
             "description",
             "sale_price",
             "property_type",
@@ -248,7 +249,7 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
             "documents",
             "document_types",
         ]
-        read_only_fields = ["agent_commission", "qaba_fee"]
+        read_only_fields = ["agent_commission", "qaba_fee", "slug"]
 
     def validate_images(self, value):
         if len(value) > 5:
@@ -288,7 +289,9 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
                 {"legal_fee": "Legal fee cannot be negative"}
             )
 
-        service_charge_value = float(service_charge) if service_charge is not None else 0.0
+        service_charge_value = (
+            float(service_charge) if service_charge is not None else 0.0
+        )
         caution_fee_value = float(caution_fee) if caution_fee is not None else 0.0
         legal_fee_value = float(legal_fee) if legal_fee is not None else 0.0
 
@@ -303,9 +306,7 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {"rent_price": "Rent price must be positive"}
                 )
-            qaba_fee = round(
-                float(rent_price) * settings.QABA_RENT_PERCENTAGE, 2
-            )
+            qaba_fee = round(float(rent_price) * settings.QABA_RENT_PERCENTAGE, 2)
             agent_commission = 0
             if lister_type == User.UserType.AGENT:
                 agent_commission = round(
@@ -340,9 +341,7 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {"sale_price": "Sale price must be positive"}
                 )
-            qaba_fee = round(
-                float(sale_price) * settings.QABA_SALE_PERCENTAGE, 2
-            )
+            qaba_fee = round(float(sale_price) * settings.QABA_SALE_PERCENTAGE, 2)
             agent_commission = 0
             if lister_type == User.UserType.AGENT:
                 agent_commission = round(
@@ -502,6 +501,7 @@ class PropertyUpdateSerializer(serializers.ModelSerializer):
         model = Property
         fields = [
             "property_name",
+            "slug",
             "description",
             "sale_price",
             "property_type",
@@ -524,7 +524,7 @@ class PropertyUpdateSerializer(serializers.ModelSerializer):
             "agent_commission",
             "qaba_fee",
         ]
-        read_only_fields = ["agent_commission", "qaba_fee"]
+        read_only_fields = ["agent_commission", "qaba_fee", "slug"]
 
     def validate(self, attrs):
         request = self.context.get("request")
@@ -633,8 +633,7 @@ class PropertyUpdateSerializer(serializers.ModelSerializer):
             attrs["agent_commission"] = agent_commission
             attrs["total_price"] = total_price
         elif (
-            listing_type == Property.ListingType.SALE
-            and current_sale_price is not None
+            listing_type == Property.ListingType.SALE and current_sale_price is not None
         ):
             if sale_price is not None and sale_price <= 0:
                 raise serializers.ValidationError(
@@ -693,7 +692,7 @@ class FavoriteSerializer(serializers.ModelSerializer):
 
 
 class PropertyFavoriteToggleSerializer(serializers.Serializer):
-    property_id = serializers.IntegerField()
+    property_id = serializers.UUIDField()
 
 
 class PropertyDocumentUploadSerializer(serializers.ModelSerializer):

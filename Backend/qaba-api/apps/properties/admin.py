@@ -133,6 +133,7 @@ class AmenitiesInline(admin.TabularInline):
 class PropertyAdmin(admin.ModelAdmin):
     list_display = (
         "property_name",
+        "slug",
         "property_type",
         "listing_type",
         "location",
@@ -165,7 +166,7 @@ class PropertyAdmin(admin.ModelAdmin):
         "listed_by__first_name",
         "listed_by__last_name",
     )
-    readonly_fields = ("listed_date",)
+    readonly_fields = ("listed_date", "slug")
     inlines = [
         PropertyImageInline,
         PropertyVideoInline,
@@ -176,7 +177,7 @@ class PropertyAdmin(admin.ModelAdmin):
     filter_horizontal = ("amenities",)
 
     fieldsets = (
-        (None, {"fields": ("property_name", "description", "listed_by")}),
+        (None, {"fields": ("property_name", "slug", "description", "listed_by")}),
         (
             _("Property Details"),
             {

@@ -55,7 +55,7 @@ urlpatterns = [
     ),
     path("reviews/create/", CreatePropertyReviewView.as_view(), name="create-review"),
     path(
-        "reviews/property/<int:property_id>/",
+        "reviews/property/<uuid:property_id>/",
         ListPropertyReviewsView.as_view(),
         name="property-reviews",
     ),
