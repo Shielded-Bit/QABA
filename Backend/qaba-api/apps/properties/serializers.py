@@ -1,8 +1,7 @@
-from django.conf import settings
-
 from apps.users.models import Notification, User
 from apps.users.serializers import UserSerializer
 from core.utils.send_email import send_email
+from django.conf import settings
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
@@ -100,11 +99,13 @@ class PropertyListSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "property_name",
+            "slug",
             "sale_price",
             "rent_price",
             "rent_frequency",
             "service_charge",
             "caution_fee",
+            "legal_fee",
             "total_price",
             "property_type",
             "property_type_display",
@@ -222,6 +223,7 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
         model = Property
         fields = [
             "property_name",
+            "slug",
             "description",
             "sale_price",
             "property_type",
@@ -240,13 +242,14 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
             "rent_price",
             "service_charge",
             "caution_fee",
+            "legal_fee",
             "total_price",
             "agent_commission",
             "qaba_fee",
             "documents",
             "document_types",
         ]
-        read_only_fields = ["agent_commission", "qaba_fee"]
+        read_only_fields = ["agent_commission", "qaba_fee", "slug"]
 
     def validate_images(self, value):
         if len(value) > 5:
@@ -271,6 +274,7 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
         lister_type = request.user.user_type
         service_charge = attrs.get("service_charge")
         caution_fee = attrs.get("caution_fee")
+        legal_fee = attrs.get("legal_fee")
 
         if service_charge is not None and service_charge < 0:
             raise serializers.ValidationError(
@@ -280,9 +284,16 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"caution_fee": "Caution fee cannot be negative"}
             )
+        if legal_fee is not None and legal_fee < 0:
+            raise serializers.ValidationError(
+                {"legal_fee": "Legal fee cannot be negative"}
+            )
 
-        service_charge_value = float(service_charge) if service_charge is not None else 0.0
+        service_charge_value = (
+            float(service_charge) if service_charge is not None else 0.0
+        )
         caution_fee_value = float(caution_fee) if caution_fee is not None else 0.0
+        legal_fee_value = float(legal_fee) if legal_fee is not None else 0.0
 
         if listing_type == Property.ListingType.RENT:
             if not all([rent_price, rent_frequency]):
@@ -295,9 +306,7 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {"rent_price": "Rent price must be positive"}
                 )
-            qaba_fee = round(
-                float(rent_price) * settings.QABA_RENT_PERCENTAGE, 2
-            )
+            qaba_fee = round(float(rent_price) * settings.QABA_RENT_PERCENTAGE, 2)
             agent_commission = 0
             if lister_type == User.UserType.AGENT:
                 agent_commission = round(
@@ -308,7 +317,8 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
                 + qaba_fee
                 + agent_commission
                 + service_charge_value
-                + caution_fee_value,
+                + caution_fee_value
+                + legal_fee_value,
                 2,
             )
             submitted_total = attrs.get("total_price")
@@ -331,9 +341,7 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {"sale_price": "Sale price must be positive"}
                 )
-            qaba_fee = round(
-                float(sale_price) * settings.QABA_SALE_PERCENTAGE, 2
-            )
+            qaba_fee = round(float(sale_price) * settings.QABA_SALE_PERCENTAGE, 2)
             agent_commission = 0
             if lister_type == User.UserType.AGENT:
                 agent_commission = round(
@@ -344,7 +352,8 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
                 + qaba_fee
                 + agent_commission
                 + service_charge_value
-                + caution_fee_value,
+                + caution_fee_value
+                + legal_fee_value,
                 2,
             )
             submitted_total = attrs.get("total_price")
@@ -492,6 +501,7 @@ class PropertyUpdateSerializer(serializers.ModelSerializer):
         model = Property
         fields = [
             "property_name",
+            "slug",
             "description",
             "sale_price",
             "property_type",
@@ -509,11 +519,12 @@ class PropertyUpdateSerializer(serializers.ModelSerializer):
             "rent_price",
             "service_charge",
             "caution_fee",
+            "legal_fee",
             "total_price",
             "agent_commission",
             "qaba_fee",
         ]
-        read_only_fields = ["agent_commission", "qaba_fee"]
+        read_only_fields = ["agent_commission", "qaba_fee", "slug"]
 
     def validate(self, attrs):
         request = self.context.get("request")
@@ -525,6 +536,7 @@ class PropertyUpdateSerializer(serializers.ModelSerializer):
         lister_type = request.user.user_type
         service_charge_value = None
         caution_fee_value = None
+        legal_fee_value = None
 
         if "service_charge" in attrs:
             service_charge = attrs["service_charge"]
@@ -552,6 +564,19 @@ class PropertyUpdateSerializer(serializers.ModelSerializer):
             existing_caution = getattr(self.instance, "caution_fee", None)
             caution_fee_value = (
                 float(existing_caution) if existing_caution is not None else 0.0
+            )
+
+        if "legal_fee" in attrs:
+            legal_fee = attrs["legal_fee"]
+            if legal_fee is not None and legal_fee < 0:
+                raise serializers.ValidationError(
+                    {"legal_fee": "Legal fee cannot be negative"}
+                )
+            legal_fee_value = float(legal_fee) if legal_fee is not None else 0.0
+        else:
+            existing_legal = getattr(self.instance, "legal_fee", None)
+            legal_fee_value = (
+                float(existing_legal) if existing_legal is not None else 0.0
             )
 
         current_rent_price = (
@@ -593,7 +618,8 @@ class PropertyUpdateSerializer(serializers.ModelSerializer):
                 + qaba_fee
                 + agent_commission
                 + service_charge_value
-                + caution_fee_value,
+                + caution_fee_value
+                + legal_fee_value,
                 2,
             )
             submitted_total = attrs.get("total_price")
@@ -607,8 +633,7 @@ class PropertyUpdateSerializer(serializers.ModelSerializer):
             attrs["agent_commission"] = agent_commission
             attrs["total_price"] = total_price
         elif (
-            listing_type == Property.ListingType.SALE
-            and current_sale_price is not None
+            listing_type == Property.ListingType.SALE and current_sale_price is not None
         ):
             if sale_price is not None and sale_price <= 0:
                 raise serializers.ValidationError(
@@ -629,7 +654,8 @@ class PropertyUpdateSerializer(serializers.ModelSerializer):
                 + qaba_fee
                 + agent_commission
                 + service_charge_value
-                + caution_fee_value,
+                + caution_fee_value
+                + legal_fee_value,
                 2,
             )
             submitted_total = attrs.get("total_price")
@@ -666,7 +692,7 @@ class FavoriteSerializer(serializers.ModelSerializer):
 
 
 class PropertyFavoriteToggleSerializer(serializers.Serializer):
-    property_id = serializers.IntegerField()
+    property_id = serializers.UUIDField()
 
 
 class PropertyDocumentUploadSerializer(serializers.ModelSerializer):
@@ -829,6 +855,7 @@ class PropertyDetailSerializer(PropertyListSerializer):
             "qaba_fee",
             "service_charge",
             "caution_fee",
+            "legal_fee",
             "total_price",
             "listed_by_name",
             "reviews",
