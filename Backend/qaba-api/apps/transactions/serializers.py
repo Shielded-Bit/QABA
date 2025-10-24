@@ -66,7 +66,7 @@ class TransactionSerializer(serializers.ModelSerializer):
 
 
 class PropertyPaymentSerializer(serializers.Serializer):
-    property_id = serializers.UUIDField(required=True)
+    property_id = serializers.IntegerField(required=True)
 
     def validate(self, data):
         property_id = data.get("property_id")
@@ -83,7 +83,7 @@ class PropertyPaymentSerializer(serializers.Serializer):
 
 
 class OfflinePaymentSerializer(serializers.ModelSerializer):
-    property_id = serializers.UUIDField(write_only=True)
+    property_id = serializers.IntegerField(write_only=True)
     payment_receipt = serializers.FileField(
         write_only=True,
         required=True,

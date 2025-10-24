@@ -692,7 +692,7 @@ class FavoriteSerializer(serializers.ModelSerializer):
 
 
 class PropertyFavoriteToggleSerializer(serializers.Serializer):
-    property_id = serializers.UUIDField()
+    property_id = serializers.IntegerField()
 
 
 class PropertyDocumentUploadSerializer(serializers.ModelSerializer):
