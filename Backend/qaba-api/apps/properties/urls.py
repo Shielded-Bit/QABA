@@ -44,18 +44,18 @@ urlpatterns = [
     path("favorites/", FavoriteListView.as_view(), name="favorites-list"),
     path("favorites/toggle/", FavoriteToggleView.as_view(), name="favorites-toggle"),
     path(
-        "properties/<uuid:property_id>/documents/",
+        "properties/<int:property_id>/documents/",
         PropertyDocumentView.as_view(),
         name="property-documents",
     ),
     path(
-        "properties/<uuid:property_id>/documents/<uuid:document_id>/",
+        "properties/<int:property_id>/documents/<uuid:document_id>/",
         PropertyDocumentDetailView.as_view(),
         name="property-document-detail",
     ),
     path("reviews/create/", CreatePropertyReviewView.as_view(), name="create-review"),
     path(
-        "reviews/property/<uuid:property_id>/",
+        "reviews/property/<int:property_id>/",
         ListPropertyReviewsView.as_view(),
         name="property-reviews",
     ),
