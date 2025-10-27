@@ -200,7 +200,7 @@ MICROSOFT_SENDER_EMAIL = getenv("MICROSOFT_SENDER_EMAIL", getenv("DEFAULT_FROM_E
 MICROSOFT_GRAPH_SCOPE = getenv(
     "MICROSOFT_GRAPH_SCOPE", "https://graph.microsoft.com/.default"
 )
-DEFAULT_FROM_EMAIL = getenv("DEFAULT_FROM_EMAIL", "")
+DEFAULT_FROM_EMAIL = getenv("DEFAULT_FROM_EMAIL", "contact@qarba.com")
 
 GOOGLE_CLIENT_ID = getenv("GOOGLE_CLIENT_ID", "").strip()
 
