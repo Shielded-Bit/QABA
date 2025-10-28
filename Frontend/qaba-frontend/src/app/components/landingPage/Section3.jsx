@@ -6,6 +6,7 @@ import { useLandingPageCache } from '../../../contexts/LandingPageCacheContext';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { createPropertySlug } from '@/utils/slugHelper';
 
 const Section3 = () => {
   // State for selected property
@@ -115,7 +116,7 @@ const Section3 = () => {
                   onClick={() => {
                     // On mobile, navigate to details page; on desktop, select property
                     if (typeof window !== 'undefined' && window.innerWidth < 768) {
-                      router.push(`/details/${property.id}`);
+                      router.push(`/details/${createPropertySlug(property.property_name, property.id)}`);
                     } else {
                       setSelectedProperty(property);
                     }
@@ -267,7 +268,7 @@ const Section3 = () => {
 
                     {/* Action Button - Hidden on mobile */}
                     <div className="hidden md:block">
-                      <Link href={`/details/${selectedProperty.id}`}>
+                      <Link href={`/details/${createPropertySlug(selectedProperty.property_name, selectedProperty.id)}`}>
                         <button className="w-full bg-gradient-to-r from-[#014d98] to-[#3ab7b1] text-white py-3 px-6 rounded-lg font-semibold hover:from-[#3ab7b1] hover:to-[#014d98] transition-all duration-300 shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#014d98]">
                           View Full Details
                         </button>

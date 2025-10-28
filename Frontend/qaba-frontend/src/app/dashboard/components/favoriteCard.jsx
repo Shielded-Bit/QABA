@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Heart, Home, Bed, Bath, SquareCode, Tag } from 'lucide-react';
 import axios from 'axios';
+import { createPropertySlug } from '@/utils/slugHelper';
 
 const FavoriteCard = ({ favorite, onRemove }) => {
   const [isRemoving, setIsRemoving] = useState(false);
@@ -67,7 +68,7 @@ const FavoriteCard = ({ favorite, onRemove }) => {
   }
 
   return (
-    <Link href={`/details/${property.id}`} className="block">
+    <Link href={`/details/${createPropertySlug(property.property_name, property.id)}`} className="block">
       <div className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden relative">
         {/* Property Image */}
         <div className="relative h-48">
