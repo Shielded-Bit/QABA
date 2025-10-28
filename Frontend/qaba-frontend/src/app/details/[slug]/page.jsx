@@ -56,31 +56,43 @@ const PropertyDetails = ({ params }) => {
     unwrapParams();
   }, [params]);
 
+  // Helper function to extract ID from slug
+  const extractIdFromSlug = (slug) => {
+    // Slug format: property-name-123
+    // Extract the last part after the last hyphen
+    const parts = slug.split('-');
+    const id = parts[parts.length - 1];
+    return id;
+  };
+
   useEffect(() => {
     const fetchPropertyDetail = async () => {
-      if (!unwrappedParams?.id) return;
-      
+      if (!unwrappedParams?.slug) return;
+
+      // Extract property ID from slug
+      const propertyId = extractIdFromSlug(unwrappedParams.slug);
+
       try {
         setLoading(true);
         setError(null);
-        
+
         // Fetch property details without authorization
         const headers = {
           'Content-Type': 'application/json',
         };
-        
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/properties/${unwrappedParams.id}/`, {
+
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/properties/${propertyId}/`, {
           method: 'GET',
           headers,
         });
-        
+
         if (!res.ok) {
           if (res.status === 404) {
             throw new Error('Property not found');
           }
           throw new Error(`Failed to fetch property: ${res.status}`);
         }
-        
+
         const response = await res.json();
         const data = response.data;
         
@@ -328,32 +340,33 @@ const PropertyDetails = ({ params }) => {
 
         {/* Quick Property Overview */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
-            <div className="p-4 bg-blue-50 rounded-lg">
-              <p className="text-blue-600 text-sm font-medium">{propertyType === "Buy" ? "Total Price" : `${property.rent_frequency_display || 'Monthly'} Rent`}</p>
-              <p className="text-2xl font-bold text-blue-900 mt-1">₦ {parseFloat(totalPrice).toLocaleString()}</p>
-              {priceFrequency && <p className="text-sm text-gray-500">{priceFrequency}</p>}
+          <h3 className="text-lg font-bold text-gray-900 mb-4">Property Details</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+              <p className="text-blue-600 text-sm font-medium mb-2">{propertyType === "Buy" ? "Total Price" : `${property.rent_frequency_display || 'Monthly'} Rent`}</p>
+              <p className="text-2xl font-bold text-blue-900">₦ {parseFloat(propertyType === "Buy" ? totalPrice : basePrice).toLocaleString()}</p>
+              {priceFrequency && <p className="text-sm text-blue-600 mt-1">{priceFrequency}</p>}
             </div>
-            <div className="p-4 bg-green-50 rounded-lg">
-              <p className="text-green-600 text-sm font-medium">Bedrooms</p>
-              <p className="text-2xl font-bold text-green-900 mt-1">{property.bedrooms || 'N/A'}</p>
-              <p className="text-sm text-gray-500">{property.bedrooms === 1 ? 'Bedroom' : 'Bedrooms'}</p>
+            <div className="p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200">
+              <p className="text-green-600 text-sm font-medium mb-2">Bedrooms</p>
+              <p className="text-2xl font-bold text-green-900">{property.bedrooms || 'N/A'}</p>
+              <p className="text-sm text-green-600 mt-1">{property.bedrooms === 1 ? 'Bedroom' : 'Bedrooms'}</p>
             </div>
-            <div className="p-4 bg-purple-50 rounded-lg">
-              <p className="text-purple-600 text-sm font-medium">Bathrooms</p>
-              <p className="text-2xl font-bold text-purple-900 mt-1">{property.bathrooms || 'N/A'}</p>
-              <p className="text-sm text-gray-500">{property.bathrooms === 1 ? 'Bathroom' : 'Bathrooms'}</p>
+            <div className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg border border-purple-200">
+              <p className="text-purple-600 text-sm font-medium mb-2">Bathrooms</p>
+              <p className="text-2xl font-bold text-purple-900">{property.bathrooms || 'N/A'}</p>
+              <p className="text-sm text-purple-600 mt-1">{property.bathrooms === 1 ? 'Bathroom' : 'Bathrooms'}</p>
             </div>
-            <div className="p-4 bg-orange-50 rounded-lg">
-              <p className="text-orange-600 text-sm font-medium">Square Feet</p>
-              <p className="text-2xl font-bold text-orange-900 mt-1">
-                {property.area_sqft ? 
-                  (typeof property.area_sqft === 'object' ? 
-                    `${property.area_sqft.min}-${property.area_sqft.max}` : 
-                    property.area_sqft) : 
+            <div className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg border border-orange-200">
+              <p className="text-orange-600 text-sm font-medium mb-2">Square Feet</p>
+              <p className="text-2xl font-bold text-orange-900">
+                {property.area_sqft ?
+                  (typeof property.area_sqft === 'object' ?
+                    `${property.area_sqft.min}-${property.area_sqft.max}` :
+                    property.area_sqft) :
                   'N/A'}
               </p>
-              <p className="text-sm text-gray-500">sq ft</p>
+              <p className="text-sm text-orange-600 mt-1">sq ft</p>
             </div>
           </div>
         </div>
@@ -362,6 +375,36 @@ const PropertyDetails = ({ params }) => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Property Details */}
           <div className="lg:col-span-2 space-y-8">
+            {/* Property Video */}
+            {hasVideo && (
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-900 to-green-600">
+                  Property Video Tour
+                </h3>
+                <div className="relative w-full aspect-video rounded-lg overflow-hidden">
+                  <video
+                    controls
+                    controlsList="nodownload"
+                    onContextMenu={(e) => e.preventDefault()}
+                    className="w-full h-full object-cover"
+                    src={property.video.video_url}
+                    poster={property.thumbnail || (images[0] && getImageUrl(images[0]))}
+                  >
+                    Your browser does not support the video tag.
+                  </video>
+                  {/* CSS Watermark - prevents easy screenshots */}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="text-white/70 text-4xl sm:text-6xl" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.3)' }}>
+                      Qarba Properties
+                    </div>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 mt-2 italic">
+                  Note: Video downloads are disabled to protect content.
+                </p>
+              </div>
+            )}
+
             {/* Description */}
             <div className="bg-white rounded-lg shadow-sm p-6">
               <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-900 to-green-600">
@@ -424,36 +467,6 @@ const PropertyDetails = ({ params }) => {
                 </div>
               )}
             </div>
-
-            {/* Property Video */}
-            {hasVideo && (
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-900 to-green-600">
-                  Property Video Tour
-                </h3>
-                <div className="relative w-full aspect-video rounded-lg overflow-hidden">
-                  <video
-                    controls
-                    controlsList="nodownload"
-                    onContextMenu={(e) => e.preventDefault()}
-                    className="w-full h-full object-cover"
-                    src={property.video.video_url}
-                    poster={property.thumbnail || (images[0] && getImageUrl(images[0]))}
-                  >
-                    Your browser does not support the video tag.
-                  </video>
-                  {/* CSS Watermark - prevents easy screenshots */}
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="text-white/70 text-4xl sm:text-6xl" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.3)' }}>
-                      Qarba Properties
-                    </div>
-                  </div>
-                </div>
-                <p className="text-xs text-gray-500 mt-2 italic">
-                  Note: Video downloads are disabled to protect content.
-                </p>
-              </div>
-            )}
           </div>
 
           {/* Right Column - Contact & Actions */}
@@ -509,19 +522,19 @@ const PropertyDetails = ({ params }) => {
                 Listed By
               </h4>
               {property.listed_by && (
-                <ListedByCard 
+                <ListedByCard
                   agent={{
                     name: `${property.listed_by.first_name} ${property.listed_by.last_name}`,
-                    company: property.listed_by.user_type === "AGENT" ? "Real Estate Agent" : 
+                    company: property.listed_by.user_type === "AGENT" ? "Real Estate Agent" :
                             property.listed_by.user_type === "LANDLORD" ? "Property Owner" : "Private Seller",
-                    image: property.listed_by.profile?.profile_photo_url || "/assets/images/default-user.png",
+                    image: property.listed_by.profile?.profile_photo_url || null,
                     rating: property.average_rating || 0,
                     userType: property.listed_by.user_type,
-                    location: property.listed_by.profile ? 
-                      `${property.listed_by.profile.state || ''}, ${property.listed_by.profile.country || 'Nigeria'}`.trim() : 
+                    location: property.listed_by.profile ?
+                      `${property.listed_by.profile.state || ''}, ${property.listed_by.profile.country || 'Nigeria'}`.trim() :
                       property.state ? `${property.state}, Nigeria` : "Nigeria",
                     verified: property.listed_by.is_email_verified
-                  }} 
+                  }}
                 />
               )}
             </div>
@@ -587,9 +600,10 @@ const PropertyDetails = ({ params }) => {
                         <ListingCard
                           id={listing.id}
                           title={listing.property_name}
+                          slug={listing.slug}
                           price={listing.listing_type === 'SALE'
                             ? `₦${parseFloat(listing.sale_price).toLocaleString()}`
-                            : `₦${parseFloat(listing.rent_price).toLocaleString()}${listing.rent_frequency ? ` / ${listing.rent_frequency_display}` : ''}`
+                            : `₦${parseFloat(listing.rent_price).toLocaleString()}${listing.rent_frequency_display ? ` / ${listing.rent_frequency_display}` : ''}`
                           }
                           description={listing.description || `${listing.bedrooms} bedroom ${listing.property_type_display.toLowerCase()} in ${listing.city}, ${listing.state}`}
                           image={listing.thumbnail}
@@ -610,9 +624,10 @@ const PropertyDetails = ({ params }) => {
                       key={listing.id}
                       id={listing.id}
                       title={listing.property_name}
+                      slug={listing.slug}
                       price={listing.listing_type === 'SALE'
                         ? `₦${parseFloat(listing.sale_price).toLocaleString()}`
-                        : `₦${parseFloat(listing.rent_price).toLocaleString()}${listing.rent_frequency ? ` / ${listing.rent_frequency_display}` : ''}`
+                        : `₦${parseFloat(listing.rent_price).toLocaleString()}${listing.rent_frequency_display ? ` / ${listing.rent_frequency_display}` : ''}`
                       }
                       description={listing.description || `${listing.bedrooms} bedroom ${listing.property_type_display.toLowerCase()} in ${listing.city}, ${listing.state}`}
                       image={listing.thumbnail}

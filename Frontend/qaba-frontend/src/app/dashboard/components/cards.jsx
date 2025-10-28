@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSwipeable } from "react-swipeable";
 import { useNotifications } from "../../../contexts/NotificationContext";
 import { PropertyCardSkeleton } from "../components/LoadingSkeletons";
+import { createPropertySlug } from "@/utils/slugHelper";
 
 const Dashboard = () => {
   const [properties, setProperties] = useState([]);
@@ -201,7 +202,7 @@ const PropertiesList = ({ properties, isLoading }) => (
 
 // Updated PropertyCard with Next.js Link component instead of useRouter
 const PropertyCard = ({ id, image, name, address, status, price }) => (
-  <Link href={`/details/${id}`} passHref>
+  <Link href={`/details/${createPropertySlug(name, id)}`} passHref>
     <div className="flex items-start gap-2 border-b pb-3 last:border-b-0 w-full cursor-pointer hover:bg-gray-50 transition">
       <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-md overflow-hidden flex-shrink-0">
         <Image src={image} alt={name} width={80} height={80} className="object-cover w-full h-full" />

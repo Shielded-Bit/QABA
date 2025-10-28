@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { Bookmark } from 'lucide-react';
 import axios from 'axios';
 import WatermarkedImage from '../WatermarkedImage';
+import { createPropertySlug } from '@/utils/slugHelper';
 
 const ListingCard = ({
   id,
@@ -16,14 +17,15 @@ const ListingCard = ({
   type,
   propertyStatus = 'Available',
   propertyTypeDisplay = '',
-  amenities = []
+  amenities = [],
+  slug // Accept slug from backend
 }) => {
   const router = useRouter();
   const [isFavorited, setIsFavorited] = useState(false);
   const [isButtonHovered, setIsButtonHovered] = useState(false);
   const [isTooltipVisible, setIsTooltipVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   // Check initial favorite status when component mounts
   useEffect(() => {
     const checkFavoriteStatus = async () => {
@@ -56,7 +58,9 @@ const ListingCard = ({
   }, [id]);
 
   const handleCardClick = () => {
-    router.push(`/details/${id}`);
+    // Use backend slug if available, otherwise generate it
+    const propertySlug = slug || createPropertySlug(title, id);
+    router.push(`/details/${propertySlug}`);
   };
 
   const toggleFavorite = async (e) => {
