@@ -265,8 +265,8 @@ export default function PropertyDetail() {
   const rentFrequency = property.rent_frequency || 'Monthly';
 
   // Calculate fees based on property data
-  const agentFee = property.agent_commission || (basePrice * 0.1);
-  const qarbaFee = property.qaba_fee || (basePrice * 0.05);
+  const agentFee = property.agent_commission ?? 0;
+  const qarbaFee = property.qaba_fee ?? 0;
   const serviceCharge = property.service_charge || 0;
   const cautionFee = property.caution_fee || 0;
   const totalPrice = property.total_price || (parseFloat(basePrice) + parseFloat(agentFee) + parseFloat(qarbaFee) + parseFloat(serviceCharge) + parseFloat(cautionFee));

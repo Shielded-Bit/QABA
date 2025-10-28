@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Search } from "lucide-react";
+import { createPropertySlug } from "@/utils/slugHelper";
 
 // Modal component for viewing all properties with enhanced filtering
 const PropertyModal = ({ isOpen, onClose, filterType }) => {
@@ -120,7 +121,7 @@ const PropertyModal = ({ isOpen, onClose, filterType }) => {
 
   // Enhanced Property Card with Next.js Link component
   const PropertyCard = ({ id, image, name, address, status, price, listed_date }) => (
-    <Link href={`/details/${id}`} passHref>
+    <Link href={`/details/${createPropertySlug(name, id)}`} passHref>
       <div 
         onClick={() => onClose()} // Close modal when navigating
         className="flex items-start gap-3 border rounded-lg p-3 hover:shadow-md transition cursor-pointer"

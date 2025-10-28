@@ -706,6 +706,14 @@ const AddForSell = () => {
     try {
       setIsLoading(true);
 
+      // Validate that at least 2 images are uploaded
+      if (mediaFiles.images.length < 2) {
+        setErrorMessage('Please upload at least 2 images of the property.');
+        setErrorModalOpen(true);
+        setIsLoading(false);
+        return;
+      }
+
       const payload = {
         ...formData,
         submit_for_review: !isDraftSubmission,

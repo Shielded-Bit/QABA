@@ -551,7 +551,15 @@ const AddForRent = () => {
   const handleSubmit = async (isDraftSubmission = false) => {
     try {
       setIsLoading(true);
-      
+
+      // Validate that at least 2 images are uploaded
+      if (mediaFiles.images.length < 2) {
+        setErrorMessage('Please upload at least 2 images of the property.');
+        setErrorModalOpen(true);
+        setIsLoading(false);
+        return;
+      }
+
       const payload = {
         ...formData,
         submit_for_review: !isDraftSubmission,
@@ -560,7 +568,7 @@ const AddForRent = () => {
         area_sqft: formData.area_sqft ? parseFloat(formData.area_sqft) : 0,
         total_price: (fees.totalPrice + (parseFloat(formData.service_charge) || 0) + (parseFloat(formData.caution_fee) || 0)).toString()
       };
-      
+
       const response = await propertyService.createProperty(payload, mediaFiles);
         
       if (!response.success) {

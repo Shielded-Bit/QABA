@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Search, RotateCcw, Filter, ChevronDown } from "lucide-react";
+import { createPropertySlug } from "@/utils/slugHelper";
 
 const AllListedProperties = () => {
   const searchParams = useSearchParams();
@@ -204,7 +205,7 @@ const AllListedProperties = () => {
 
 
   const PropertyCard = ({ id, image, name, address, status, price }) => (
-    <Link href={`/details/${id}`} passHref>
+    <Link href={`/details/${createPropertySlug(name, id)}`} passHref>
       <div className="group bg-white rounded-2xl border border-gray-200/50 p-4 hover:shadow-xl hover:shadow-gray-200/50 transition-all duration-300 cursor-pointer hover:-translate-y-1">
         <div className="flex items-start gap-4">
           <div className="w-32 h-32 sm:w-40 sm:h-40 lg:w-48 lg:h-48 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100">
