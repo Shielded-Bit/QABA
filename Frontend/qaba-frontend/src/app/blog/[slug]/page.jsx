@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 export default function BlogDetailPage({ params }) {
-  const { id: slug } = React.use(params);
+  const { slug } = React.use(params);
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
