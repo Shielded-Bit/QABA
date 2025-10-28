@@ -5,6 +5,12 @@ from .base import *
 # Production settings
 DEBUG = getenv("DEBUG", "False") == "True"
 
+# Hosts and CORS/CSRF
+ALLOWED_HOSTS = [h for h in getenv("ALLOWED_HOSTS", "").split(",") if h]
+CSRF_TRUSTED_ORIGINS = [o for o in getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if o]
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOWED_ORIGINS = [o for o in getenv("CORS_ALLOWED_ORIGINS", "").split(",") if o]
+
 # Database configuration
 DATABASES = {
     "default": {
@@ -17,31 +23,23 @@ DATABASES = {
     }
 }
 
-# CORS Settings
-CORS_ALLOW_ALL_ORIGINS = False
-CORS_ALLOWED_ORIGINS = getenv("CORS_ALLOWED_ORIGINS", "").split(",")
-CORS_ALLOWED_ORIGIN_REGEXES = []
+# When behind a reverse proxy/ingress that terminates TLS, keep redirect off here
+SECURE_SSL_REDIRECT = False
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_TZ = True
+USE_X_FORWARDED_HOST = True
 
-# Security settings
-SECURE_BROWSER_XSS_FILTER = True
-SECURE_CONTENT_TYPE_NOSNIFF = True
-SECURE_SSL_REDIRECT = True
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-
-# Additional security headers
-SECURE_HSTS_SECONDS = 31536000  # 1 year
+# HSTS (enable when serving strictly over HTTPS)
+SECURE_HSTS_SECONDS = int(getenv("SECURE_HSTS_SECONDS", "31536000"))
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
-X_FRAME_OPTIONS = "DENY"
 
-# # WhiteNoise configuration for production
-# STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+# Content security
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_BROWSER_XSS_FILTER = True
 
-# # Enable GZip compression
-# WHITENOISE_MIDDLEWARE = {
-#     "enable_gzip_compression": True,
-# }
+# Cookie security
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
 
-# # Cache control for static files (1 year)
-# WHITENOISE_MAX_AGE = 31536000
+STATICFILES_STORAGE = "cloudinary_storage.storage.StaticHashedCloudinaryStorage"

@@ -4,21 +4,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-# Look for .env file in multiple locations
-env_paths = [
-    Path(__file__).resolve().parent.parent.parent.parent / ".env",  # Project root
-    Path(__file__).resolve().parent.parent.parent / ".env",  # qaba-api root
-    Path.cwd() / ".env",  # Current directory
-]
-
-for env_path in env_paths:
-    if env_path.exists():
-        load_dotenv(env_path)
-        print(f"Loaded environment variables from: {env_path}")
-        break
-else:
-    load_dotenv()  # Load from default locations
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -48,6 +34,25 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = "users.User"
 
+# Pricing configuration
+def _get_percentage(env_name: str, default: str) -> float:
+    raw_value = getenv(env_name, default)
+    try:
+        value = float(raw_value)
+    except (TypeError, ValueError):
+        value = float(default)
+    return value / 100 if value > 1 else value
+
+
+QABA_RENT_PERCENTAGE = _get_percentage("QABA_RENT_PERCENTAGE", "0.00")
+AGENT_RENT_COMMISSION_PERCENTAGE = _get_percentage(
+    "AGENT_RENT_COMMISSION_PERCENTAGE", "0.10"
+)
+QABA_SALE_PERCENTAGE = _get_percentage("QABA_SALE_PERCENTAGE", "0.00")
+AGENT_SALE_COMMISSION_PERCENTAGE = _get_percentage(
+    "AGENT_SALE_COMMISSION_PERCENTAGE", "0.10"
+)
+
 # Application definition
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -58,6 +63,10 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     # Third-party apps
     "corsheaders",  # Add this line
+    "django_otp",
+    "django_otp.plugins.otp_static",
+    "django_otp.plugins.otp_totp",
+    "two_factor",
     "rest_framework",  # Django REST framework
     "rest_framework_simplejwt",  # Django REST framework JWT
     "drf_spectacular",  # drf-spectacular
@@ -68,6 +77,7 @@ INSTALLED_APPS = [
     "apps.properties",  # Properties app
     "apps.transactions",  # Transactions app
     "apps.blogs",
+    "apps.jobs",
 ]
 
 MIDDLEWARE = [
@@ -78,6 +88,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django_otp.middleware.OTPMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -141,7 +152,7 @@ REST_FRAMEWORK = {
 # drf-spectacular settings
 SPECTACULAR_SETTINGS = {
     "TITLE": "QABA API",
-    "DESCRIPTION": "QABA Real Estate Platform API documentation",
+    "DESCRIPTION": "QABA Properties Platform API documentation",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "AUTHENTICATION_CLASSES": (
@@ -157,10 +168,12 @@ SPECTACULAR_SETTINGS = {
 # JWT Settings
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(
-        minutes=int(getenv("ACCESS_TOKEN_LIFETIME"), 15)
+        hours=int(getenv("ACCESS_TOKEN_LIFETIME", "24"))
     ),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=int(getenv("REFRESH_TOKEN_LIFETIME"), 30)),
-    "ROTATE_REFRESH_TOKENS": False,
+    "REFRESH_TOKEN_LIFETIME": timedelta(
+        days=int(getenv("REFRESH_TOKEN_LIFETIME", "30"))
+    ),
+    "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
@@ -170,18 +183,26 @@ AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
 ]
 
+LOGIN_URL = "two_factor:login"
+LOGIN_REDIRECT_URL = "admin:index"
 
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = getenv("EMAIL_HOST", "smtp.gmail.com")
-EMAIL_PORT = getenv("EMAIL_PORT", 465)
-EMAIL_USE_TLS = getenv("EMAIL_USE_TLS", False)
-EMAIL_USE_SSL = getenv("EMAIL_USE_SSL", True)
-EMAIL_HOST_USER = getenv("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = getenv("EMAIL_HOST_PASSWORD")
-DEFAULT_FROM_EMAIL = getenv("DEFAULT_FROM_EMAIL")
+OTP_TOTP_ISSUER = getenv("OTP_TOTP_ISSUER", "QABA Admin")
+
+TWO_FACTOR_PATCH_ADMIN = True
 
 FRONTEND_URL = getenv("FRONTEND_URL", "http://localhost:3000")
 BACKEND_URL = getenv("BACKEND_URL", "http://localhost:8000")
+
+MICROSOFT_TENANT_ID = getenv("MICROSOFT_TENANT_ID", "")
+MICROSOFT_CLIENT_ID = getenv("MICROSOFT_CLIENT_ID", "")
+MICROSOFT_CLIENT_SECRET = getenv("MICROSOFT_CLIENT_SECRET", "")
+MICROSOFT_SENDER_EMAIL = getenv("MICROSOFT_SENDER_EMAIL", getenv("DEFAULT_FROM_EMAIL", ""))
+MICROSOFT_GRAPH_SCOPE = getenv(
+    "MICROSOFT_GRAPH_SCOPE", "https://graph.microsoft.com/.default"
+)
+DEFAULT_FROM_EMAIL = getenv("DEFAULT_FROM_EMAIL", "contact@qarba.com")
+
+GOOGLE_CLIENT_ID = getenv("GOOGLE_CLIENT_ID", "").strip()
 
 CORS_ALLOW_CREDENTIALS = True
 # Security Headers
@@ -219,9 +240,6 @@ CLOUDINARY_STORAGE = {
     # Folder settings for different media types
     "MEDIA_TAG": "media",
     "STATIC_TAG": "static",
-    # Transformations and settings
-    "INVALID_VIDEO_ERROR_MESSAGE": "Please upload a valid video file.",
-    "EXCLUDE_DELETE_ORPHANED_MEDIA_PATHS": [],
 }
 
 # Set specific folders for different types of media
@@ -229,6 +247,7 @@ CLOUDINARY_FOLDERS = {
     "user_profiles": "qaba/users/profiles",
     "property_images": "qaba/properties/images",
     "property_videos": "qaba/properties/videos",
+    "job_applications": "qaba/jobs/applications",
 }
 
 FLW_SECRET_KEY = getenv("FLW_SECRET_KEY", "your-default-secret-key")

@@ -1,15 +1,12 @@
 from django.urls import path
 
 from .views import (
-    AdminRegistrationView,
     AgentProfileView,
-    AgentRegistrationView,
     ClientProfileView,
-    ClientRegistrationView,
     ContactFormView,
     CurrentUserView,
-    EmailVerificationView,
-    LandlordRegistrationView,
+    OTPVerificationView,
+    GoogleAuthView,
     LoginView,
     LogoutView,
     NotificationListView,
@@ -18,6 +15,7 @@ from .views import (
     PasswordResetConfirmView,
     PasswordResetRequestView,
     PropertySurveyMeetingCreateView,
+    RegistrationView,
     RefreshTokenView,
     SendEmailVerificationView,
     UpdateUserView,
@@ -26,20 +24,11 @@ from .views import (
 
 auth_patterns = [
     path("auth/login/", LoginView.as_view(), name="login"),
+    path("auth/google/", GoogleAuthView.as_view(), name="google-auth"),
     path("auth/logout/", LogoutView.as_view(), name="logout"),
-    path(
-        "auth/register/client/",
-        ClientRegistrationView.as_view(),
-        name="register-client",
-    ),
-    path(
-        "auth/register/agent/", AgentRegistrationView.as_view(), name="register-agent"
-    ),
-    path(
-        "auth/register/admin/", AdminRegistrationView.as_view(), name="register-admin"
-    ),
+    path("auth/register/", RegistrationView.as_view(), name="register"),
     path("auth/token/refresh/", RefreshTokenView.as_view(), name="refresh-token"),
-    path("auth/verify-email/", EmailVerificationView.as_view(), name="verify-email"),
+    path("auth/verify-email/", OTPVerificationView.as_view(), name="verify-email"),
     path(
         "auth/password-reset/",
         PasswordResetRequestView.as_view(),
@@ -70,11 +59,6 @@ urlpatterns = [
         "notifications/<int:pk>/read/",
         NotificationMarkReadView.as_view(),
         name="notification-mark-read",
-    ),
-    path(
-        "register/landlord/",
-        LandlordRegistrationView.as_view(),
-        name="register-landlord",
     ),
     path("contact/", ContactFormView.as_view(), name="contact-form"),
     path('survey-meetings/create/', PropertySurveyMeetingCreateView.as_view(), name='survey_meetings_create'),

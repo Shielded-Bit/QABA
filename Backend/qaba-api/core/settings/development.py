@@ -4,10 +4,16 @@ from os import getenv
 # Development settings
 DEBUG = True
 
-# Allow all origins in development
+# Allow all origins and hosts in development
 CORS_ALLOW_ALL_ORIGINS = True
+ALLOWED_HOSTS = ["*"]
 
-# Database Configuration
+# Use local file storage in development to avoid external dependencies
+DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
+
+# Send emails to console in development
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
