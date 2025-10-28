@@ -67,7 +67,8 @@ jobs:
             ls -al
 
             # Run Docker Compose
-            docker compose -f docker-compose.yml up -d --build --no-cache
-
+            docker-compose -f docker-compose.yml build --no-cache
+            docker-compose -f docker-compose.yml up -d
+            
             # Cleanup old resources
             docker system prune -f || true
