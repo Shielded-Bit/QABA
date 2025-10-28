@@ -1,10 +1,14 @@
 import logging
+import random
+import string
 from typing import Dict, List, Union
 
 from django.conf import settings
-from django.core.mail import EmailMultiAlternatives, send_mail
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
+
+from apps.users.models import OTP
+from core.utils import microsoft_graph_email
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +33,7 @@ def send_email(
     context.update(
         {
             "site_name": (
-                settings.SITE_NAME if hasattr(settings, "SITE_NAME") else "QABA"
+                settings.SITE_NAME if hasattr(settings, "SITE_NAME") else "Qarba"
             ),
             "frontend_url": settings.FRONTEND_URL,
             "backend_url": (
@@ -45,36 +49,28 @@ def send_email(
         from_email = settings.DEFAULT_FROM_EMAIL
 
     try:
+        if not microsoft_graph_email.is_configured():
+            raise RuntimeError(
+                "Microsoft Graph email configuration is incomplete. "
+                "Ensure MICROSOFT_TENANT_ID, MICROSOFT_CLIENT_ID, MICROSOFT_CLIENT_SECRET, "
+                "and MICROSOFT_SENDER_EMAIL are set."
+            )
+
         # Render HTML content
         html_content = render_to_string(f"email/{template_name}.html", context)
         text_content = strip_tags(html_content)
 
-        if not (cc or bcc or attachments):
-            send_mail(
-                subject=subject,
-                message=text_content,
-                from_email=from_email,
-                recipient_list=recipients,
-                html_message=html_content,
-                fail_silently=fail_silently,
-            )
-        else:
-            email = EmailMultiAlternatives(
-                subject=subject,
-                body=text_content,
-                from_email=from_email,
-                to=recipients,
-                cc=cc,
-                bcc=bcc,
-            )
-            email.attach_alternative(html_content, "text/html")
-
-            if attachments:
-                for attachment in attachments:
-                    filename, content, mimetype = attachment
-                    email.attach(filename, content, mimetype)
-
-            email.send(fail_silently=fail_silently)
+        microsoft_graph_email.send_mail_via_graph(
+            subject=subject,
+            body_html=html_content,
+            body_text=text_content,
+            to=recipients,
+            from_email=from_email,
+            cc=cc,
+            bcc=bcc,
+            attachments=attachments,
+            timeout=getattr(settings, "EMAIL_TIMEOUT", 30),
+        )
 
         logger.info(f"Email sent to {', '.join(recipients)}: {subject}")
         return {"success": True}
@@ -89,16 +85,12 @@ def send_email(
 
 def send_verification_email(user):
     """Send verification email to user"""
-    from core.utils.token import email_verification_token_generator
+    otp = "".join(random.choices(string.digits, k=6))
+    OTP.objects.create(user=user, otp=otp)
 
-    token = email_verification_token_generator.make_token(user)
-    user.email_verification_token = token
-    user.save()
-
-    verification_url = f"{settings.FRONTEND_URL}/verify-email?token={token}"
     context = {
         "user": user,
-        "verification_url": verification_url,
+        "otp": otp,
     }
 
     return send_email(
@@ -110,23 +102,19 @@ def send_verification_email(user):
 
 
 def send_password_reset_email(user):
-    """Send password reset email to user"""
-    from core.utils.token import email_verification_token_generator
+    """Send password reset OTP to user"""
+    otp = "".join(random.choices(string.digits, k=6))
+    OTP.objects.create(user=user, otp=otp)
 
-    token = email_verification_token_generator.make_token(user)
-    user.password_reset_token = token
-    user.save()
-
-    reset_url = f"{settings.FRONTEND_URL}/reset-password?token={token}"
     context = {
         "user": user,
-        "reset_url": reset_url,
+        "otp": otp,
     }
 
     return send_email(
         subject="Reset your password",
         recipients=user.email,
-        template_name="password_reset",
+        template_name="password_reset_otp",
         context=context,
     )
 
@@ -139,7 +127,7 @@ def send_welcome_email(user):
     }
 
     return send_email(
-        subject="Welcome to QABA",
+        subject="Welcome to Qarba",
         recipients=user.email,
         template_name="welcome",
         context=context,
@@ -169,11 +157,7 @@ def send_contact_form_email(name, email, phone, user_type, subject, message):
     try:
         # Get admin emails
         from apps.users.models import User
-        from django.conf import settings
-        from django.core.mail import send_mail
-        from django.template.loader import render_to_string
         from django.utils import timezone
-        from django.utils.html import strip_tags
 
         admin_emails = [settings.DEFAULT_FROM_EMAIL]
         try:
@@ -183,31 +167,22 @@ def send_contact_form_email(name, email, phone, user_type, subject, message):
         except Exception:
             pass
 
-        html_message = render_to_string(
-            "email/contact_form.html",
-            {
-                "name": name,
-                "email": email,
-                "phone": phone,
-                "user_type": user_type,
-                "subject": subject,
-                "message": message,
-                "date": timezone.now().strftime("%B %d, %Y %H:%M"),
-            },
-        )
+        context = {
+            "name": name,
+            "email": email,
+            "phone": phone,
+            "user_type": user_type,
+            "subject": subject,
+            "message": message,
+            "date": timezone.now().strftime("%B %d, %Y %H:%M"),
+        }
 
-        plain_message = strip_tags(html_message)
-
-        send_mail(
+        return send_email(
             subject=f"Contact Form: {subject}",
-            message=plain_message,
-            html_message=html_message,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=admin_emails,
-            fail_silently=False,
+            recipients=admin_emails,
+            template_name="contact_form",
+            context=context,
         )
-
-        return {"success": True}
     except Exception as e:
         import logging
 
@@ -221,30 +196,13 @@ def send_contact_confirmation_email(email, name):
     Send confirmation email to contact form submitter
     """
     try:
-        from django.conf import settings
-        from django.core.mail import send_mail
-        from django.template.loader import render_to_string
-        from django.utils.html import strip_tags
-
-        html_message = render_to_string(
-            "email/contact_confirmation.html",
-            {
-                "name": name,
-            },
-        )
-
-        plain_message = strip_tags(html_message)
-
-        send_mail(
-            subject="We've received your message - QABA Real Estate",
-            message=plain_message,
-            html_message=html_message,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[email],
+        return send_email(
+            subject="We've received your message - Qarba Properties",
+            recipients=[email],
+            template_name="contact_confirmation",
+            context={"name": name},
             fail_silently=True,
         )
-
-        return {"success": True}
     except Exception as e:
         import logging
 
@@ -297,7 +255,7 @@ def send_survey_meeting_notification(meeting, recipient_type="client"):
     from django.utils import timezone
 
     if recipient_type == "client":
-        subject = "Property Survey Meeting Scheduled - QABA Real Estate"
+        subject = "Property Survey Meeting Scheduled - Qarba Properties"
         recipients = [meeting.user.email]
         template_name = "survey_meeting_client"
     else:
@@ -353,7 +311,7 @@ def send_survey_meeting_status_update(meeting, old_status, new_status):
         "COMPLETED": "has been completed",
     }
 
-    subject = f"Property Survey Meeting {status_messages.get(new_status, 'Updated')} - QABA Real Estate"
+    subject = f"Property Survey Meeting {status_messages.get(new_status, 'Updated')} - Qarba Properties"
 
     scheduled_datetime = timezone.datetime.combine(
         meeting.scheduled_date, meeting.scheduled_time

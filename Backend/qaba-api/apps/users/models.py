@@ -5,7 +5,7 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
-
+from django.utils import timezone
 
 class UserManager(BaseUserManager):
     """Custom user manager that requires email, first_name, last_name, and password"""
@@ -55,8 +55,6 @@ class User(AbstractUser):
         max_length=10, choices=UserType.choices, default=UserType.CLIENT
     )
     is_email_verified = models.BooleanField(default=False)
-    email_verification_token = models.CharField(max_length=100, blank=True)
-    password_reset_token = models.CharField(max_length=100, blank=True)
 
     USERNAME_FIELD = "email"
 
@@ -91,6 +89,21 @@ class User(AbstractUser):
     def is_agent_or_landlord(self):
         """Helper property to check if user is agent or landlord"""
         return self.user_type in [self.UserType.AGENT, self.UserType.LANDLORD]
+
+
+class OTP(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="otps")
+    otp = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+
+    def save(self, *args, **kwargs):
+        if not self.expires_at:
+            self.expires_at = timezone.now() + timezone.timedelta(minutes=10)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"OTP for {self.user.email}"
 
 
 class Profile(models.Model):
@@ -252,7 +265,6 @@ class PropertySurveyMeeting(models.Model):
         super().save(*args, **kwargs)
 
 
-# Signal handlers to automatically create profiles when users are created
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     """Create appropriate profile when a user is created"""

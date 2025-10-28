@@ -32,3 +32,13 @@ coverage
 # Misc
 *.log
 .cache
+.git
+**/.git
+**/node_modules
+**/.next
+**/dist
+**/coverage
+**/*.log
+Dockerfile*
+README.md
+

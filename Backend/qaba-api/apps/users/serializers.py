@@ -1,10 +1,12 @@
 from datetime import datetime, time, timedelta
 
+from django.conf import settings
 from django.contrib.auth import authenticate
 from django.utils import timezone
 from rest_framework import serializers
 
 from .models import (
+    OTP,
     AgentProfile,
     ClientProfile,
     LandlordProfile,
@@ -28,7 +30,6 @@ class ClientProfilePatchSerializer(serializers.ModelSerializer):
         ]
 
     def validate(self, attrs):
-        # Add any specific validation for PATCH operations
         return attrs
 
 
@@ -46,7 +47,6 @@ class AgentProfilePatchSerializer(serializers.ModelSerializer):
         ]
 
     def validate(self, attrs):
-        # Add any specific validation for PATCH operations
         return attrs
 
 
@@ -113,6 +113,10 @@ class LandlordProfileSerializer(serializers.ModelSerializer):
 
 
 class BaseUserRegistrationSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(
+        required=True,
+        validators=[],  # handled manually to allow reuse of unverified accounts
+    )
     password = serializers.CharField(
         write_only=True, required=True, style={"input_type": "password"}
     )
@@ -135,6 +139,10 @@ class BaseUserRegistrationSerializer(serializers.ModelSerializer):
             "last_name": {"required": True},
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._existing_user = None
+
     def validate(self, attrs):
         if attrs.get("password") != attrs.get("password_confirm"):
             raise serializers.ValidationError(
@@ -143,23 +151,113 @@ class BaseUserRegistrationSerializer(serializers.ModelSerializer):
         return attrs
 
     def validate_email(self, value):
-        if User.objects.filter(email=value).exists():
+        try:
+            existing_user = User.objects.get(email=value)
+        except User.DoesNotExist:
+            return value
+
+        if existing_user.is_email_verified:
             raise serializers.ValidationError("User with this email already exists")
+        self._existing_user = existing_user
+
         return value
 
     def create(self, validated_data):
+        password = validated_data.pop("password")
         validated_data.pop("password_confirm", None)
+        user_type = validated_data.get("user_type", User.UserType.CLIENT)
+
+        existing_user = getattr(self, "_existing_user", None)
+
+        if existing_user:
+            # Reset and update the existing unverified account
+            existing_user.first_name = validated_data["first_name"]
+            existing_user.last_name = validated_data["last_name"]
+            existing_user.user_type = user_type
+            existing_user.is_active = False
+            existing_user.is_email_verified = False
+            existing_user.set_password(password)
+            existing_user.save(
+                update_fields=[
+                    "first_name",
+                    "last_name",
+                    "user_type",
+                    "is_active",
+                    "is_email_verified",
+                    "password",
+                ]
+            )
+            OTP.objects.filter(user=existing_user).delete()
+            return existing_user
 
         user = User.objects.create_user(
             email=validated_data["email"],
-            password=validated_data["password"],
+            password=password,
             first_name=validated_data["first_name"],
             last_name=validated_data["last_name"],
-            user_type=validated_data.get("user_type", User.UserType.CLIENT),
+            user_type=user_type,
             is_active=False,
         )
 
         return user
+
+
+class RegistrationSerializer(BaseUserRegistrationSerializer):
+    allowed_user_types = (
+        (User.UserType.CLIENT, "Client"),
+        (User.UserType.AGENT, "Agent"),
+        (User.UserType.LANDLORD, "Landlord"),
+    )
+
+    user_type = serializers.ChoiceField(choices=allowed_user_types, required=True)
+
+    class Meta(BaseUserRegistrationSerializer.Meta):
+        fields = BaseUserRegistrationSerializer.Meta.fields + ["user_type"]
+
+
+class GoogleAuthSerializer(serializers.Serializer):
+    id_token = serializers.CharField()
+    user_type = serializers.ChoiceField(
+        choices=RegistrationSerializer.allowed_user_types, required=False
+    )
+
+    def validate(self, attrs):
+        client_id = settings.GOOGLE_CLIENT_ID
+        if not client_id:
+            raise serializers.ValidationError(
+                {"non_field_errors": ["Google authentication is not configured."]}
+            )
+
+        try:
+            payload = verify_google_id_token(attrs["id_token"], audience=client_id)
+        except ImportError as exc:
+            raise serializers.ValidationError(
+                {
+                    "non_field_errors": [
+                        "Google authentication dependencies are not installed."
+                    ]
+                }
+            ) from exc
+        except ValueError as exc:
+            raise serializers.ValidationError(
+                {"id_token": ["Invalid Google ID token."]}
+            ) from exc
+
+        email = payload.get("email")
+        email_verified = payload.get("email_verified")
+
+        if not email:
+            raise serializers.ValidationError(
+                {"id_token": ["Google ID token does not include an email."]}
+            )
+
+        if email_verified not in (True, "true", "True", "1"):
+            raise serializers.ValidationError(
+                {"id_token": ["Google email is not verified."]}
+            )
+
+        attrs["payload"] = payload
+        return attrs
 
 
 class SendEmailVerificationSerializer(serializers.Serializer):
@@ -169,6 +267,11 @@ class SendEmailVerificationSerializer(serializers.Serializer):
         if not User.objects.filter(email=value).exists():
             raise serializers.ValidationError("User with this email does not exist")
         return value
+
+
+class OTPVerificationSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    otp = serializers.CharField(max_length=6)
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -193,21 +296,18 @@ class UserSerializer(serializers.ModelSerializer):
             try:
                 return ClientProfileSerializer(obj.clientprofile).data
             except ClientProfile.DoesNotExist:
-                # Create profile if it doesn't exist
                 profile = ClientProfile.objects.create(user=obj)
                 return ClientProfileSerializer(profile).data
         elif obj.user_type == User.UserType.AGENT:
             try:
                 return AgentProfileSerializer(obj.agentprofile).data
             except AgentProfile.DoesNotExist:
-                # Create profile if it doesn't exist
                 profile = AgentProfile.objects.create(user=obj)
                 return AgentProfileSerializer(profile).data
         elif obj.user_type == User.UserType.LANDLORD:
             try:
                 return LandlordProfileSerializer(obj.landlordprofile).data
             except LandlordProfile.DoesNotExist:
-                # Create profile if it doesn't exist
                 profile = LandlordProfile.objects.create(user=obj)
                 return LandlordProfileSerializer(profile).data
 
@@ -236,42 +336,6 @@ class LoginSerializer(serializers.Serializer):
         return user
 
 
-class ClientRegistrationSerializer(BaseUserRegistrationSerializer):
-    class Meta(BaseUserRegistrationSerializer.Meta):
-        pass
-
-    def create(self, validated_data):
-        validated_data["user_type"] = User.UserType.CLIENT
-        return super().create(validated_data)
-
-
-class AgentRegistrationSerializer(BaseUserRegistrationSerializer):
-    class Meta(BaseUserRegistrationSerializer.Meta):
-        pass
-
-    def create(self, validated_data):
-        validated_data["user_type"] = User.UserType.AGENT
-        return super().create(validated_data)
-
-
-class LandlordRegistrationSerializer(BaseUserRegistrationSerializer):
-    class Meta(BaseUserRegistrationSerializer.Meta):
-        pass
-
-    def create(self, validated_data):
-        validated_data["user_type"] = User.UserType.LANDLORD
-        return super().create(validated_data)
-
-
-class AdminRegistrationSerializer(BaseUserRegistrationSerializer):
-    class Meta(BaseUserRegistrationSerializer.Meta):
-        pass
-
-    def create(self, validated_data):
-        validated_data["user_type"] = User.UserType.ADMIN
-        return super().create(validated_data)
-
-
 class PasswordChangeSerializer(serializers.Serializer):
     old_password = serializers.CharField(write_only=True)
     new_password = serializers.CharField(write_only=True)
@@ -283,16 +347,13 @@ class PasswordChangeSerializer(serializers.Serializer):
         return value
 
 
-class EmailVerificationSerializer(serializers.Serializer):
-    token = serializers.CharField()
-
-
 class PasswordResetRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
 
 class PasswordResetConfirmSerializer(serializers.Serializer):
-    token = serializers.CharField()
+    email = serializers.EmailField()
+    otp = serializers.CharField(max_length=6)
     new_password = serializers.CharField(write_only=True)
 
 
@@ -308,7 +369,7 @@ class ContactFormSerializer(serializers.Serializer):
 
     name = serializers.CharField(max_length=100, required=False)
     email = serializers.EmailField(required=False)
-    phone = serializers.CharField(max_length=15, required=False)
+    phone = serializers.CharField(max_length=15, required=False, allow_blank=True)
     subject = serializers.CharField(max_length=200)
     message = serializers.CharField(max_length=2000)
 
@@ -485,9 +546,24 @@ class PropertySurveyMeetingCreateSerializer(serializers.ModelSerializer):
             if self.instance:
                 conflict_check = conflict_check.exclude(id=self.instance.id)
 
-            if conflict_check.exists():
-                raise serializers.ValidationError(
-                    "You already have a meeting scheduled at this date and time."
-                )
+        if conflict_check.exists():
+            raise serializers.ValidationError(
+                "You already have a meeting scheduled at this date and time."
+            )
 
         return data
+
+
+def verify_google_id_token(id_token_value, audience):
+    try:
+        from google.auth.transport import requests as google_requests
+        from google.oauth2 import id_token as google_id_token
+    except ImportError as exc:
+        raise ImportError(
+            "google-auth library is required for Google authentication."
+        ) from exc
+
+    auth_request = google_requests.Request()
+    return google_id_token.verify_oauth2_token(
+        id_token_value, auth_request, audience=audience
+    )

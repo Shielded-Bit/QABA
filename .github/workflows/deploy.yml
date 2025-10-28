@@ -1,0 +1,73 @@
+name: CI/CD - Deploy to VM
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify Docker Compose file
+        env:
+          ENV_FILE: env.example
+        run: docker compose -f docker-compose.yml config -q
+
+      - name: Copy project to VM
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          port: ${{ secrets.VM_SSH_PORT || 22 }}
+          source: .
+          target: ${{ secrets.VM_PROJECT_DIR }}
+          overwrite: true
+          strip_components: 0
+          exclude: |
+            .git
+            .git/**
+            **/.git/**
+            .env
+            node_modules
+            node_modules/**
+            **/node_modules/**
+            .next
+            .next/**
+            Backend/qaba-api/media/**
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          PROJECT_DIR: ${{ secrets.VM_PROJECT_DIR }}
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          port: ${{ secrets.VM_SSH_PORT || 22 }}
+          envs: PROJECT_DIR,ENV_FILE
+          script: |
+            set -euo pipefail
+
+            # Ensure project dir exists
+            mkdir -p "$PROJECT_DIR"
+            cd "$PROJECT_DIR"
+
+            echo "Listing project files after deploy:"
+            ls -al
+
+            # Run Docker Compose
+            docker compose -f docker-compose.yml up -d --build
+
+            # Cleanup old resources
+            docker system prune -f || true

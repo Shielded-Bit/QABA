@@ -44,12 +44,12 @@ urlpatterns = [
     path("favorites/", FavoriteListView.as_view(), name="favorites-list"),
     path("favorites/toggle/", FavoriteToggleView.as_view(), name="favorites-toggle"),
     path(
-        "properties/<uuid:property_id>/documents/",
+        "properties/<int:property_id>/documents/",
         PropertyDocumentView.as_view(),
         name="property-documents",
     ),
     path(
-        "properties/<uuid:property_id>/documents/<uuid:document_id>/",
+        "properties/<int:property_id>/documents/<uuid:document_id>/",
         PropertyDocumentDetailView.as_view(),
         name="property-document-detail",
     ),

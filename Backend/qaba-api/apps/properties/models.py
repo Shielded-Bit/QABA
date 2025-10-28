@@ -1,6 +1,7 @@
 from cloudinary.models import CloudinaryField
 from django.conf import settings
 from django.db import models
+from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
 
@@ -64,6 +65,7 @@ class Property(models.Model):
         YEARLY = "YEARLY", "Yearly"
 
     property_name = models.CharField(max_length=255)
+    slug = models.SlugField(max_length=255, unique=True, blank=True, null=True)
     description = models.TextField()
     property_type = models.CharField(max_length=20, choices=PropertyType.choices)
     listing_type = models.CharField(max_length=10, choices=ListingType.choices)
@@ -126,6 +128,21 @@ class Property(models.Model):
         blank=True,
         help_text="Qaba fee percentage",
     )
+    service_charge = models.FloatField(
+        null=True,
+        blank=True,
+        help_text="Optional service charge applied to the property",
+    )
+    caution_fee = models.FloatField(
+        null=True,
+        blank=True,
+        help_text="Optional caution fee required for the property",
+    )
+    legal_fee = models.FloatField(
+        null=True,
+        blank=True,
+        help_text="Optional legal fee applied to the property",
+    )
     total_price = models.FloatField(
         null=True,
         blank=True,
@@ -184,6 +201,25 @@ class Property(models.Model):
     def lister_type(self):
         """Get the type of lister"""
         return self.listed_by.user_type
+
+    def save(self, *args, **kwargs):
+        base_slug = slugify(self.property_name) or "property"
+
+        if not self.slug or not str(self.slug).startswith(base_slug):
+            self.slug = self._generate_unique_slug(base_slug)
+
+        super().save(*args, **kwargs)
+
+    def _generate_unique_slug(self, base_slug):
+        """Generate a unique slug based on the property name"""
+        slug = base_slug
+        counter = 1
+
+        while Property.objects.exclude(pk=self.pk).filter(slug=slug).exists():
+            slug = f"{base_slug}-{counter}"
+            counter += 1
+
+        return slug
 
 
 class PropertyImage(models.Model):

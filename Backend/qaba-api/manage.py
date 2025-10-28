@@ -2,6 +2,9 @@
 import os
 import sys
 
+from dotenv import load_dotenv
+load_dotenv()  # Load environment variables from .env file
+
 
 def main():
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings.development")

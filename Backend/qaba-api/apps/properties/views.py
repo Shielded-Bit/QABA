@@ -2,6 +2,7 @@ from datetime import datetime
 
 from core.utils.response import APIResponse
 from django.db.models import Sum
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema
@@ -56,6 +57,25 @@ class PropertyViewSet(viewsets.ModelViewSet):
     ]
     ordering = ["-listed_date"]
     http_method_names = ["get", "post", "patch", "delete"]
+
+    def get_object(self):
+        queryset = self.filter_queryset(self.get_queryset())
+        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+        lookup_value = self.kwargs.get(lookup_url_kwarg)
+
+        if lookup_value is None:
+            raise Http404("Property not found.")
+
+        try:
+            property_obj = queryset.get(slug=lookup_value)
+        except Property.DoesNotExist:
+            try:
+                property_obj = queryset.get(pk=lookup_value)
+            except (ValueError, Property.DoesNotExist):
+                raise Http404("Property not found.")
+
+        self.check_object_permissions(self.request, property_obj)
+        return property_obj
 
     def get_permissions(self):
         if self.action in ["create"]:
