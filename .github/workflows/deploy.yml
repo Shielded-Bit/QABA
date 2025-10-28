@@ -26,25 +26,24 @@ jobs:
       - name: Copy project to VM
         uses: appleboy/scp-action@master
         with:
-          host: ${{ secrets.VM_HOST }}
-          username: ${{ secrets.VM_USER }}
-          key: ${{ secrets.VM_SSH_KEY }}
-          port: ${{ secrets.VM_SSH_PORT || 22 }}
-          source: .
-          target: ${{ secrets.VM_PROJECT_DIR }}
-          overwrite: true
-          strip_components: 0
-          exclude: |
-            .git
-            .git/**
-            **/.git/**
-            .env
-            node_modules
-            node_modules/**
-            **/node_modules/**
-            .next
-            .next/**
-            Backend/qaba-api/media/**
+            host: ${{ secrets.VM_HOST }}
+            username: ${{ secrets.VM_USER }}
+            key: ${{ secrets.VM_SSH_KEY }}
+            port: ${{ secrets.VM_SSH_PORT || 22 }}
+            source: "./"
+            target: ${{ secrets.VM_PROJECT_DIR }}
+            overwrite: true
+            strip_components: 0
+            exclude: |
+                .git/**
+                **/.git/**
+                .env
+                node_modules/**
+                **/node_modules/**
+                .next/**
+                **/.next/**
+                Backend/qaba-api/media/**
+
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.0
