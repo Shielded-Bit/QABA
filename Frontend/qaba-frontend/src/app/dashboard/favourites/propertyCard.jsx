@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Bookmark } from 'lucide-react';
 import { useState } from 'react';
+import { createPropertySlug } from '@/utils/slugHelper';
 
 const PropertyCard = ({ property, onRemove }) => {
   const router = useRouter();
@@ -11,7 +12,7 @@ const PropertyCard = ({ property, onRemove }) => {
 
   const handlePropertyClick = () => {
     if (property && property.id) {
-      router.push(`/details/${property.id}`);
+      router.push(`/details/${createPropertySlug(property.property_name, property.id)}`);
     }
   };
 

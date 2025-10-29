@@ -1,8 +1,9 @@
 import React from 'react';
+import { createPropertySlug } from '@/utils/slugHelper';
 
 const ContactEnquiryModal = ({ open, onClose, property }) => {
   if (!open) return null;
-  const propertyLink = `/details/${property?.id}`;
+  const propertyLink = `/details/${createPropertySlug(property?.property_name, property?.id)}`;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
       <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 relative">

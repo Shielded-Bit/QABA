@@ -600,7 +600,6 @@ const PropertyDetails = ({ params }) => {
                         <ListingCard
                           id={listing.id}
                           title={listing.property_name}
-                          slug={listing.slug}
                           price={listing.listing_type === 'SALE'
                             ? `₦${parseFloat(listing.sale_price).toLocaleString()}`
                             : `₦${parseFloat(listing.rent_price).toLocaleString()}${listing.rent_frequency_display ? ` / ${listing.rent_frequency_display}` : ''}`
@@ -624,7 +623,6 @@ const PropertyDetails = ({ params }) => {
                       key={listing.id}
                       id={listing.id}
                       title={listing.property_name}
-                      slug={listing.slug}
                       price={listing.listing_type === 'SALE'
                         ? `₦${parseFloat(listing.sale_price).toLocaleString()}`
                         : `₦${parseFloat(listing.rent_price).toLocaleString()}${listing.rent_frequency_display ? ` / ${listing.rent_frequency_display}` : ''}`
