@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import { PropertyCardSkeleton, LoadingGrid, HeaderSkeleton } from './components/LoadingSkeletons';
+import { createPropertySlug } from '@/utils/slugHelper';
 
 // Property Card Component
 const PropertyCard = ({ property, isFavorite = false, toggleFavorite }) => {
@@ -15,7 +16,7 @@ const PropertyCard = ({ property, isFavorite = false, toggleFavorite }) => {
 
   const handlePropertyClick = () => {
     if (property && property.id) {
-      router.push(`/details/${property.id}`);
+      router.push(`/details/${createPropertySlug(property.name, property.id)}`);
     }
   };
 

@@ -54,13 +54,10 @@ function PropertiesContent() {
           searchTerm: searchTerm.trim()
         };
         
-        // Only fetch if we have filters or search term, otherwise use cached data
-        const hasFilters = Object.values(currentFilters).some(value => value && value.trim());
-        
-        if (hasFilters) {
-          await getProperties(currentFilters);
-        }
-        // If no filters, the context will handle loading cached data automatically
+        // Always request current properties from the context. The context
+        // will return cached (unfiltered) data when filters are empty,
+        // or fetch filtered results when filters are present.
+        await getProperties(currentFilters);
       } catch (err) {
         console.error('Error fetching properties:', err);
       }

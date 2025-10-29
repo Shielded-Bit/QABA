@@ -27,8 +27,11 @@ function RentContent() {
     property_type: '',
     price_range: '',
     property_status: '',
-    lister_type: ''
+    lister_type: '',
+    bedrooms: '',
+    bathrooms: ''
   });
+
 
   const [searchTerm, setSearchTerm] = useState('');
   const searchParams = useSearchParams();
@@ -46,7 +49,7 @@ function RentContent() {
 
   // Fetch properties using the cache system
   useEffect(() => {
-    // Only run if context is initialized and we have filters
+    // Only run if context is initialized
     if (!initialized) return;
     
     const fetchProperties = async () => {
@@ -55,14 +58,11 @@ function RentContent() {
           ...filters,
           searchTerm: searchTerm.trim()
         };
-        
-        // Only fetch if we have filters or search term, otherwise use cached data
-        const hasFilters = Object.values(currentFilters).some(value => value && value.trim());
-        
-        if (hasFilters) {
-          await getProperties(currentFilters);
-        }
-        // If no filters, the context will handle loading cached data automatically
+
+        // Always request current properties from the context. The context
+        // will return cached (unfiltered) data when filters are empty,
+        // or fetch filtered results when filters are present.
+        await getProperties(currentFilters);
       } catch (err) {
         console.error('Error fetching properties:', err);
       }
@@ -79,7 +79,9 @@ function RentContent() {
       property_type: '',
       price_range: '',
       property_status: '',
-      lister_type: ''
+      lister_type: '',
+      bedrooms: '',
+      bathrooms: ''
     });
     setSearchTerm(''); // Reset search term
     setVisibleListings(6); // Reset to show first 6 items
@@ -237,6 +239,22 @@ function RentContent() {
     { value: '2000000+', label: 'Above ₦2M' }
   ];
 
+  const bedroomOptions = [
+    { value: '1', label: '1 Bedroom' },
+    { value: '2', label: '2 Bedrooms' },
+    { value: '3', label: '3 Bedrooms' },
+    { value: '4', label: '4 Bedrooms' },
+    { value: '5+', label: '5+ Bedrooms' }
+  ];
+
+  const bathroomOptions = [
+    { value: '1', label: '1 Bathroom' },
+    { value: '2', label: '2 Bathrooms' },
+    { value: '3', label: '3 Bathrooms' },
+    { value: '4', label: '4 Bathrooms' },
+    { value: '5+', label: '5+ Bathrooms' }
+  ];
+
 
 
   // Filter properties only by search query as other filters are handled by the backend
@@ -284,8 +302,8 @@ function RentContent() {
     }
   }
 
-  // Count active filters
-  const activeFiltersCount = Object.values(filters).filter(value => value).length;
+  // Count active filters (include search term)
+  const activeFiltersCount = Object.values(filters).filter(value => value).length + (searchTerm.trim() ? 1 : 0);
 
   return (
     <div className="px-4 sm:px-6 lg:px-14 py-4">
@@ -384,6 +402,20 @@ function RentContent() {
                   options={listerTypeOptions}
                   value={filters.lister_type}
                   onChange={(value) => setFilters({ ...filters, lister_type: value })}
+                />
+                <CustomDropdown
+                  label="Bedrooms"
+                  placeholder="Bedrooms"
+                  options={bedroomOptions}
+                  value={filters.bedrooms}
+                  onChange={(value) => setFilters({ ...filters, bedrooms: value })}
+                />
+                <CustomDropdown
+                  label="Bathrooms"
+                  placeholder="Bathrooms"
+                  options={bathroomOptions}
+                  value={filters.bathrooms}
+                  onChange={(value) => setFilters({ ...filters, bathrooms: value })}
                 />
               </div>
             </div>
