@@ -269,7 +269,8 @@ export default function PropertyDetail() {
   const qarbaFee = property.qaba_fee ?? 0;
   const serviceCharge = property.service_charge || 0;
   const cautionFee = property.caution_fee || 0;
-  const totalPrice = property.total_price || (parseFloat(basePrice) + parseFloat(agentFee) + parseFloat(qarbaFee) + parseFloat(serviceCharge) + parseFloat(cautionFee));
+  const legalFee = property.legal_fee || 0;
+  const totalPrice = property.total_price || (parseFloat(basePrice) + parseFloat(agentFee) + parseFloat(qarbaFee) + parseFloat(serviceCharge) + parseFloat(cautionFee) + parseFloat(legalFee));
 
   // Add status indicator badge
   const getStatusBadge = () => {
@@ -420,6 +421,16 @@ export default function PropertyDetail() {
                   </p>
                   <p className="text-xs text-gray-500">
                     {cautionFee > 0 ? 'Security deposit' : 'No caution fee required'}
+                  </p>
+                </div>
+
+                <div className="bg-white p-3 rounded shadow-sm">
+                  <p className="text-sm text-gray-500">Legal Fee</p>
+                  <p className="font-bold">
+                    {legalFee > 0 ? `₦ ${formatCurrency(legalFee)}` : 'Not set'}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {legalFee > 0 ? 'Legal fee' : 'No legal fee applied'}
                   </p>
                 </div>
               </div>
