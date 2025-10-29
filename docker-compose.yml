@@ -1,10 +1,11 @@
-# Docker Compose for QABA Application
+version: "3.9"
 
 services:
   # PostgreSQL Database
   db:
     image: postgres:15-alpine
     container_name: qaba_db
+    restart: unless-stopped
     env_file:
       - ${ENV_FILE:-.env}
     volumes:
@@ -14,12 +15,13 @@ services:
     networks:
       - qaba_network
 
-  # Backend Django Application
+  # Django Backend
   backend:
     build:
       context: ./Backend
       dockerfile: Dockerfile
     container_name: qaba_backend
+    restart: unless-stopped
     env_file:
       - ${ENV_FILE:-.env}
     depends_on:
@@ -34,39 +36,39 @@ services:
     networks:
       - qaba_network
 
-  # Frontend Next.js Application
+  # Next.js Frontend
   frontend:
     build:
-      context: ./Frontend
+      context: ./Frontend/qaba-frontend   # Updated to match your Dockerfile COPY paths
       dockerfile: Dockerfile
     container_name: qaba_frontend
+    restart: unless-stopped
     env_file:
       - ${ENV_FILE:-.env}
     depends_on:
       - backend
     ports:
       - "3000:3000"
-    volumes: []
     networks:
       - qaba_network
 
-  # Nginx Proxy Manager for reverse proxy and SSL management
+  # Nginx Proxy Manager (reverse proxy + SSL)
   nginx-proxy-manager:
     image: jc21/nginx-proxy-manager:latest
     container_name: nginx_proxy_manager
     restart: unless-stopped
+    depends_on:
+      - backend
+      - frontend
     ports:
-      - "80:80" # Public HTTP Port
-      - "81:81" # Admin Web Port
-      - "443:443" # Public HTTPS Port
+      - "80:80"     # Public HTTP
+      - "81:81"     # Admin dashboard
+      - "443:443"   # HTTPS
     volumes:
       - npm_data:/data
       - npm_letsencrypt:/etc/letsencrypt
     networks:
       - qaba_network
-    depends_on:
-      - backend
-      - frontend
 
 networks:
   qaba_network:
