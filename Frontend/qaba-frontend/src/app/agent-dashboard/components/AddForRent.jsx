@@ -272,12 +272,13 @@ const ErrorModal = ({ isOpen, onClose, message }) => {
 };
 
 // Updated Fee breakdown component with clearer recurring vs one-time fee explanation
-const FeeBreakdown = ({ fees, frequency, serviceCharge, cautionFee }) => {
+const FeeBreakdown = ({ fees, frequency, serviceCharge, cautionFee, legalFee }) => {
   if (!fees.basePrice) return null;
 
   const parsedServiceCharge = parseFloat(serviceCharge) || 0;
   const parsedCautionFee = parseFloat(cautionFee) || 0;
-  const totalInitialPayment = fees.totalPrice + parsedServiceCharge + parsedCautionFee;
+  const parsedLegalFee = parseFloat(legalFee) || 0;
+  const totalInitialPayment = fees.totalPrice + parsedServiceCharge + parsedCautionFee + parsedLegalFee;
 
   return (
     <div className="mt-4 p-4 bg-gray-50 rounded-md border border-gray-200">
@@ -307,6 +308,12 @@ const FeeBreakdown = ({ fees, frequency, serviceCharge, cautionFee }) => {
           <div className="flex justify-between">
             <span>Caution Fee:</span>
             <span>₦{formatUtils.formatNumberWithCommas(parsedCautionFee.toString())}</span>
+          </div>
+        )}
+        {parsedLegalFee > 0 && (
+          <div className="flex justify-between">
+            <span>Legal Fee:</span>
+            <span>₦{formatUtils.formatNumberWithCommas(parsedLegalFee.toString())}</span>
           </div>
         )}
         <div className="flex justify-between font-medium border-t border-gray-200 pt-2 mt-2">
@@ -355,6 +362,7 @@ const AddForRent = () => {
     rent_price: "",
     service_charge: "",
     caution_fee: "",
+    legal_fee: "",
     total_price: "",
     amenities_ids: [],
     user_type: getAuthenticatedUserType(), // Set based on authenticated user
@@ -365,6 +373,7 @@ const AddForRent = () => {
   const [displayPrice, setDisplayPrice] = useState('');
   const [displayServiceCharge, setDisplayServiceCharge] = useState('');
   const [displayCautionFee, setDisplayCautionFee] = useState('');
+  const [displayLegalFee, setDisplayLegalFee] = useState('');
   const [fees, setFees] = useState({ basePrice: 0, agentFee: 0, qarbaFee: 0, totalFee: 0, totalPrice: 0 });
   const [amenities, setAmenities] = useState([]);
   const [mediaFiles, setMediaFiles] = useState({ images: [], video: null });
@@ -442,6 +451,10 @@ const AddForRent = () => {
       const formattedValue = formatUtils.formatNumberWithCommas(value);
       setDisplayCautionFee(formattedValue);
       setFormData({ ...formData, [name]: formatUtils.convertToPlainNumber(formattedValue) });
+    } else if (name === 'legal_fee') {
+      const formattedValue = formatUtils.formatNumberWithCommas(value);
+      setDisplayLegalFee(formattedValue);
+      setFormData({ ...formData, [name]: formatUtils.convertToPlainNumber(formattedValue) });
     } else {
       setFormData({ ...formData, [name]: value });
     }
@@ -515,7 +528,7 @@ const AddForRent = () => {
       setFormData({
         property_name: "", description: "", property_type: "HOUSE", listing_type: "RENT",
         submit_for_review: false, location: "", bedrooms: 1, bathrooms: 1, area_sqft: 0,
-        rent_frequency: "MONTHLY", rent_price: "", service_charge: "", caution_fee: "", total_price: "", amenities_ids: [], user_type: "landlord",
+        rent_frequency: "MONTHLY", rent_price: "", service_charge: "", caution_fee: "", legal_fee: "", total_price: "", amenities_ids: [], user_type: "landlord",
         state: "",
         city: ""
       });
@@ -523,6 +536,7 @@ const AddForRent = () => {
       setDisplayPrice('');
       setDisplayServiceCharge('');
       setDisplayCautionFee('');
+      setDisplayLegalFee('');
       setFees({ basePrice: 0, agentFee: 0, qarbaFee: 0, totalFee: 0, totalPrice: 0 });
     }
   };
@@ -552,21 +566,13 @@ const AddForRent = () => {
     try {
       setIsLoading(true);
 
-      // Validate that at least 2 images are uploaded
-      if (mediaFiles.images.length < 2) {
-        setErrorMessage('Please upload at least 2 images of the property.');
-        setErrorModalOpen(true);
-        setIsLoading(false);
-        return;
-      }
-
       const payload = {
         ...formData,
         submit_for_review: !isDraftSubmission,
         bedrooms: parseInt(formData.bedrooms),
         bathrooms: parseInt(formData.bathrooms),
         area_sqft: formData.area_sqft ? parseFloat(formData.area_sqft) : 0,
-        total_price: (fees.totalPrice + (parseFloat(formData.service_charge) || 0) + (parseFloat(formData.caution_fee) || 0)).toString()
+        total_price: (fees.totalPrice + (parseFloat(formData.service_charge) || 0) + (parseFloat(formData.caution_fee) || 0) + (parseFloat(formData.legal_fee) || 0)).toString()
       };
 
       const response = await propertyService.createProperty(payload, mediaFiles);
@@ -750,6 +756,20 @@ const AddForRent = () => {
             Caution/security deposit if applicable
           </p>
         </div>
+        <div>
+          <label className="block text-gray-700">Legal Fee (Optional)</label>
+          <input
+            type="text"
+            name="legal_fee"
+            value={displayLegalFee}
+            onChange={handleInputChange}
+            className="w-full border border-gray-300 p-2 rounded-md"
+            placeholder="50,000"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Legal fee if applicable
+          </p>
+        </div>
       </div>
 
       {/* Fee Breakdown */}
@@ -760,6 +780,7 @@ const AddForRent = () => {
             frequency={formData.rent_frequency}
             serviceCharge={formData.service_charge}
             cautionFee={formData.caution_fee}
+            legalFee={formData.legal_fee}
           />
         </div>
       )}
