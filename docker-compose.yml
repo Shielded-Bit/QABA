@@ -37,7 +37,7 @@ services:
   # Next.js Frontend
   frontend:
     build:
-      context: ./Frontend/qaba-frontend
+      context: ./Frontend
       dockerfile: Dockerfile
     container_name: qaba_frontend
     restart: unless-stopped
