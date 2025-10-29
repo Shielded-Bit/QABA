@@ -6,6 +6,7 @@ const PriceBreakdown = ({ property }) => {
   const qarbaFee = property.qaba_fee;
   const serviceCharge = property.service_charge;
   const cautionFee = property.caution_fee;
+  const legalFee = property.legal_fee;
   const totalPrice = property.total_price;
   const isRent = property.listing_type === "RENT";
   const frequency = property.rent_frequency_display || 'Monthly';
@@ -40,7 +41,7 @@ const PriceBreakdown = ({ property }) => {
         )}
         
         {/* Qarba Service Fee */}
-        {qarbaFee && parseFloat(qarbaFee) > 0 && (
+        {qarbaFee != null && parseFloat(qarbaFee) > 0 && (
           <div className="flex justify-between items-center py-2">
             <span className="text-gray-600">Qarba Fee</span>
             <span className="font-semibold text-gray-900">₦{formatPrice(qarbaFee)}</span>
@@ -64,6 +65,17 @@ const PriceBreakdown = ({ property }) => {
           <span className="font-semibold text-gray-900">
             {cautionFee && parseFloat(cautionFee) > 0
               ? `₦${formatPrice(cautionFee)}`
+              : <span className="text-gray-400 text-sm">Not set</span>
+            }
+          </span>
+        </div>
+
+        {/* Legal Fee */}
+        <div className="flex justify-between items-center py-2">
+          <span className="text-gray-600">Legal Fee</span>
+          <span className="font-semibold text-gray-900">
+            {legalFee && parseFloat(legalFee) > 0
+              ? `₦${formatPrice(legalFee)}`
               : <span className="text-gray-400 text-sm">Not set</span>
             }
           </span>

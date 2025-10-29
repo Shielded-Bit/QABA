@@ -104,12 +104,13 @@ const Select = ({ name, value, onChange, children, className = "", ...props }) =
 );
 
 // Fee breakdown component
-const FeeBreakdown = ({ fees, userType, listingType, rentFrequency, serviceCharge, cautionFee }) => {
+const FeeBreakdown = ({ fees, userType, listingType, rentFrequency, serviceCharge, cautionFee, legalFee }) => {
   if (!fees.basePrice) return null;
 
   const parsedServiceCharge = parseFloat(serviceCharge) || 0;
   const parsedCautionFee = parseFloat(cautionFee) || 0;
-  const totalPrice = fees.totalPrice + parsedServiceCharge + parsedCautionFee;
+  const parsedLegalFee = parseFloat(legalFee) || 0;
+  const totalPrice = fees.totalPrice + parsedServiceCharge + parsedCautionFee + parsedLegalFee;
 
   return (
     <div className="mt-4 p-4 bg-gray-50 rounded-md border border-gray-200">
@@ -139,6 +140,12 @@ const FeeBreakdown = ({ fees, userType, listingType, rentFrequency, serviceCharg
           <div className="flex justify-between">
             <span>Caution Fee:</span>
             <span>₦{formatNumberWithCommas(parsedCautionFee.toString())}</span>
+          </div>
+        )}
+        {parsedLegalFee > 0 && (
+          <div className="flex justify-between">
+            <span>Legal Fee:</span>
+            <span>₦{formatNumberWithCommas(parsedLegalFee.toString())}</span>
           </div>
         )}
         <div className="flex justify-between font-medium border-t border-gray-200 pt-2 mt-2">
@@ -308,6 +315,7 @@ const EditProperty = () => {
     sale_price: "",
     service_charge: "",
     caution_fee: "",
+    legal_fee: "",
     amenities: [],
     user_type: getAuthenticatedUserType(), // Set based on authenticated user, not property data
     // Fields from your API example
@@ -323,6 +331,7 @@ const EditProperty = () => {
   const [displaySalePrice, setDisplaySalePrice] = useState('');
   const [displayServiceCharge, setDisplayServiceCharge] = useState('');
   const [displayCautionFee, setDisplayCautionFee] = useState('');
+  const [displayLegalFee, setDisplayLegalFee] = useState('');
 
   // Fee calculation state
   const [fees, setFees] = useState({
@@ -434,6 +443,7 @@ const EditProperty = () => {
           sale_price: data.sale_price !== undefined ? data.sale_price : "",
           service_charge: data.service_charge !== undefined ? data.service_charge : "",
           caution_fee: data.caution_fee !== undefined ? data.caution_fee : "",
+          legal_fee: data.legal_fee !== undefined ? data.legal_fee : "",
           amenities: Array.isArray(data.amenities)
             ? data.amenities.map(amenity => typeof amenity === 'object' && amenity.id ? amenity.id : amenity)
             : [],
@@ -460,6 +470,10 @@ const EditProperty = () => {
 
         if (data.caution_fee) {
           setDisplayCautionFee(formatNumberWithCommas(data.caution_fee));
+        }
+
+        if (data.legal_fee) {
+          setDisplayLegalFee(formatNumberWithCommas(data.legal_fee));
         }
         
         // Set existing images - extract URLs properly
@@ -565,6 +579,14 @@ const EditProperty = () => {
     } else if (name === 'caution_fee') {
       const formattedValue = formatNumberWithCommas(value);
       setDisplayCautionFee(formattedValue);
+
+      setFormData({
+        ...formData,
+        [name]: formattedValue.replace(/[^\d]/g, '')
+      });
+    } else if (name === 'legal_fee') {
+      const formattedValue = formatNumberWithCommas(value);
+      setDisplayLegalFee(formattedValue);
 
       setFormData({
         ...formData,
@@ -717,7 +739,7 @@ const EditProperty = () => {
         bedrooms: parseInt(formData.bedrooms),
         bathrooms: parseInt(formData.bathrooms),
         area_sqft: formData.area_sqft ? parseFloat(formData.area_sqft) : 0,
-        total_price: (fees.totalPrice + (parseFloat(formData.service_charge) || 0) + (parseFloat(formData.caution_fee) || 0)).toString(), // Add calculated total_price
+        total_price: (fees.totalPrice + (parseFloat(formData.service_charge) || 0) + (parseFloat(formData.caution_fee) || 0) + (parseFloat(formData.legal_fee) || 0)).toString(), // Add calculated total_price
         submit_for_review: !isDraft // Explicitly set submit_for_review
       };
 
@@ -1039,6 +1061,19 @@ const EditProperty = () => {
                 Caution/security deposit if applicable
               </p>
             </FormField>
+            <FormField label="Legal Fee (Optional)">
+              <input
+                type="text"
+                name="legal_fee"
+                value={displayLegalFee}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="50,000"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Legal fee if applicable
+              </p>
+            </FormField>
           </>
         )}
       </div>
@@ -1053,6 +1088,7 @@ const EditProperty = () => {
             rentFrequency={formData.rent_frequency}
             serviceCharge={formData.service_charge}
             cautionFee={formData.caution_fee}
+            legalFee={formData.legal_fee}
           />
         </div>
       )}
