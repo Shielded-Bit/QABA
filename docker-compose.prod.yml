@@ -1,0 +1,12 @@
+# Production docker-compose override
+# This file uses pre-built images from GitHub Container Registry
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+services:
+  # Use pre-built backend image from registry
+  backend:
+    image: ${BACKEND_IMAGE:-ghcr.io/shielded-bit/qaba/backend:latest}
+
+  # Use pre-built frontend image from registry
+  frontend:
+    image: ${FRONTEND_IMAGE:-ghcr.io/shielded-bit/qaba/frontend:latest}
