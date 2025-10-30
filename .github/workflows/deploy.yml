@@ -129,9 +129,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build-images
-    environment:
-      name: production
-      url: https://${{ secrets.VM_HOST }}
+    environment: production
 
     steps:
       - name: Checkout repository
