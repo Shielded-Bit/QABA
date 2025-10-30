@@ -14,7 +14,8 @@ ENV NEXT_PUBLIC_GOOGLE_CLIENT_ID=$NEXT_PUBLIC_GOOGLE_CLIENT_ID
 
 # Copy package files
 COPY qaba-frontend/package*.json ./
-RUN npm ci
+ENV NODE_OPTIONS="--max_old_space_size=2048"
+RUN npm ci --no-audit --no-fund
 
 # Copy source and build
 COPY qaba-frontend/ .
