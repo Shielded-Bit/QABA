@@ -4,7 +4,8 @@ WORKDIR /app
 
 # Copy and install dependencies
 COPY qaba-frontend/package*.json ./
-RUN npm ci
+ENV NODE_OPTIONS="--max_old_space_size=2048"
+RUN npm ci --no-audit --no-fund
 
 # Copy source and build
 COPY qaba-frontend/ .
