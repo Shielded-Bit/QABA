@@ -3,6 +3,7 @@ from django.urls import include, path
 from two_factor import urls as two_factor_urls
 from two_factor.admin import AdminSiteOTPRequired
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+from .views import health_check
 
 admin.site.__class__ = AdminSiteOTPRequired
 
@@ -16,6 +17,7 @@ urlpatterns = [
     path('api/v1/', include('apps.transactions.urls')),
     path('api/v1/', include('apps.blogs.urls')),
     path('api/v1/', include('apps.jobs.urls')),
+    path('health/', health_check, name='health'),
     path('schema/', SpectacularAPIView.as_view(), name='schema'),
     path('docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
 ]
