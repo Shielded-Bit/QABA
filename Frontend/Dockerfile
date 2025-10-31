@@ -2,9 +2,14 @@
 FROM node:24-alpine AS build
 WORKDIR /app
 
+ARG NEXT_PUBLIC_API_URL
+ENV NODE_OPTIONS="--max_old_space_size=2048" \
+    NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+RUN test -n "$NEXT_PUBLIC_API_URL" || (echo "NEXT_PUBLIC_API_URL is required" && exit 1)
+
 # Copy and install dependencies
 COPY qaba-frontend/package*.json ./
-ENV NODE_OPTIONS="--max_old_space_size=2048"
+
 RUN npm ci --no-audit --no-fund
 
 # Copy source and build
@@ -15,6 +20,8 @@ RUN npm run build
 # Stage 2: Production runner using Next.js standalone
 FROM node:24-alpine AS runner
 WORKDIR /app
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
