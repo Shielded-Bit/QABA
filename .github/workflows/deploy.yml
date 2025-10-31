@@ -158,19 +158,17 @@ jobs:
             target: ${{ secrets.VM_PROJECT_DIR }}
             overwrite: true
             strip_components: 0
+            tar_tmp_path: "/tmp/"
             exclude: |
-                .git/**
-                **/.git/**
+                .git
                 .env
-                node_modules/**
-                **/node_modules/**
-                .next/**
-                **/.next/**
-                Backend/qaba-api/media/**
-                __pycache__/**
-                **/__pycache__/**
+                node_modules
+                .next
+                Backend/qaba-api/media
+                __pycache__
                 *.pyc
-                .pytest_cache/**
+                .pytest_cache
+                .github
 
       - name: Create backup and deploy
         id: deploy
