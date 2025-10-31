@@ -255,10 +255,12 @@ jobs:
 
             # Health check endpoints
             echo "Testing backend health..."
+            backend_health_url="https://api.qarba.com/health"
+            backend_fallback_url="https://api.qarba.com/"
             max_attempts=30
             attempt=0
             while [ $attempt -lt $max_attempts ]; do
-              if curl -f http://localhost:8000/health 2>/dev/null || curl -f http://localhost:8000/ 2>/dev/null; then
+              if curl -f "$backend_health_url" 2>/dev/null || curl -f "$backend_fallback_url" 2>/dev/null; then
                 echo "✅ Backend is healthy"
                 break
               fi
@@ -272,9 +274,10 @@ jobs:
             done
 
             echo "Testing frontend health..."
+            frontend_health_url="https://qarba.com/"
             attempt=0
             while [ $attempt -lt $max_attempts ]; do
-              if curl -f http://localhost:3000/ 2>/dev/null; then
+              if curl -f "$frontend_health_url" 2>/dev/null; then
                 echo "✅ Frontend is healthy"
                 break
               fi
