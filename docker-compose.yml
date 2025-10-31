@@ -40,7 +40,9 @@ services:
       context: ./Frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL?Set NEXT_PUBLIC_API_URL in your .env file}
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID?Set NEXT_PUBLIC_GOOGLE_CLIENT_ID in your .env file}
+        NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?Set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY in your .env file}
     container_name: qaba_frontend
     restart: unless-stopped
     env_file:
