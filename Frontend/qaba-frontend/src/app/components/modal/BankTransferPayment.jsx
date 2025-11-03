@@ -16,10 +16,10 @@ const BankTransferPayment = ({ propertyId, propertyType, amount, onBack }) => {
 
   // Bank account details (you can move this to environment variables or API)
   const bankDetails = {
-    bankName: "Fidelity Bank",
-    accountNumber: "5280000840",
-    accountName: "SHIELDEDBIT LTD",
-    swiftCode: "FIDTNGLA",
+    bankName: "UBA",
+    accountNumber: "1028797330",
+    accountName: "QARBA LTD",
+    swiftCode: "058",
   };
 
   const handleCopyAccountNumber = async () => {
