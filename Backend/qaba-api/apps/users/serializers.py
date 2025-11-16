@@ -372,6 +372,11 @@ class ContactFormSerializer(serializers.Serializer):
     phone = serializers.CharField(max_length=15, required=False, allow_blank=True)
     subject = serializers.CharField(max_length=200)
     message = serializers.CharField(max_length=2000)
+    property_id = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        help_text="Optional: ID of the property being enquired about"
+    )
 
     def validate(self, attrs):
         request = self.context.get("request")

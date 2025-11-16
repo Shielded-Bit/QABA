@@ -26,6 +26,28 @@
     </tr>
 </table>
 
+{% if property %}
+<table role="presentation" width="100%" style="margin: 24px 0;">
+    <tr>
+        <td style="background-color: #fff3e0; border-radius: 14px; padding: 20px; border: 2px solid #ff9800;">
+            <h2 style="margin: 0 0 12px; font-size: 18px; color: #e65100;">Property Enquiry</h2>
+            <p style="margin: 0 0 10px;"><strong>Property ID:</strong> {{ property.property_id }}</p>
+            <p style="margin: 0 0 10px;"><strong>Property Name:</strong> {{ property.name }}</p>
+            <p style="margin: 0 0 10px;"><strong>Location:</strong> {{ property.location }}{% if property.city %}, {{ property.city }}{% endif %}{% if property.state %}, {{ property.state }}{% endif %}</p>
+            <p style="margin: 0 0 10px;"><strong>Type:</strong> {{ property.property_type }} ({{ property.listing_type }})</p>
+            {% if property.price %}
+            <p style="margin: 0 0 10px;"><strong>Price:</strong> ₦{{ property.price|floatformat:0|stringformat:"s"|slice:":-2" }}</p>
+            {% endif %}
+            <p style="margin: 0 0 10px;">
+                <a href="{{ property.url }}" style="display: inline-block; background-color: #ff9800; color: #ffffff; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: 600; margin-top: 8px;">
+                    View Property Details
+                </a>
+            </p>
+        </td>
+    </tr>
+</table>
+{% endif %}
+
 <table role="presentation" width="100%" style="margin: 0;">
     <tr>
         <td style="background-color: #ffffff; border-radius: 14px; padding: 0;">

@@ -150,22 +150,16 @@ def send_property_notification_email(user, property_obj):
     )
 
 
-def send_contact_form_email(name, email, phone, user_type, subject, message):
+def send_contact_form_email(name, email, phone, user_type, subject, message, property_obj=None):
     """
     Send contact form submission to admin users
     """
     try:
         # Get admin emails
-        from apps.users.models import User
         from django.utils import timezone
 
+        # Send only to the default contact email
         admin_emails = [settings.DEFAULT_FROM_EMAIL]
-        try:
-            admin_users = User.objects.filter(user_type=User.UserType.ADMIN)
-            if admin_users.exists():
-                admin_emails = [user.email for user in admin_users if user.email]
-        except Exception:
-            pass
 
         context = {
             "name": name,
@@ -176,6 +170,21 @@ def send_contact_form_email(name, email, phone, user_type, subject, message):
             "message": message,
             "date": timezone.now().strftime("%B %d, %Y %H:%M"),
         }
+
+        # Add property details if available
+        if property_obj:
+            context["property"] = {
+                "id": property_obj.id,
+                "property_id": property_obj.property_id,
+                "name": property_obj.property_name,
+                "location": property_obj.location,
+                "state": property_obj.state,
+                "city": property_obj.city,
+                "property_type": property_obj.get_property_type_display(),
+                "listing_type": property_obj.get_listing_type_display(),
+                "price": property_obj.sale_price if property_obj.listing_type == "SALE" else property_obj.rent_price,
+                "url": f"{settings.FRONTEND_URL}/details/{property_obj.slug}",
+            }
 
         return send_email(
             subject=f"Contact Form: {subject}",
