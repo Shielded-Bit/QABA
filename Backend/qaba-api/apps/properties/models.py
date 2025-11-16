@@ -1,3 +1,4 @@
+import uuid
 from cloudinary.models import CloudinaryField
 from django.conf import settings
 from django.db import models
@@ -65,6 +66,10 @@ class Property(models.Model):
         YEARLY = "YEARLY", "Yearly"
 
     property_name = models.CharField(max_length=255)
+    property_id = models.CharField(
+        max_length=100, unique=True, blank=True, editable=False,
+        help_text="Unique property identifier with property name prefix"
+    )
     slug = models.SlugField(max_length=255, unique=True, blank=True, null=True)
     description = models.TextField()
     property_type = models.CharField(max_length=20, choices=PropertyType.choices)
@@ -208,6 +213,10 @@ class Property(models.Model):
         if not self.slug or not str(self.slug).startswith(base_slug):
             self.slug = self._generate_unique_slug(base_slug)
 
+        # Generate unique property_id if not set
+        if not self.property_id:
+            self.property_id = self._generate_property_id()
+
         super().save(*args, **kwargs)
 
     def _generate_unique_slug(self, base_slug):
@@ -220,6 +229,32 @@ class Property(models.Model):
             counter += 1
 
         return slug
+
+    def _generate_property_id(self):
+        """
+        Generate a unique property ID with format: PROP-{NAME_PREFIX}-{UNIQUE_CODE}
+        Example: PROP-LUXURY-VILLA-A1B2C3
+        """
+        # Get first 2-3 words from property name, clean and uppercase
+        name_parts = self.property_name.upper().split()[:3]
+        name_prefix = "-".join(name_parts)
+
+        # Remove special characters and limit length
+        import re
+        name_prefix = re.sub(r'[^A-Z0-9-]', '', name_prefix)
+        name_prefix = name_prefix[:30]  # Limit prefix length
+
+        # Generate unique code using short UUID
+        unique_code = str(uuid.uuid4()).split('-')[0].upper()
+
+        property_id = f"PROP-{name_prefix}-{unique_code}"
+
+        # Ensure uniqueness
+        while Property.objects.exclude(pk=self.pk).filter(property_id=property_id).exists():
+            unique_code = str(uuid.uuid4()).split('-')[0].upper()
+            property_id = f"PROP-{name_prefix}-{unique_code}"
+
+        return property_id
 
 
 class PropertyImage(models.Model):
