@@ -105,17 +105,29 @@ export function LandingPageCacheProvider({ children }) {
     return blogsData
       .sort((a, b) => new Date(b.published_at) - new Date(a.published_at))
       .slice(0, 3)
-      .map(blog => ({
-        date: new Date(blog.published_at).toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        }),
-        title: blog.title,
-        description: blog.summary || blog.excerpt || '',
-        image: blog.cover_image_url,
-        link: `/blog/${blog.slug}`
-      }));
+      .map(blog => {
+        // Handle invalid or missing date
+        let formattedDate = 'Date not available';
+        if (blog.published_at) {
+          const date = new Date(blog.published_at);
+          // Check if the date is valid and not the Unix epoch
+          if (!isNaN(date.getTime()) && date.getTime() > 0) {
+            formattedDate = date.toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            });
+          }
+        }
+        
+        return {
+          date: formattedDate,
+          title: blog.title,
+          description: blog.summary || blog.excerpt || '',
+          image: blog.cover_image_url,
+          link: `/blog/${blog.slug}`
+        };
+      });
   }, []);
 
   // Fetch featured properties from API
