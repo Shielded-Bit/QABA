@@ -145,6 +145,10 @@ class LandlordProfile(Profile):
     pass
 
 
+class AdminProfile(Profile):
+    pass
+
+
 class Notification(models.Model):
     user = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="notifications"
@@ -275,3 +279,5 @@ def create_user_profile(sender, instance, created, **kwargs):
             AgentProfile.objects.get_or_create(user=instance)
         elif instance.user_type == User.UserType.LANDLORD:
             LandlordProfile.objects.get_or_create(user=instance)
+        elif instance.user_type == User.UserType.ADMIN:
+            AdminProfile.objects.get_or_create(user=instance)
