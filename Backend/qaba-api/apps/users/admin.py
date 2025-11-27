@@ -16,6 +16,7 @@ from .models import (
     LandlordProfile,
     Notification,
     PropertySurveyMeeting,
+    Referral,
     User,
 )
 
@@ -304,6 +305,28 @@ class LandlordProfileAdmin(AgentProfileAdmin):
 @admin.register(AdminProfile)
 class AdminProfileAdmin(AgentProfileAdmin):
     pass
+
+
+@admin.register(Referral)
+class ReferralAdmin(admin.ModelAdmin):
+    list_display = ("user", "source", "custom_source", "created_at")
+    list_filter = ("source", "created_at")
+    search_fields = (
+        "user__email",
+        "user__first_name",
+        "user__last_name",
+        "custom_source",
+    )
+    readonly_fields = ("created_at", "updated_at")
+    ordering = ("-created_at",)
+
+    fieldsets = (
+        (None, {"fields": ("user", "source", "custom_source")}),
+        (_("Timestamps"), {"fields": ("created_at", "updated_at"), "classes": ("collapse",)}),
+    )
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("user")
 
 
 @admin.register(Notification)

@@ -149,6 +149,43 @@ class AdminProfile(Profile):
     pass
 
 
+class Referral(models.Model):
+    class Source(models.TextChoices):
+        X = "X", "X (Twitter)"
+        LINKEDIN = "LINKEDIN", "LinkedIn"
+        FACEBOOK = "FACEBOOK", "Facebook"
+        INSTAGRAM = "INSTAGRAM", "Instagram"
+        GOOGLE_SEARCH = "GOOGLE_SEARCH", "Google Search"
+        OTHERS = "OTHERS", "Others"
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="referral")
+    source = models.CharField(max_length=20, choices=Source.choices)
+    custom_source = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text=_("Required when 'Others' is selected"),
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        if self.source == self.Source.OTHERS and self.custom_source:
+            return f"Referral for {self.user.email}: {self.custom_source}"
+        return f"Referral for {self.user.email}: {self.get_source_display()}"
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+
+        if self.source == self.Source.OTHERS and not self.custom_source:
+            raise ValidationError(
+                {"custom_source": "Custom source is required when 'Others' is selected."}
+            )
+
+
 class Notification(models.Model):
     user = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="notifications"
