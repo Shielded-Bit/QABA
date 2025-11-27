@@ -59,6 +59,7 @@ const EnquiryModal = ({ isOpen, onClose, property }) => {
       phone: user.phone || user.phone_number || '',
       subject: `Enquiry about ${property?.property_name || 'a property'}`,
       message,
+      property_id: property?.id || 0,
     };
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/contact/`, {
