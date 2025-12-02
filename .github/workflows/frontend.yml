@@ -207,8 +207,11 @@ jobs:
             export FRONTEND_IMAGE="${DOCKER_REGISTRY}/frontend:${IMAGE_PREFIX}-${GITHUB_SHA:0:7}"
 
             echo "🚀 Starting frontend deployment..."
-            # Deploy with pre-built images, force recreate to apply new config
+            # Deploy frontend with pre-built image, force recreate to apply new config
             docker compose -f docker-compose.yml -f ${COMPOSE_OVERRIDE} up -d frontend --no-build --force-recreate --remove-orphans
+
+            # Ensure nginx-proxy-manager is running for routing
+            docker compose -f docker-compose.yml -f ${COMPOSE_OVERRIDE} up -d nginx-proxy-manager
 
             echo "⏳ Waiting for frontend service to be ready..."
             sleep 10
