@@ -53,6 +53,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ("properties", "0021_alter_property_agent_commission_and_more"),
+        ("users", "0012_remove_user_email_verification_token_otp"),  # OTP model dependency
     ]
 
     operations = [
