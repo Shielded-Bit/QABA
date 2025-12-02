@@ -65,3 +65,5 @@ coverage.xml
 pytest.ini
 
 ./src/db.sqlite3
+
+CLAUDE.md
