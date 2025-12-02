@@ -210,11 +210,11 @@ jobs:
             export BACKEND_IMAGE="${DOCKER_REGISTRY}/backend:${IMAGE_PREFIX}-${GITHUB_SHA:0:7}"
 
             echo "🚀 Starting backend deployment..."
-            # Ensure db is running first
-            docker compose -f docker-compose.yml -f ${COMPOSE_OVERRIDE} up -d db
+            # Ensure db is running (don't force recreate - preserve data)
+            docker compose -f docker-compose.yml -f ${COMPOSE_OVERRIDE} up -d db --no-recreate
 
             # Deploy backend with pre-built image, force recreate to apply new config
-            docker compose -f docker-compose.yml -f ${COMPOSE_OVERRIDE} up -d backend --no-build --force-recreate --remove-orphans
+            docker compose -f docker-compose.yml -f ${COMPOSE_OVERRIDE} up -d backend --no-build --force-recreate
 
             # Ensure nginx-proxy-manager is running for routing (production only)
             if [ "${COMPOSE_OVERRIDE}" = "docker-compose.prod.yml" ]; then
