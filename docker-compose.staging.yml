@@ -1,11 +1,19 @@
 # Staging docker-compose override
 # This file uses pre-built images from GitHub Container Registry for staging environment
 # Usage: docker-compose -f docker-compose.yml -f docker-compose.staging.yml up -d
+# Staging uses different ports to avoid conflicts with production on same VM
 
 services:
+  # Database with staging port
+  db:
+    ports:
+      - "5433:5432"
+
   # Use pre-built backend image from registry (staging)
   backend:
     image: ${BACKEND_IMAGE:-ghcr.io/shielded-bit/qaba/backend:staging-latest}
+    ports:
+      - "8001:8000"
     # Override volumes to remove source code mount (code is baked into image)
     volumes:
       - backend_media:/app/media
@@ -14,3 +22,10 @@ services:
   # Use pre-built frontend image from registry (staging)
   frontend:
     image: ${FRONTEND_IMAGE:-ghcr.io/shielded-bit/qaba/frontend:staging-latest}
+    ports:
+      - "3001:3000"
+
+  # Disable nginx-proxy-manager for staging (routes through production's nginx)
+  nginx-proxy-manager:
+    profiles:
+      - disabled

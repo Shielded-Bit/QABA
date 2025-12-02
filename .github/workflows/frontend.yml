@@ -214,8 +214,10 @@ jobs:
             # Deploy frontend with pre-built image, force recreate to apply new config
             docker compose -f docker-compose.yml -f ${COMPOSE_OVERRIDE} up -d frontend --no-build --force-recreate --remove-orphans
 
-            # Ensure nginx-proxy-manager is running for routing
-            docker compose -f docker-compose.yml -f ${COMPOSE_OVERRIDE} up -d nginx-proxy-manager
+            # Ensure nginx-proxy-manager is running for routing (production only)
+            if [ "${COMPOSE_OVERRIDE}" = "docker-compose.prod.yml" ]; then
+              docker compose -f docker-compose.yml -f ${COMPOSE_OVERRIDE} up -d nginx-proxy-manager
+            fi
 
             echo "⏳ Waiting for frontend service to be ready..."
             sleep 10
