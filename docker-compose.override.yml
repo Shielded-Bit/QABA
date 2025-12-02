@@ -1,0 +1,9 @@
+# Local development overrides
+# This file is automatically loaded by docker-compose when running locally
+# It mounts source code for hot-reloading during development
+
+services:
+  backend:
+    volumes:
+      - ./Backend/qaba-api:/app
+      - backend_media:/app/media

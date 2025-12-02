@@ -6,6 +6,10 @@ services:
   # Use pre-built backend image from registry
   backend:
     image: ${BACKEND_IMAGE:-ghcr.io/shielded-bit/qaba/backend:latest}
+    # Override volumes to remove source code mount (code is baked into image)
+    volumes:
+      - backend_media:/app/media
+    command: ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "core.wsgi:application"]
 
   # Use pre-built frontend image from registry
   frontend:

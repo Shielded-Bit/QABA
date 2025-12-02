@@ -29,7 +29,8 @@ services:
     entrypoint: ["/start_docker.sh"]
     command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
     volumes:
-      - ./Backend/qaba-api:/app
+      # For local development, uncomment the next line:
+      # - ./Backend/qaba-api:/app
       - backend_media:/app/media
     networks:
       - qaba_network
