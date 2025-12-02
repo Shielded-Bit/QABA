@@ -1,13 +1,27 @@
-name: CI/CD - Deploy to VM
+name: Backend CI/CD
 
 on:
   push:
     branches:
       - main
+      - staging
+    paths:
+      - 'Backend/**'
+      - '.github/workflows/backend.yml'
+      - 'docker-compose*.yml'
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
 
 concurrency:
-  group: deploy-${{ github.ref }}
+  group: backend-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -15,31 +29,56 @@ permissions:
   packages: write
 
 jobs:
-  # Pre-deployment validation job
-  test-and-validate:
+  # Determine deployment environment
+  set-environment:
     runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.set-env.outputs.environment }}
+      image_prefix: ${{ steps.set-env.outputs.image_prefix }}
+      compose_override: ${{ steps.set-env.outputs.compose_override }}
+    steps:
+      - name: Determine deployment environment
+        id: set-env
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            ENV="${{ github.event.inputs.environment }}"
+          elif [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            ENV="production"
+          else
+            ENV="staging"
+          fi
 
+          echo "environment=$ENV" >> $GITHUB_OUTPUT
+
+          if [ "$ENV" == "production" ]; then
+            echo "image_prefix=main" >> $GITHUB_OUTPUT
+            echo "compose_override=docker-compose.prod.yml" >> $GITHUB_OUTPUT
+          else
+            echo "image_prefix=staging" >> $GITHUB_OUTPUT
+            echo "compose_override=docker-compose.staging.yml" >> $GITHUB_OUTPUT
+          fi
+
+          echo "Deploying to: $ENV"
+
+  # Run backend tests
+  test:
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: Frontend/qaba-frontend/package-lock.json
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
 
       - name: Install Backend dependencies
         run: |
           cd Backend/qaba-api
-          pip install -r requirements.txt
+          uv pip install --system -e ".[dev]"
 
       - name: Run Backend tests
         run: |
@@ -49,34 +88,20 @@ jobs:
       - name: Backend linting
         run: |
           cd Backend/qaba-api
-          pip install flake8 || true
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics || echo "::warning::Linting issues found"
+          ruff check . || echo "::warning::Linting issues found"
+          ruff format --check . || echo "::warning::Formatting issues found"
 
-      - name: Install Frontend dependencies
+      - name: Type checking
         run: |
-          cd Frontend/qaba-frontend
-          npm ci
+          cd Backend/qaba-api
+          mypy . --ignore-missing-imports || echo "::warning::Type errors found"
 
-      - name: Run Frontend linting
-        run: |
-          cd Frontend/qaba-frontend
-          npm run lint || echo "::warning::Frontend linting issues found"
-
-      - name: Build Frontend
-        run: |
-          cd Frontend/qaba-frontend
-          npm run build
-
-      - name: Verify Docker Compose file
-        env:
-          ENV_FILE: env.example
-        run: docker compose -f docker-compose.yml config -q
-
-  # Build and push Docker images to registry
-  build-images:
+  # Build and push Docker image
+  build:
     runs-on: ubuntu-latest
-    needs: test-and-validate
-
+    needs: [set-environment, test]
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tags }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -96,49 +121,30 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract metadata for Backend
-        id: meta-backend
+        id: meta
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ steps.repo.outputs.repository }}/backend
           tags: |
-            type=sha,prefix={{branch}}-
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix=${{ needs.set-environment.outputs.image_prefix }}-
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=staging-latest,enable=${{ github.ref == 'refs/heads/staging' }}
 
       - name: Build and push Backend image
         uses: docker/build-push-action@v5
         with:
           context: ./Backend
           push: true
-          tags: ${{ steps.meta-backend.outputs.tags }}
-          labels: ${{ steps.meta-backend.outputs.labels }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=registry,ref=ghcr.io/${{ steps.repo.outputs.repository }}/backend:buildcache
           cache-to: type=registry,ref=ghcr.io/${{ steps.repo.outputs.repository }}/backend:buildcache,mode=max
 
-      - name: Extract metadata for Frontend
-        id: meta-frontend
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/${{ steps.repo.outputs.repository }}/frontend
-          tags: |
-            type=sha,prefix={{branch}}-
-            type=raw,value=latest,enable={{is_default_branch}}
-
-      - name: Build and push Frontend image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./Frontend
-          push: true
-          tags: ${{ steps.meta-frontend.outputs.tags }}
-          labels: ${{ steps.meta-frontend.outputs.labels }}
-          cache-from: type=registry,ref=ghcr.io/${{ steps.repo.outputs.repository }}/frontend:buildcache
-          cache-to: type=registry,ref=ghcr.io/${{ steps.repo.outputs.repository }}/frontend:buildcache,mode=max
-
-  # Main deployment job
+  # Deploy to VM
   deploy:
     runs-on: ubuntu-latest
-    needs: build-images
-    environment: production
-
+    needs: [set-environment, build]
+    environment: ${{ needs.set-environment.outputs.environment }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -147,42 +153,32 @@ jobs:
         id: repo
         run: echo "repository=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
 
-      - name: Copy project files to VM
+      - name: Copy compose files to VM
         uses: appleboy/scp-action@master
         with:
-            host: ${{ secrets.VM_HOST }}
-            username: ${{ secrets.VM_USER }}
-            key: ${{ secrets.VM_SSH_KEY }}
-            port: ${{ secrets.VM_SSH_PORT || 22 }}
-            source: "./"
-            target: ${{ secrets.VM_PROJECT_DIR }}
-            overwrite: true
-            strip_components: 0
-            tar_tmp_path: "/tmp/"
-            exclude: |
-                .git
-                .env
-                node_modules
-                .next
-                Backend/qaba-api/media
-                __pycache__
-                *.pyc
-                .pytest_cache
-                .github
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          port: ${{ secrets.VM_SSH_PORT || 22 }}
+          source: "docker-compose.yml,docker-compose.prod.yml,docker-compose.staging.yml"
+          target: ${{ secrets.VM_PROJECT_DIR }}
+          overwrite: true
 
-      - name: Create backup and deploy
+      - name: Create backup and deploy backend
         id: deploy
         uses: appleboy/ssh-action@v1.2.0
         env:
           PROJECT_DIR: ${{ secrets.VM_PROJECT_DIR }}
           GITHUB_SHA: ${{ github.sha }}
           DOCKER_REGISTRY: ghcr.io/${{ steps.repo.outputs.repository }}
+          IMAGE_PREFIX: ${{ needs.set-environment.outputs.image_prefix }}
+          COMPOSE_OVERRIDE: ${{ needs.set-environment.outputs.compose_override }}
         with:
           host: ${{ secrets.VM_HOST }}
           username: ${{ secrets.VM_USER }}
           key: ${{ secrets.VM_SSH_KEY }}
           port: ${{ secrets.VM_SSH_PORT || 22 }}
-          envs: PROJECT_DIR,GITHUB_SHA,DOCKER_REGISTRY
+          envs: PROJECT_DIR,GITHUB_SHA,DOCKER_REGISTRY,IMAGE_PREFIX,COMPOSE_OVERRIDE
           script: |
             set -euo pipefail
 
@@ -205,62 +201,50 @@ jobs:
             # Login to GitHub Container Registry
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            # Pull latest images
-            echo "🔄 Pulling latest Docker images..."
-            docker pull ${DOCKER_REGISTRY}/backend:main-${GITHUB_SHA:0:7} || docker pull ${DOCKER_REGISTRY}/backend:latest
-            docker pull ${DOCKER_REGISTRY}/frontend:main-${GITHUB_SHA:0:7} || docker pull ${DOCKER_REGISTRY}/frontend:latest
+            # Pull latest backend image
+            echo "🔄 Pulling latest Backend Docker image..."
+            docker pull ${DOCKER_REGISTRY}/backend:${IMAGE_PREFIX}-${GITHUB_SHA:0:7} || docker pull ${DOCKER_REGISTRY}/backend:${IMAGE_PREFIX}-latest
 
             # Update docker-compose to use registry images
-            export BACKEND_IMAGE="${DOCKER_REGISTRY}/backend:main-${GITHUB_SHA:0:7}"
-            export FRONTEND_IMAGE="${DOCKER_REGISTRY}/frontend:main-${GITHUB_SHA:0:7}"
+            export BACKEND_IMAGE="${DOCKER_REGISTRY}/backend:${IMAGE_PREFIX}-${GITHUB_SHA:0:7}"
 
-            echo "🚀 Starting deployment..."
+            echo "🚀 Starting backend deployment..."
             # Deploy with zero-downtime using rolling update with pre-built images
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-build --remove-orphans
+            docker compose -f docker-compose.yml -f ${COMPOSE_OVERRIDE} up -d backend --no-build --remove-orphans
 
-            echo "⏳ Waiting for services to be ready..."
+            echo "⏳ Waiting for backend service to be ready..."
             sleep 10
 
-      - name: Health check deployment
+      - name: Health check backend deployment
         uses: appleboy/ssh-action@v1.2.0
         env:
           PROJECT_DIR: ${{ secrets.VM_PROJECT_DIR }}
+          API_HEALTH_URL: ${{ secrets.HEALTH_CHECK_API_URL }}
         with:
           host: ${{ secrets.VM_HOST }}
           username: ${{ secrets.VM_USER }}
           key: ${{ secrets.VM_SSH_KEY }}
           port: ${{ secrets.VM_SSH_PORT || 22 }}
-          envs: PROJECT_DIR
+          envs: PROJECT_DIR,API_HEALTH_URL
           script: |
             set -euo pipefail
             cd "$PROJECT_DIR"
 
-            echo "🔍 Checking container health..."
+            echo "🔍 Checking backend container health..."
 
-            # Check if containers are running
-            CONTAINERS=$(docker compose ps -q)
-            if [ -z "$CONTAINERS" ]; then
-              echo "❌ No containers are running!"
+            # Check if backend container is running
+            if ! docker compose ps backend | grep -q "Up"; then
+              echo "❌ Backend service is not running!"
+              docker compose logs --tail=50 backend
               exit 1
             fi
 
-            # Check each service
-            for service in backend frontend db; do
-              if ! docker compose ps $service | grep -q "Up"; then
-                echo "❌ Service $service is not running!"
-                docker compose logs --tail=50 $service
-                exit 1
-              fi
-            done
-
-            # Health check endpoints
-            echo "Testing backend health..."
-            backend_health_url="https://api.qarba.com/health"
-            backend_fallback_url="https://api.qarba.com/"
+            # Health check endpoint
+            echo "Testing backend health at ${API_HEALTH_URL}..."
             max_attempts=30
             attempt=0
             while [ $attempt -lt $max_attempts ]; do
-              if curl -f "$backend_health_url" 2>/dev/null || curl -f "$backend_fallback_url" 2>/dev/null; then
+              if curl -f "${API_HEALTH_URL}/health" 2>/dev/null || curl -f "${API_HEALTH_URL}/" 2>/dev/null; then
                 echo "✅ Backend is healthy"
                 break
               fi
@@ -273,25 +257,8 @@ jobs:
               sleep 2
             done
 
-            echo "Testing frontend health..."
-            frontend_health_url="https://qarba.com/"
-            attempt=0
-            while [ $attempt -lt $max_attempts ]; do
-              if curl -f "$frontend_health_url" 2>/dev/null; then
-                echo "✅ Frontend is healthy"
-                break
-              fi
-              attempt=$((attempt + 1))
-              if [ $attempt -eq $max_attempts ]; then
-                echo "❌ Frontend health check failed after $max_attempts attempts"
-                docker compose logs --tail=50 frontend
-                exit 1
-              fi
-              sleep 2
-            done
-
-            echo "✅ All services are healthy!"
-            docker compose ps
+            echo "✅ Backend service is healthy!"
+            docker compose ps backend
 
       - name: Cleanup old resources
         if: success()
@@ -308,28 +275,29 @@ jobs:
             cd "$PROJECT_DIR"
 
             echo "🧹 Cleaning up old Docker resources..."
-            docker system prune -f --volumes || true
+            docker system prune -f || true
 
-            # Keep only last 1 backup
-            echo "🧹 Cleaning old backups (keeping last 1)..."
-            ls -dt ${PROJECT_DIR}_backup_* 2>/dev/null | tail -n +2 | xargs rm -rf || true
+            # Keep only last 2 backups
+            echo "🧹 Cleaning old backups (keeping last 2)..."
+            ls -dt ${PROJECT_DIR}_backup_* 2>/dev/null | tail -n +3 | xargs rm -rf || true
 
       - name: Rollback on failure
         if: failure()
         uses: appleboy/ssh-action@v1.2.0
         env:
           PROJECT_DIR: ${{ secrets.VM_PROJECT_DIR }}
+          COMPOSE_OVERRIDE: ${{ needs.set-environment.outputs.compose_override }}
         with:
           host: ${{ secrets.VM_HOST }}
           username: ${{ secrets.VM_USER }}
           key: ${{ secrets.VM_SSH_KEY }}
           port: ${{ secrets.VM_SSH_PORT || 22 }}
-          envs: PROJECT_DIR
+          envs: PROJECT_DIR,COMPOSE_OVERRIDE
           script: |
             set -euo pipefail
             cd "$PROJECT_DIR"
 
-            echo "⚠️ Deployment failed! Attempting rollback..."
+            echo "⚠️ Backend deployment failed! Attempting rollback..."
 
             # Find most recent backup
             LATEST_BACKUP=$(ls -dt ${PROJECT_DIR}_backup_* 2>/dev/null | head -1)
@@ -341,11 +309,10 @@ jobs:
               cp "$LATEST_BACKUP/docker-compose.yml" . || true
               cp "$LATEST_BACKUP/.env" . || true
 
-              # Restart with previous configuration
-              docker compose down
-              docker compose up -d
+              # Restart backend with previous configuration
+              docker compose -f docker-compose.yml -f ${COMPOSE_OVERRIDE} up -d backend
 
-              echo "✅ Rollback completed"
+              echo "✅ Backend rollback completed"
             else
               echo "❌ No backup found for rollback"
               exit 1

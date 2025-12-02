@@ -1,0 +1,312 @@
+name: Frontend CI/CD
+
+on:
+  push:
+    branches:
+      - main
+      - staging
+    paths:
+      - 'Frontend/**'
+      - '.github/workflows/frontend.yml'
+      - 'docker-compose*.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+concurrency:
+  group: frontend-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  # Determine deployment environment
+  set-environment:
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.set-env.outputs.environment }}
+      image_prefix: ${{ steps.set-env.outputs.image_prefix }}
+      compose_override: ${{ steps.set-env.outputs.compose_override }}
+    steps:
+      - name: Determine deployment environment
+        id: set-env
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            ENV="${{ github.event.inputs.environment }}"
+          elif [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            ENV="production"
+          else
+            ENV="staging"
+          fi
+
+          echo "environment=$ENV" >> $GITHUB_OUTPUT
+
+          if [ "$ENV" == "production" ]; then
+            echo "image_prefix=main" >> $GITHUB_OUTPUT
+            echo "compose_override=docker-compose.prod.yml" >> $GITHUB_OUTPUT
+          else
+            echo "image_prefix=staging" >> $GITHUB_OUTPUT
+            echo "compose_override=docker-compose.staging.yml" >> $GITHUB_OUTPUT
+          fi
+
+          echo "Deploying to: $ENV"
+
+  # Run frontend tests and build validation
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: Frontend/qaba-frontend/package-lock.json
+
+      - name: Install Frontend dependencies
+        run: |
+          cd Frontend/qaba-frontend
+          npm ci
+
+      - name: Run Frontend linting
+        run: |
+          cd Frontend/qaba-frontend
+          npm run lint || echo "::warning::Frontend linting issues found"
+
+      - name: Build Frontend
+        run: |
+          cd Frontend/qaba-frontend
+          npm run build
+
+  # Build and push Docker image
+  build:
+    runs-on: ubuntu-latest
+    needs: [set-environment, test]
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tags }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set lowercase repository name
+        id: repo
+        run: echo "repository=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Frontend
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ steps.repo.outputs.repository }}/frontend
+          tags: |
+            type=sha,prefix=${{ needs.set-environment.outputs.image_prefix }}-
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=staging-latest,enable=${{ github.ref == 'refs/heads/staging' }}
+
+      - name: Build and push Frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./Frontend
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=ghcr.io/${{ steps.repo.outputs.repository }}/frontend:buildcache
+          cache-to: type=registry,ref=ghcr.io/${{ steps.repo.outputs.repository }}/frontend:buildcache,mode=max
+
+  # Deploy to VM
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [set-environment, build]
+    environment: ${{ needs.set-environment.outputs.environment }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set lowercase repository name
+        id: repo
+        run: echo "repository=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
+      - name: Copy compose files to VM
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          port: ${{ secrets.VM_SSH_PORT || 22 }}
+          source: "docker-compose.yml,docker-compose.prod.yml,docker-compose.staging.yml"
+          target: ${{ secrets.VM_PROJECT_DIR }}
+          overwrite: true
+
+      - name: Create backup and deploy frontend
+        id: deploy
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          PROJECT_DIR: ${{ secrets.VM_PROJECT_DIR }}
+          GITHUB_SHA: ${{ github.sha }}
+          DOCKER_REGISTRY: ghcr.io/${{ steps.repo.outputs.repository }}
+          IMAGE_PREFIX: ${{ needs.set-environment.outputs.image_prefix }}
+          COMPOSE_OVERRIDE: ${{ needs.set-environment.outputs.compose_override }}
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          port: ${{ secrets.VM_SSH_PORT || 22 }}
+          envs: PROJECT_DIR,GITHUB_SHA,DOCKER_REGISTRY,IMAGE_PREFIX,COMPOSE_OVERRIDE
+          script: |
+            set -euo pipefail
+
+            # Ensure project dir exists
+            mkdir -p "$PROJECT_DIR"
+            cd "$PROJECT_DIR"
+
+            echo "📦 Creating backup of current deployment..."
+            BACKUP_DIR="${PROJECT_DIR}_backup_$(date +%Y%m%d_%H%M%S)"
+
+            # Backup current state if it exists
+            if [ -f docker-compose.yml ]; then
+              mkdir -p "$BACKUP_DIR"
+              docker compose ps > "$BACKUP_DIR/containers_state.txt" || true
+              cp docker-compose.yml "$BACKUP_DIR/" || true
+              cp .env "$BACKUP_DIR/" || true
+              echo "Backup created at: $BACKUP_DIR"
+            fi
+
+            # Login to GitHub Container Registry
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            # Pull latest frontend image
+            echo "🔄 Pulling latest Frontend Docker image..."
+            docker pull ${DOCKER_REGISTRY}/frontend:${IMAGE_PREFIX}-${GITHUB_SHA:0:7} || docker pull ${DOCKER_REGISTRY}/frontend:${IMAGE_PREFIX}-latest
+
+            # Update docker-compose to use registry images
+            export FRONTEND_IMAGE="${DOCKER_REGISTRY}/frontend:${IMAGE_PREFIX}-${GITHUB_SHA:0:7}"
+
+            echo "🚀 Starting frontend deployment..."
+            # Deploy with zero-downtime using rolling update with pre-built images
+            docker compose -f docker-compose.yml -f ${COMPOSE_OVERRIDE} up -d frontend --no-build --remove-orphans
+
+            echo "⏳ Waiting for frontend service to be ready..."
+            sleep 10
+
+      - name: Health check frontend deployment
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          PROJECT_DIR: ${{ secrets.VM_PROJECT_DIR }}
+          FRONTEND_HEALTH_URL: ${{ secrets.HEALTH_CHECK_FRONTEND_URL }}
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          port: ${{ secrets.VM_SSH_PORT || 22 }}
+          envs: PROJECT_DIR,FRONTEND_HEALTH_URL
+          script: |
+            set -euo pipefail
+            cd "$PROJECT_DIR"
+
+            echo "🔍 Checking frontend container health..."
+
+            # Check if frontend container is running
+            if ! docker compose ps frontend | grep -q "Up"; then
+              echo "❌ Frontend service is not running!"
+              docker compose logs --tail=50 frontend
+              exit 1
+            fi
+
+            # Health check endpoint
+            echo "Testing frontend health at ${FRONTEND_HEALTH_URL}..."
+            max_attempts=30
+            attempt=0
+            while [ $attempt -lt $max_attempts ]; do
+              if curl -f "${FRONTEND_HEALTH_URL}/" 2>/dev/null; then
+                echo "✅ Frontend is healthy"
+                break
+              fi
+              attempt=$((attempt + 1))
+              if [ $attempt -eq $max_attempts ]; then
+                echo "❌ Frontend health check failed after $max_attempts attempts"
+                docker compose logs --tail=50 frontend
+                exit 1
+              fi
+              sleep 2
+            done
+
+            echo "✅ Frontend service is healthy!"
+            docker compose ps frontend
+
+      - name: Cleanup old resources
+        if: success()
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          PROJECT_DIR: ${{ secrets.VM_PROJECT_DIR }}
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          port: ${{ secrets.VM_SSH_PORT || 22 }}
+          envs: PROJECT_DIR
+          script: |
+            cd "$PROJECT_DIR"
+
+            echo "🧹 Cleaning up old Docker resources..."
+            docker system prune -f || true
+
+            # Keep only last 2 backups
+            echo "🧹 Cleaning old backups (keeping last 2)..."
+            ls -dt ${PROJECT_DIR}_backup_* 2>/dev/null | tail -n +3 | xargs rm -rf || true
+
+      - name: Rollback on failure
+        if: failure()
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          PROJECT_DIR: ${{ secrets.VM_PROJECT_DIR }}
+          COMPOSE_OVERRIDE: ${{ needs.set-environment.outputs.compose_override }}
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          port: ${{ secrets.VM_SSH_PORT || 22 }}
+          envs: PROJECT_DIR,COMPOSE_OVERRIDE
+          script: |
+            set -euo pipefail
+            cd "$PROJECT_DIR"
+
+            echo "⚠️ Frontend deployment failed! Attempting rollback..."
+
+            # Find most recent backup
+            LATEST_BACKUP=$(ls -dt ${PROJECT_DIR}_backup_* 2>/dev/null | head -1)
+
+            if [ -n "$LATEST_BACKUP" ] && [ -d "$LATEST_BACKUP" ]; then
+              echo "Rolling back to: $LATEST_BACKUP"
+
+              # Restore backup files
+              cp "$LATEST_BACKUP/docker-compose.yml" . || true
+              cp "$LATEST_BACKUP/.env" . || true
+
+              # Restart frontend with previous configuration
+              docker compose -f docker-compose.yml -f ${COMPOSE_OVERRIDE} up -d frontend
+
+              echo "✅ Frontend rollback completed"
+            else
+              echo "❌ No backup found for rollback"
+              exit 1
+            fi
