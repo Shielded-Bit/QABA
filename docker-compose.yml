@@ -2,30 +2,28 @@ services:
   # PostgreSQL Database
   db:
     image: postgres:15-alpine
-    container_name: qaba_db
     restart: unless-stopped
     env_file:
       - ${ENV_FILE:-.env}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5432}:5432"
     networks:
-      - qaba_network
+      - default
 
   # Django Backend
   backend:
     build:
       context: ./Backend
       dockerfile: Dockerfile
-    container_name: qaba_backend
     restart: unless-stopped
     env_file:
       - ${ENV_FILE:-.env}
     depends_on:
       - db
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT:-8000}:8000"
     entrypoint: ["/start_docker.sh"]
     command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
     volumes:
@@ -33,7 +31,7 @@ services:
       # - ./Backend/qaba-api:/app
       - backend_media:/app/media
     networks:
-      - qaba_network
+      - default
 
   # Next.js Frontend
   frontend:
@@ -44,21 +42,19 @@ services:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL?Set NEXT_PUBLIC_API_URL in your .env file}
         NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID?Set NEXT_PUBLIC_GOOGLE_CLIENT_ID in your .env file}
         NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?Set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY in your .env file}
-    container_name: qaba_frontend
     restart: unless-stopped
     env_file:
       - ${ENV_FILE:-.env}
     depends_on:
       - backend
     ports:
-      - "3000:3000"
+      - "${FRONTEND_PORT:-3000}:3000"
     networks:
-      - qaba_network
+      - default
 
   # Nginx Proxy Manager (reverse proxy + SSL)
   nginx-proxy-manager:
     image: jc21/nginx-proxy-manager:latest
-    container_name: nginx_proxy_manager
     restart: unless-stopped
     depends_on:
       - backend
@@ -71,10 +67,10 @@ services:
       - npm_data:/data
       - npm_letsencrypt:/etc/letsencrypt
     networks:
-      - qaba_network
+      - default
 
 networks:
-  qaba_network:
+  default:
     driver: bridge
 
 volumes:
