@@ -3,7 +3,17 @@
 # It mounts source code for hot-reloading during development
 
 services:
+  db:
+    ports:
+      - "5432:5432"
+
   backend:
+    ports:
+      - "8000:8000"
     volumes:
       - ./Backend/qaba-api:/app
       - backend_media:/app/media
+
+  frontend:
+    ports:
+      - "3000:3000"
