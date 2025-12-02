@@ -132,6 +132,7 @@ class AmenitiesInline(admin.TabularInline):
 @admin.register(Property)
 class PropertyAdmin(admin.ModelAdmin):
     list_display = (
+        "property_id",
         "property_name",
         "slug",
         "property_type",
@@ -166,7 +167,7 @@ class PropertyAdmin(admin.ModelAdmin):
         "listed_by__first_name",
         "listed_by__last_name",
     )
-    readonly_fields = ("listed_date", "slug")
+    readonly_fields = ("listed_date", "slug", "property_id")
     inlines = [
         PropertyImageInline,
         PropertyVideoInline,
@@ -177,7 +178,7 @@ class PropertyAdmin(admin.ModelAdmin):
     filter_horizontal = ("amenities",)
 
     fieldsets = (
-        (None, {"fields": ("property_name", "slug", "description", "listed_by")}),
+        (None, {"fields": ("property_id", "property_name", "slug", "description", "listed_by")}),
         (
             _("Property Details"),
             {
@@ -203,6 +204,8 @@ class PropertyAdmin(admin.ModelAdmin):
                     "rent_frequency",
                     "agent_commission",  # Add commission
                     "qaba_fee",  # Add fee
+                    "service_charge",
+                    "caution_fee",
                     "legal_fee",
                     "total_price",  # Add total price
                 ),
@@ -220,12 +223,12 @@ class PropertyAdmin(admin.ModelAdmin):
             frequency = (
                 obj.get_rent_frequency_display() if obj.rent_frequency else "Monthly"
             )
-            price_display = f"${obj.rent_price:,} / {frequency}"
+            price_display = f"₦{obj.rent_price:,} / {frequency}"
         elif obj.sale_price:
-            price_display = f"${obj.sale_price:,}"
+            price_display = f"₦{obj.sale_price:,}"
 
         if obj.total_price:
-            price_display += f" (Total: ${obj.total_price:,})"
+            price_display += f" (Total: ₦{obj.total_price:,})"
 
         return price_display
 

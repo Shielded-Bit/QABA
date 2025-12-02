@@ -283,6 +283,13 @@ const Section3 = () => {
               )}
             </div>
           </div>
+          {/* View All Link */}
+          <div className="text-center mt-8">
+            <Link href="/properties" className="inline-flex items-center text-[#014d98] hover:text-[#3ab7b1] font-semibold transition-colors duration-300 text-lg">
+              View All Properties
+              <span className="ml-2">→</span>
+            </Link>
+          </div>
         </div>
       )}
 

@@ -98,6 +98,7 @@ class PropertyListSerializer(serializers.ModelSerializer):
         model = Property
         fields = [
             "id",
+            "property_id",
             "property_name",
             "slug",
             "sale_price",

@@ -641,6 +641,16 @@ class ContactFormView(APIView):
 
             subject = serializer.validated_data["subject"]
             message = serializer.validated_data["message"]
+            property_id = serializer.validated_data.get("property_id")
+
+            # Get property details if property_id is provided
+            property_obj = None
+            if property_id:
+                from apps.properties.models import Property
+                try:
+                    property_obj = Property.objects.get(id=property_id)
+                except Property.DoesNotExist:
+                    pass
 
             from core.utils.send_email import send_contact_form_email
 
@@ -651,6 +661,7 @@ class ContactFormView(APIView):
                 user_type=user_type,
                 subject=subject,
                 message=message,
+                property_obj=property_obj,
             )
 
             if not email_result.get("success", False):
