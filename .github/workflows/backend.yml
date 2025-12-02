@@ -78,7 +78,8 @@ jobs:
       - name: Install Backend dependencies
         run: |
           cd Backend/qaba-api
-          uv pip install --system -e ".[dev]"
+          uv pip install --system -r requirements.txt
+          uv pip install --system pytest pytest-django ruff mypy
 
       - name: Run Backend tests
         run: |
