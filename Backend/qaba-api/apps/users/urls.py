@@ -15,6 +15,7 @@ from .views import (
     PasswordResetConfirmView,
     PasswordResetRequestView,
     PropertySurveyMeetingCreateView,
+    ReferralView,
     RegistrationView,
     RefreshTokenView,
     SendEmailVerificationView,
@@ -61,6 +62,6 @@ urlpatterns = [
         name="notification-mark-read",
     ),
     path("contact/", ContactFormView.as_view(), name="contact-form"),
+    path("referral/", ReferralView.as_view(), name="referral"),
     path('survey-meetings/create/', PropertySurveyMeetingCreateView.as_view(), name='survey_meetings_create'),
-
 ]

@@ -1,6 +1,9 @@
 # Use Python 3.11 slim image
 FROM python:3.11-slim
 
+# Install uv from official image
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -16,13 +19,9 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv (Python packaging tool)
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.local/bin:${PATH}"
-
-# Copy dependency metadata and install locked production deps
-COPY qaba-api/pyproject.toml qaba-api/uv.lock ./
-RUN uv sync --frozen --no-dev
+# Copy dependency files and install Python dependencies with uv
+COPY qaba-api/pyproject.toml .
+RUN uv pip install --system --no-cache .
 
 COPY ./start_docker.sh /start_docker.sh
 RUN chmod +x /start_docker.sh

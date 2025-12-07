@@ -12,6 +12,7 @@ from .models import (
     LandlordProfile,
     Notification,
     PropertySurveyMeeting,
+    Referral,
     User,
 )
 
@@ -362,6 +363,34 @@ class NotificationSerializer(serializers.ModelSerializer):
         model = Notification
         fields = ["id", "message", "is_read", "created_at"]
         read_only_fields = ["message", "is_read", "created_at"]
+
+
+class ReferralSerializer(serializers.ModelSerializer):
+    source_display = serializers.CharField(source="get_source_display", read_only=True)
+
+    class Meta:
+        model = Referral
+        fields = ["id", "source", "source_display", "custom_source", "created_at"]
+        read_only_fields = ["id", "created_at"]
+
+    def validate(self, data):
+        source = data.get("source")
+        custom_source = data.get("custom_source")
+
+        # For updates, get existing source if not provided
+        if self.instance and not source:
+            source = self.instance.source
+
+        if source == Referral.Source.OTHERS and not custom_source:
+            raise serializers.ValidationError(
+                {"custom_source": "Custom source is required when 'Others' is selected."}
+            )
+
+        # Clear custom_source if source is not "Others"
+        if source and source != Referral.Source.OTHERS:
+            data["custom_source"] = None
+
+        return data
 
 
 class ContactFormSerializer(serializers.Serializer):
