@@ -19,9 +19,9 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy dependency files and install Python dependencies with uv
-COPY qaba-api/pyproject.toml .
-RUN uv pip install --system --no-cache .
+# Copy dependency files and README needed for packaging, then install deps with uv
+COPY qaba-api/pyproject.toml qaba-api/uv.lock qaba-api/README.md ./
+RUN uv sync --frozen --no-dev
 
 COPY ./start_docker.sh /start_docker.sh
 RUN chmod +x /start_docker.sh
