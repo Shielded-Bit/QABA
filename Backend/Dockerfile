@@ -16,15 +16,22 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install Python dependencies
-COPY qaba-api/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Install uv (Python packaging tool)
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.local/bin:${PATH}"
+
+# Copy dependency metadata and install locked production deps
+COPY qaba-api/pyproject.toml qaba-api/uv.lock ./
+RUN uv sync --frozen --no-dev
 
 COPY ./start_docker.sh /start_docker.sh
 RUN chmod +x /start_docker.sh
 
 # Copy project
 COPY qaba-api/ .
+
+# Ensure the project virtualenv is used for all commands
+ENV PATH="/app/.venv/bin:${PATH}"
 
 # Create necessary directories
 RUN mkdir -p /app/staticfiles /app/media
