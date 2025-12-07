@@ -65,5 +65,5 @@ toml==0.10.2
 tomli==1.2.3
 typing-extensions==4.12.2
 uritemplate==4.1.1
-urllib3==2.3.0
+urllib3==2.6.0
 whitenoise==6.9.0
