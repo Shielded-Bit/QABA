@@ -23,7 +23,7 @@ from core.utils.send_email import (
     send_verification_email,
 )
 
-from .models import OTP, AgentProfile, ClientProfile, LandlordProfile, User
+from .models import OTP, AgentProfile, ClientProfile, LandlordProfile, Referral, User
 from .serializers import (
     AgentProfilePatchSerializer,
     AgentProfileSerializer,
@@ -40,6 +40,7 @@ from .serializers import (
     PasswordResetRequestSerializer,
     PropertySurveyMeetingCreateSerializer,
     PropertySurveyMeetingSerializer,
+    ReferralSerializer,
     RegistrationSerializer,
     SendEmailVerificationSerializer,
     UserSerializer,
@@ -607,6 +608,45 @@ class NotificationMarkReadView(generics.UpdateAPIView):
             data=NotificationSerializer(notification).data,
             message="Notification marked as read",
         )
+
+
+@extend_schema(tags=["Referral"])
+class ReferralView(APIView):
+    """
+    View for managing user referral/marketing attribution source.
+    """
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    @extend_schema(responses={200: ReferralSerializer})
+    def get(self, request):
+        """Get the current user's referral source"""
+        try:
+            referral = request.user.referral
+            serializer = ReferralSerializer(referral)
+            return APIResponse.success(
+                data=serializer.data, message="Referral retrieved successfully"
+            )
+        except Referral.DoesNotExist:
+            return APIResponse.not_found(message="Referral not set")
+
+    @extend_schema(request=ReferralSerializer, responses={201: ReferralSerializer})
+    def post(self, request):
+        """Create or update the current user's referral source"""
+        try:
+            referral = request.user.referral
+            serializer = ReferralSerializer(referral, data=request.data, partial=True)
+        except Referral.DoesNotExist:
+            serializer = ReferralSerializer(data=request.data)
+
+        if serializer.is_valid():
+            serializer.save(user=request.user)
+            return APIResponse.success(
+                data=serializer.data,
+                message="Referral saved successfully",
+                status_code=status.HTTP_201_CREATED,
+            )
+        return APIResponse.bad_request(message="Validation failed", errors=serializer.errors)
 
 
 @extend_schema(tags=["Contact"])

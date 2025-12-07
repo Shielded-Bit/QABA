@@ -10,11 +10,13 @@ from django.utils.translation import gettext_lazy as _
 from core.utils.send_email import send_email
 
 from .models import (
+    AdminProfile,
     AgentProfile,
     ClientProfile,
     LandlordProfile,
     Notification,
     PropertySurveyMeeting,
+    Referral,
     User,
 )
 
@@ -72,6 +74,25 @@ class LandlordProfileInline(admin.StackedInline):
             obj
             and obj.user_type == User.UserType.LANDLORD
             and not hasattr(obj, "landlordprofile")
+        ):
+            return True
+        return False
+
+
+class AdminProfileInline(admin.StackedInline):
+    model = AdminProfile
+    can_delete = False
+    verbose_name_plural = "Admin Profile"
+    fk_name = "user"
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("user")
+
+    def has_add_permission(self, request, obj=None):
+        if (
+            obj
+            and obj.user_type == User.UserType.ADMIN
+            and not hasattr(obj, "adminprofile")
         ):
             return True
         return False
@@ -147,6 +168,8 @@ class UserAdmin(BaseUserAdmin):
                 inlines.append(AgentProfileInline)
             elif obj.user_type == User.UserType.LANDLORD:
                 inlines.append(LandlordProfileInline)
+            elif obj.user_type == User.UserType.ADMIN:
+                inlines.append(AdminProfileInline)
         return inlines
 
     def profile_photo_display(self, obj):
@@ -168,6 +191,24 @@ class UserAdmin(BaseUserAdmin):
                 return format_html(
                     '<img src="{}" width="50" height="50" style="border-radius:50%;" />',
                     obj.agentprofile.profile_photo.url,
+                )
+            elif (
+                obj.user_type == User.UserType.LANDLORD
+                and hasattr(obj, "landlordprofile")
+                and obj.landlordprofile.profile_photo
+            ):
+                return format_html(
+                    '<img src="{}" width="50" height="50" style="border-radius:50%;" />',
+                    obj.landlordprofile.profile_photo.url,
+                )
+            elif (
+                obj.user_type == User.UserType.ADMIN
+                and hasattr(obj, "adminprofile")
+                and obj.adminprofile.profile_photo
+            ):
+                return format_html(
+                    '<img src="{}" width="50" height="50" style="border-radius:50%;" />',
+                    obj.adminprofile.profile_photo.url,
                 )
         except Exception:
             pass
@@ -259,6 +300,33 @@ class AgentProfileAdmin(admin.ModelAdmin):
 @admin.register(LandlordProfile)
 class LandlordProfileAdmin(AgentProfileAdmin):
     pass
+
+
+@admin.register(AdminProfile)
+class AdminProfileAdmin(AgentProfileAdmin):
+    pass
+
+
+@admin.register(Referral)
+class ReferralAdmin(admin.ModelAdmin):
+    list_display = ("user", "source", "custom_source", "created_at")
+    list_filter = ("source", "created_at")
+    search_fields = (
+        "user__email",
+        "user__first_name",
+        "user__last_name",
+        "custom_source",
+    )
+    readonly_fields = ("created_at", "updated_at")
+    ordering = ("-created_at",)
+
+    fieldsets = (
+        (None, {"fields": ("user", "source", "custom_source")}),
+        (_("Timestamps"), {"fields": ("created_at", "updated_at"), "classes": ("collapse",)}),
+    )
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("user")
 
 
 @admin.register(Notification)

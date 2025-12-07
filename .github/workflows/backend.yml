@@ -76,26 +76,22 @@ jobs:
         uses: astral-sh/setup-uv@v4
 
       - name: Install Backend dependencies
-        run: |
-          cd Backend/qaba-api
-          uv pip install --system -r requirements.txt
-          uv pip install --system pytest pytest-django ruff mypy
+        working-directory: Backend/qaba-api
+        run: uv sync --frozen --group dev
 
       - name: Run Backend tests
-        run: |
-          cd Backend/qaba-api
-          pytest --maxfail=1 --disable-warnings -v || echo "::warning::Backend tests failed but continuing"
+        working-directory: Backend/qaba-api
+        run: uv run pytest --maxfail=1 --disable-warnings -v || echo "::warning::Backend tests failed but continuing"
 
       - name: Backend linting
+        working-directory: Backend/qaba-api
         run: |
-          cd Backend/qaba-api
-          ruff check . || echo "::warning::Linting issues found"
-          ruff format --check . || echo "::warning::Formatting issues found"
+          uv run ruff check . || echo "::warning::Linting issues found"
+          uv run ruff format --check . || echo "::warning::Formatting issues found"
 
       - name: Type checking
-        run: |
-          cd Backend/qaba-api
-          mypy . --ignore-missing-imports || echo "::warning::Type errors found"
+        working-directory: Backend/qaba-api
+        run: uv run mypy . --ignore-missing-imports || echo "::warning::Type errors found"
 
   # Build and push Docker image
   build:
