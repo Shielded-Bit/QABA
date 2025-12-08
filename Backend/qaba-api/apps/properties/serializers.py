@@ -91,6 +91,7 @@ class PropertyListSerializer(serializers.ModelSerializer):
     )
 
     listed_by = UserSerializer(read_only=True)
+    owner = UserSerializer(read_only=True)
     thumbnail = serializers.SerializerMethodField()
     amenities = AmenitySerializer(many=True, read_only=True)
 
@@ -124,6 +125,7 @@ class PropertyListSerializer(serializers.ModelSerializer):
             "area_sqft",
             "listed_date",
             "listed_by",
+            "owner",
             "thumbnail",
             "is_favorited",
             "amenities",
@@ -208,6 +210,18 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
         default=False,
         help_text="Submit the property for review by the admin",
     )
+    owner_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.filter(
+            user_type__in=[
+                User.UserType.AGENT,
+                User.UserType.LANDLORD,
+            ]
+        ),
+        required=False,
+        allow_null=True,
+        write_only=True,
+        help_text="Owner of the property (if creating on behalf of someone else)",
+    )
 
     amenities_ids = AmenityListField()
 
@@ -230,6 +244,7 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
             "property_type",
             "listing_type",
             "submit_for_review",
+            "owner_id",
             "location",
             "state",
             "city",
@@ -272,10 +287,27 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
         rent_price = attrs.get("rent_price")
         rent_frequency = attrs.get("rent_frequency")
         request = self.context.get("request")
+        owner = attrs.get("owner_id")
         lister_type = request.user.user_type
         service_charge = attrs.get("service_charge")
         caution_fee = attrs.get("caution_fee")
         legal_fee = attrs.get("legal_fee")
+
+        if owner and owner.user_type not in [
+            User.UserType.AGENT,
+            User.UserType.LANDLORD,
+        ]:
+            raise serializers.ValidationError(
+                {"owner_id": "Owner must be an agent or landlord"}
+            )
+
+        if owner and not (request.user.is_staff or request.user.is_admin):
+            if owner != request.user:
+                raise serializers.ValidationError(
+                    {"owner_id": "You can only set yourself as the property owner"}
+                )
+
+        effective_lister_type = owner.user_type if owner else lister_type
 
         if service_charge is not None and service_charge < 0:
             raise serializers.ValidationError(
@@ -309,7 +341,7 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
                 )
             qaba_fee = round(float(rent_price) * settings.QABA_RENT_PERCENTAGE, 2)
             agent_commission = 0
-            if lister_type == User.UserType.AGENT:
+            if effective_lister_type == User.UserType.AGENT:
                 agent_commission = round(
                     float(rent_price) * settings.AGENT_RENT_COMMISSION_PERCENTAGE, 2
                 )
@@ -344,7 +376,7 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
                 )
             qaba_fee = round(float(sale_price) * settings.QABA_SALE_PERCENTAGE, 2)
             agent_commission = 0
-            if lister_type == User.UserType.AGENT:
+            if effective_lister_type == User.UserType.AGENT:
                 agent_commission = round(
                     float(sale_price) * settings.AGENT_SALE_COMMISSION_PERCENTAGE, 2
                 )
@@ -401,12 +433,17 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
         amenities_ids = validated_data.pop("amenities_ids", [])
         documents_data = validated_data.pop("documents", [])
         document_types = validated_data.pop("document_types", [])
+        owner = validated_data.pop("owner_id", None)
+        request_user = self.context["request"].user
 
         if submit_for_review:
             validated_data["listing_status"] = Property.ListingStatus.PENDING
 
         property_instance = Property.objects.create(
-            listed_by=self.context["request"].user, **validated_data
+            listed_by=request_user,
+            owner=owner
+            or (request_user if request_user.is_agent_or_landlord else None),
+            **validated_data,
         )
 
         if amenities_ids:
@@ -497,6 +534,18 @@ class PropertyUpdateSerializer(serializers.ModelSerializer):
         required=False,
         help_text="Upload a video for the property (optional)",
     )
+    owner_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.filter(
+            user_type__in=[
+                User.UserType.AGENT,
+                User.UserType.LANDLORD,
+            ]
+        ),
+        required=False,
+        allow_null=True,
+        write_only=True,
+        help_text="Update the owner of the property",
+    )
 
     class Meta:
         model = Property
@@ -524,6 +573,7 @@ class PropertyUpdateSerializer(serializers.ModelSerializer):
             "total_price",
             "agent_commission",
             "qaba_fee",
+            "owner_id",
         ]
         read_only_fields = ["agent_commission", "qaba_fee", "slug"]
 
@@ -534,7 +584,26 @@ class PropertyUpdateSerializer(serializers.ModelSerializer):
         )
         rent_price = attrs.get("rent_price")
         sale_price = attrs.get("sale_price")
-        lister_type = request.user.user_type
+        owner_candidate = attrs.get(
+            "owner_id", getattr(self.instance, "owner", None)
+        )
+        if owner_candidate and owner_candidate.user_type not in [
+            User.UserType.AGENT,
+            User.UserType.LANDLORD,
+        ]:
+            raise serializers.ValidationError(
+                {"owner_id": "Owner must be an agent or landlord"}
+            )
+        if owner_candidate and not (request.user.is_staff or request.user.is_admin):
+            if owner_candidate != request.user:
+                raise serializers.ValidationError(
+                    {"owner_id": "You can only set yourself as the property owner"}
+                )
+        lister_type = (
+            owner_candidate.user_type
+            if owner_candidate
+            else request.user.user_type
+        )
         service_charge_value = None
         caution_fee_value = None
         legal_fee_value = None
@@ -673,8 +742,14 @@ class PropertyUpdateSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         video_data = validated_data.pop("video", None)
+        owner_sentinel = object()
+        owner = validated_data.pop("owner_id", owner_sentinel)
 
         instance = super().update(instance, validated_data)
+
+        if owner is not owner_sentinel:
+            instance.owner = owner
+            instance.save(update_fields=["owner"])
 
         if video_data:
             PropertyVideo.objects.filter(property=instance).delete()
@@ -870,7 +945,7 @@ class PropertyDetailSerializer(PropertyListSerializer):
         if not request or not request.user.is_authenticated:
             return []
 
-        if request.user.is_staff or obj.listed_by == request.user:
+        if request.user.is_staff or obj.listed_by == request.user or obj.owner == request.user:
             documents = obj.documents.all()
         else:
             documents = obj.documents.filter(is_verified=True)

@@ -110,6 +110,15 @@ class Property(models.Model):
         related_name="properties",
         limit_choices_to={"user_type__in": ["ADMIN", "AGENT", "LANDLORD"]},
     )
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="owned_properties",
+        null=True,
+        blank=True,
+        limit_choices_to={"user_type__in": ["AGENT", "LANDLORD"]},
+        help_text="Actual owner of the property (if different from the lister)",
+    )
 
     rent_frequency = models.CharField(
         max_length=10,

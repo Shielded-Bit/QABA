@@ -13,7 +13,11 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         if request.method in permissions.SAFE_METHODS:
             return True
-        return obj.listed_by == request.user or request.user.is_staff
+        return (
+            obj.listed_by == request.user
+            or getattr(obj, "owner_id", None) == getattr(request.user, "id", None)
+            or request.user.is_staff
+        )
 
 
 class IsAgentLandlordOrAdmin(permissions.BasePermission):
