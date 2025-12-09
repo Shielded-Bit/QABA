@@ -144,7 +144,7 @@ class PropertyAdmin(admin.ModelAdmin):
         "property_status",
         "listing_status",
         "image_count",
-        "listed_by",
+        "listed_by_name",
         "owner",
         "listed_date",
     )
@@ -278,6 +278,13 @@ class PropertyAdmin(admin.ModelAdmin):
         return obj.images.count()
 
     image_count.short_description = "Images"
+
+    def listed_by_name(self, obj):
+        if obj.listed_by:
+            return obj.listed_by.get_full_name() or obj.listed_by.email
+        return "-"
+
+    listed_by_name.short_description = "Listed By"
 
     # Admin actions
     actions = [
