@@ -171,7 +171,7 @@ class PropertyAdmin(admin.ModelAdmin):
         "owner__first_name",
         "owner__last_name",
     )
-    readonly_fields = ("listed_date", "slug", "property_id")
+    readonly_fields = ("listed_date", "slug", "property_id", "listed_by")
     inlines = [
         PropertyImageInline,
         PropertyVideoInline,
@@ -240,6 +240,39 @@ class PropertyAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         return super().get_queryset(request).select_related("listed_by", "owner")
+
+    def save_model(self, request, obj, form, change):
+        # Always tie the listing to the staff user creating it
+        if not change or not obj.pk:
+            obj.listed_by = request.user
+        # Non-superusers cannot set listing_status to approved/declined
+        if not request.user.is_superuser and obj.listing_status not in [
+            Property.ListingStatus.DRAFT,
+            Property.ListingStatus.PENDING,
+        ]:
+            obj.listing_status = Property.ListingStatus.PENDING
+        super().save_model(request, obj, form, change)
+
+    def get_actions(self, request):
+        actions = super().get_actions(request)
+        if not request.user.is_superuser:
+            actions.pop("approve_properties", None)
+            actions.pop("decline_properties", None)
+        return actions
+
+    def formfield_for_choice_field(self, db_field, request, **kwargs):
+        field = super().formfield_for_choice_field(db_field, request, **kwargs)
+        if (
+            db_field.name == "listing_status"
+            and not request.user.is_superuser
+            and field
+        ):
+            allowed_statuses = {
+                Property.ListingStatus.DRAFT,
+                Property.ListingStatus.PENDING,
+            }
+            field.choices = [choice for choice in field.choices if choice[0] in allowed_statuses]
+        return field
 
     def image_count(self, obj):
         return obj.images.count()
