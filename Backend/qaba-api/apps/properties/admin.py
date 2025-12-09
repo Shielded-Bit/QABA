@@ -145,6 +145,7 @@ class PropertyAdmin(admin.ModelAdmin):
         "listing_status",
         "image_count",
         "listed_by",
+        "owner",
         "listed_date",
     )
     list_filter = (
@@ -166,6 +167,9 @@ class PropertyAdmin(admin.ModelAdmin):
         "listed_by__email",
         "listed_by__first_name",
         "listed_by__last_name",
+        "owner__email",
+        "owner__first_name",
+        "owner__last_name",
     )
     readonly_fields = ("listed_date", "slug", "property_id")
     inlines = [
@@ -178,7 +182,7 @@ class PropertyAdmin(admin.ModelAdmin):
     filter_horizontal = ("amenities",)
 
     fieldsets = (
-        (None, {"fields": ("property_id", "property_name", "slug", "description", "listed_by")}),
+        (None, {"fields": ("property_id", "property_name", "slug", "description", "listed_by", "owner")}),
         (
             _("Property Details"),
             {
@@ -235,7 +239,7 @@ class PropertyAdmin(admin.ModelAdmin):
     price_display.short_description = "Price"
 
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related("listed_by")
+        return super().get_queryset(request).select_related("listed_by", "owner")
 
     def image_count(self, obj):
         return obj.images.count()
@@ -282,7 +286,7 @@ class PropertyAdmin(admin.ModelAdmin):
 
                 # Create notification for property owner
                 Notification.objects.create(
-                    user=property_obj.listed_by,
+                    user=property_obj.owner or property_obj.listed_by,
                     title="Property Approved",
                     message=f"Your property '{property_obj.property_name}' has been approved and is now live on the platform.",
                     notification_type="property_approved",
@@ -304,7 +308,7 @@ class PropertyAdmin(admin.ModelAdmin):
 
                 # Create notification for property owner
                 Notification.objects.create(
-                    user=property_obj.listed_by,
+                    user=property_obj.owner or property_obj.listed_by,
                     title="Property Declined",
                     message=f"Your property '{property_obj.property_name}' has been declined. Please review and resubmit with necessary changes.",
                     notification_type="property_declined",
@@ -318,7 +322,7 @@ class PropertyAdmin(admin.ModelAdmin):
 
     def _send_owner_approval_notification_email(self, property_instance, decision):
         """Send email notification to property owner about approval/decline decision"""
-        owner = property_instance.listed_by
+        owner = property_instance.owner or property_instance.listed_by
 
         if owner.email:
             subject = f"Property Listing {decision.title()}: {property_instance.property_name}"
