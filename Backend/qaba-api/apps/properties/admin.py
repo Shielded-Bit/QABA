@@ -171,7 +171,7 @@ class PropertyAdmin(admin.ModelAdmin):
         "owner__first_name",
         "owner__last_name",
     )
-    readonly_fields = ("listed_date", "slug", "property_id", "listed_by")
+    readonly_fields = ("listed_date", "slug", "property_id")
     inlines = [
         PropertyImageInline,
         PropertyVideoInline,
@@ -274,14 +274,39 @@ class PropertyAdmin(admin.ModelAdmin):
             field.choices = [choice for choice in field.choices if choice[0] in allowed_statuses]
         return field
 
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "listed_by":
+            kwargs["queryset"] = kwargs.get("queryset", db_field.related_model.objects.all()).filter(
+                pk=request.user.pk
+            )
+            formfield = super().formfield_for_foreignkey(db_field, request, **kwargs)
+            formfield.initial = request.user.pk
+            formfield.disabled = True
+            formfield.label_from_instance = lambda obj: obj.email
+            return formfield
+        if db_field.name == "owner":
+            kwargs.setdefault(
+                "queryset",
+                db_field.related_model.objects.filter(
+                    user_type__in=["AGENT", "LANDLORD"]
+                ),
+            )
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
     def image_count(self, obj):
         return obj.images.count()
 
     image_count.short_description = "Images"
 
+    def listed_by_display(self, obj):
+        user = getattr(obj, "listed_by", None)
+        return user.email if user else "-"
+
+    listed_by_display.short_description = "Listed By"
+
     def listed_by_name(self, obj):
         if obj.listed_by:
-            return obj.listed_by.get_full_name() or obj.listed_by.email
+            return obj.listed_by.email
         return "-"
 
     listed_by_name.short_description = "Listed By"
