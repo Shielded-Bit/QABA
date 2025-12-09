@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from core.utils.response import APIResponse
-from django.db.models import Sum
+from django.db.models import Q, Sum
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -101,7 +101,9 @@ class PropertyViewSet(viewsets.ModelViewSet):
         if self.request.user.is_authenticated and (
             self.request.user.user_type in ["AGENT", "LANDLORD"]
         ):
-            return queryset.filter(listed_by=self.request.user)
+            return queryset.filter(
+                Q(listed_by=self.request.user) | Q(owner=self.request.user)
+            ).distinct()
 
         if not self.request.user.is_staff and not (
             self.request.user.is_authenticated
@@ -189,7 +191,10 @@ class PropertyViewSet(viewsets.ModelViewSet):
         max_rent = request.query_params.get("max_rent")
 
         if lister_type:
-            queryset = queryset.filter(listed_by__user_type=lister_type)
+            queryset = queryset.filter(
+                Q(listed_by__user_type=lister_type)
+                | Q(owner__user_type=lister_type)
+            )
 
         if min_total:
             try:

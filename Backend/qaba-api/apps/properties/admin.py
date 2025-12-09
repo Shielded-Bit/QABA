@@ -144,7 +144,8 @@ class PropertyAdmin(admin.ModelAdmin):
         "property_status",
         "listing_status",
         "image_count",
-        "listed_by",
+        "listed_by_name",
+        "owner",
         "listed_date",
     )
     list_filter = (
@@ -166,6 +167,9 @@ class PropertyAdmin(admin.ModelAdmin):
         "listed_by__email",
         "listed_by__first_name",
         "listed_by__last_name",
+        "owner__email",
+        "owner__first_name",
+        "owner__last_name",
     )
     readonly_fields = ("listed_date", "slug", "property_id")
     inlines = [
@@ -178,7 +182,7 @@ class PropertyAdmin(admin.ModelAdmin):
     filter_horizontal = ("amenities",)
 
     fieldsets = (
-        (None, {"fields": ("property_id", "property_name", "slug", "description", "listed_by")}),
+        (None, {"fields": ("property_id", "property_name", "slug", "description", "listed_by", "owner")}),
         (
             _("Property Details"),
             {
@@ -235,12 +239,77 @@ class PropertyAdmin(admin.ModelAdmin):
     price_display.short_description = "Price"
 
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related("listed_by")
+        return super().get_queryset(request).select_related("listed_by", "owner")
+
+    def save_model(self, request, obj, form, change):
+        # Always tie the listing to the staff user creating it
+        if not change or not obj.pk:
+            obj.listed_by = request.user
+        # Non-superusers cannot set listing_status to approved/declined
+        if not request.user.is_superuser and obj.listing_status not in [
+            Property.ListingStatus.DRAFT,
+            Property.ListingStatus.PENDING,
+        ]:
+            obj.listing_status = Property.ListingStatus.PENDING
+        super().save_model(request, obj, form, change)
+
+    def get_actions(self, request):
+        actions = super().get_actions(request)
+        if not request.user.is_superuser:
+            actions.pop("approve_properties", None)
+            actions.pop("decline_properties", None)
+        return actions
+
+    def formfield_for_choice_field(self, db_field, request, **kwargs):
+        field = super().formfield_for_choice_field(db_field, request, **kwargs)
+        if (
+            db_field.name == "listing_status"
+            and not request.user.is_superuser
+            and field
+        ):
+            allowed_statuses = {
+                Property.ListingStatus.DRAFT,
+                Property.ListingStatus.PENDING,
+            }
+            field.choices = [choice for choice in field.choices if choice[0] in allowed_statuses]
+        return field
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "listed_by":
+            kwargs["queryset"] = kwargs.get("queryset", db_field.related_model.objects.all()).filter(
+                pk=request.user.pk
+            )
+            formfield = super().formfield_for_foreignkey(db_field, request, **kwargs)
+            formfield.initial = request.user.pk
+            formfield.disabled = True
+            formfield.label_from_instance = lambda obj: obj.email
+            return formfield
+        if db_field.name == "owner":
+            kwargs.setdefault(
+                "queryset",
+                db_field.related_model.objects.filter(
+                    user_type__in=["AGENT", "LANDLORD"]
+                ),
+            )
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
     def image_count(self, obj):
         return obj.images.count()
 
     image_count.short_description = "Images"
+
+    def listed_by_display(self, obj):
+        user = getattr(obj, "listed_by", None)
+        return user.email if user else "-"
+
+    listed_by_display.short_description = "Listed By"
+
+    def listed_by_name(self, obj):
+        if obj.listed_by:
+            return obj.listed_by.email
+        return "-"
+
+    listed_by_name.short_description = "Listed By"
 
     # Admin actions
     actions = [
@@ -282,7 +351,7 @@ class PropertyAdmin(admin.ModelAdmin):
 
                 # Create notification for property owner
                 Notification.objects.create(
-                    user=property_obj.listed_by,
+                    user=property_obj.owner or property_obj.listed_by,
                     title="Property Approved",
                     message=f"Your property '{property_obj.property_name}' has been approved and is now live on the platform.",
                     notification_type="property_approved",
@@ -304,7 +373,7 @@ class PropertyAdmin(admin.ModelAdmin):
 
                 # Create notification for property owner
                 Notification.objects.create(
-                    user=property_obj.listed_by,
+                    user=property_obj.owner or property_obj.listed_by,
                     title="Property Declined",
                     message=f"Your property '{property_obj.property_name}' has been declined. Please review and resubmit with necessary changes.",
                     notification_type="property_declined",
@@ -318,7 +387,7 @@ class PropertyAdmin(admin.ModelAdmin):
 
     def _send_owner_approval_notification_email(self, property_instance, decision):
         """Send email notification to property owner about approval/decline decision"""
-        owner = property_instance.listed_by
+        owner = property_instance.owner or property_instance.listed_by
 
         if owner.email:
             subject = f"Property Listing {decision.title()}: {property_instance.property_name}"
