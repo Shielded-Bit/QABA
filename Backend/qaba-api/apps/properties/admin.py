@@ -274,13 +274,24 @@ class PropertyAdmin(admin.ModelAdmin):
             field.choices = [choice for choice in field.choices if choice[0] in allowed_statuses]
         return field
 
+    def get_form(self, request, obj=None, **kwargs):
+        # stash the object being edited so formfield_for_foreignkey can access it
+        request._editing_obj = obj
+        return super().get_form(request, obj, **kwargs)
+
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "listed_by":
+            current_obj = getattr(request, "_editing_obj", None)
+            current_lister_id = getattr(current_obj, "listed_by_id", None)
+            allowed_ids = [request.user.pk]
+            if current_lister_id and current_lister_id not in allowed_ids:
+                allowed_ids.append(current_lister_id)
+
             kwargs["queryset"] = kwargs.get("queryset", db_field.related_model.objects.all()).filter(
-                pk=request.user.pk
+                pk__in=allowed_ids
             )
             formfield = super().formfield_for_foreignkey(db_field, request, **kwargs)
-            formfield.initial = request.user.pk
+            formfield.initial = current_lister_id or request.user.pk
             formfield.disabled = True
             formfield.label_from_instance = lambda obj: obj.email
             return formfield
