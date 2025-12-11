@@ -204,11 +204,16 @@ function BuyContent() {
     { value: 'HOUSE', label: 'House' },
     { value: 'APARTMENT', label: 'Apartment' },
     { value: 'SELF_CONTAIN', label: 'Self Contain' },
+    { value: 'DUPLEX', label: 'Duplex' },
+    { value: 'SEMI_DETACHED', label: 'Semi Detached' },
+    { value: 'FULL_DETACHED', label: 'Full Detached' },
+    { value: 'ONE_BEDROOM_FLAT', label: 'One Bedroom Flat' },
     { value: 'TWO_BEDROOM_FLAT', label: 'Two Bedroom Flat' },
     { value: 'THREE_BEDROOM_FLAT', label: 'Three Bedroom Flat' },
-    { value: 'STUDIO', label: 'Studio' },
-    { value: 'DUPLEX', label: 'Duplex' },
-    { value: 'BUNGALOW', label: 'Bungalow' }
+    { value: 'FOUR_BEDROOM_FLAT', label: 'Four Bedroom Flat' },
+    { value: 'WAREHOUSE', label: 'Warehouse' },
+    { value: 'EMPTY_LAND', label: 'Empty Land' },
+    { value: 'LAND_WITH_BUILDING', label: 'Land with Building' }
   ];
 
   const propertyStatusOptions = [

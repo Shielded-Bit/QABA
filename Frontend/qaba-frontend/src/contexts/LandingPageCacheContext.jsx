@@ -101,16 +101,30 @@ export function LandingPageCacheProvider({ children }) {
 
   // Format blog articles data
   const formatBlogArticles = useCallback((blogsData) => {
+    // Helper to check if date is valid
+    const isValidDate = (dateString) => {
+      if (!dateString) return false;
+      const date = new Date(dateString);
+      return date instanceof Date && !isNaN(date.getTime());
+    };
+
+    // Helper to format date safely
+    const formatDate = (dateString) => {
+      if (!isValidDate(dateString)) return '';
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    };
+
     // Sort by date and get latest 3
     return blogsData
       .sort((a, b) => new Date(b.published_at) - new Date(a.published_at))
       .slice(0, 3)
       .map(blog => ({
-        date: new Date(blog.published_at).toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        }),
+        date: formatDate(blog.published_at),
         title: blog.title,
         description: blog.summary || blog.excerpt || '',
         image: blog.cover_image_url,
