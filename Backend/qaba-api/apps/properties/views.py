@@ -249,39 +249,35 @@ class PropertyViewSet(viewsets.ModelViewSet):
         Get 3 related properties, prioritizing properties in the same city,
         then properties in the same state
         """
-        related_properties = Property.objects.none()
-
         base_queryset = self.get_queryset().exclude(id=instance.id)
 
-        city_properties = base_queryset.filter(city=instance.city)
+        related_list = []
 
-        if city_properties.count() >= 3:
-            return city_properties.order_by("-listed_date")[:3]
+        city_properties = list(
+            base_queryset.filter(city=instance.city).order_by("-listed_date")[:3]
+        )
+        related_list.extend(city_properties)
 
-        related_properties = city_properties
-
-        remaining_slots = 3 - related_properties.count()
+        remaining_slots = 3 - len(related_list)
 
         if remaining_slots > 0 and instance.state:
-            state_properties = base_queryset.filter(state=instance.state).exclude(
-                id__in=related_properties.values_list("id", flat=True)
+            state_properties = list(
+                base_queryset.filter(state=instance.state)
+                .exclude(id__in=[prop.id for prop in related_list])
+                .order_by("-listed_date")[:remaining_slots]
             )
+            related_list.extend(state_properties)
 
-            if state_properties.exists():
-                related_properties = related_properties.union(
-                    state_properties.order_by("-listed_date")[:remaining_slots]
-                )
-
-        remaining_slots = 3 - related_properties.count()
+        remaining_slots = 3 - len(related_list)
         if remaining_slots > 0:
-            recent_properties = base_queryset.exclude(
-                id__in=related_properties.values_list("id", flat=True)
-            ).order_by("-listed_date")[:remaining_slots]
+            recent_properties = list(
+                base_queryset.exclude(id__in=[prop.id for prop in related_list])
+                .order_by("-listed_date")[:remaining_slots]
+            )
+            related_list.extend(recent_properties)
 
-            if recent_properties.exists():
-                related_properties = related_properties.union(recent_properties)
-
-        return related_properties.order_by("-listed_date")[:3]
+        related_ids = [prop.id for prop in related_list][:3]
+        return Property.objects.filter(id__in=related_ids).order_by("-listed_date")
 
 
 @extend_schema(tags=["Amenities"])

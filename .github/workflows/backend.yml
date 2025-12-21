@@ -221,7 +221,6 @@ jobs:
             sleep 10
 
       - name: Health check backend deployment
-        continue-on-error: true  # Skip health check failure temporarily until Nginx is configured
         uses: appleboy/ssh-action@v1.2.0
         env:
           PROJECT_DIR: ${{ secrets.VM_PROJECT_DIR }}
