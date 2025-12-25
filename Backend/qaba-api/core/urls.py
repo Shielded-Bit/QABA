@@ -12,6 +12,7 @@ two_factor_patterns, two_factor_app_name = two_factor_urls.urlpatterns
 urlpatterns = [
     path("", include((two_factor_patterns, two_factor_app_name), namespace="two_factor")),
     path('admin/', admin.site.urls),
+    path('tinymce/', include('tinymce.urls')),
     path('api/v1/', include('apps.users.urls')),
     path('api/v1/', include('apps.properties.urls')),
     path('api/v1/', include('apps.transactions.urls')),

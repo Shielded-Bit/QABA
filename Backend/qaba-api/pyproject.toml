@@ -18,6 +18,7 @@ dependencies = [
     "django-formtools>=2.5.1",
     "django-phonenumber-field>=8.1.0",
     "django-extra-fields>=3.0.2",
+    "django-tinymce>=4.0.0",
 
     # DRF extensions
     "drf-nested-routers>=0.94.1",

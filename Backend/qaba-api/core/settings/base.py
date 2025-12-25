@@ -72,6 +72,7 @@ INSTALLED_APPS = [
     "drf_spectacular",  # drf-spectacular
     "cloudinary",  # Cloudinary
     "cloudinary_storage",  # Cloudinary Storage
+    "tinymce",  # TinyMCE rich text editor
     # Local apps
     "apps.users",  # Custom user app
     "apps.properties",  # Properties app
@@ -253,3 +254,37 @@ CLOUDINARY_FOLDERS = {
 FLW_SECRET_KEY = getenv("FLW_SECRET_KEY", "your-default-secret-key")
 PAYMENT_REDIRECT_URL = getenv("PAYMENT_REDIRECT_URL", "http://localhost:3000")
 FLUTTERWAVE_SECRET_HASH = getenv("FLUTTERWAVE_SECRET_HASH", "your-default-secret-hash")
+
+# TinyMCE Configuration
+TINYMCE_DEFAULT_CONFIG = {
+    "theme": "silver",
+    "height": 500,
+    "menubar": "file edit view insert format tools table help",
+    "plugins": [
+        "advlist",
+        "autolink",
+        "lists",
+        "link",
+        "image",
+        "charmap",
+        "preview",
+        "anchor",
+        "searchreplace",
+        "visualblocks",
+        "code",
+        "fullscreen",
+        "insertdatetime",
+        "media",
+        "table",
+        "help",
+        "wordcount",
+    ],
+    "toolbar": (
+        "undo redo | blocks | bold italic underline strikethrough | "
+        "alignleft aligncenter alignright alignjustify | "
+        "bullist numlist outdent indent | link image media | "
+        "table | removeformat | fullscreen preview code help"
+    ),
+    "branding": False,
+    "promotion": False,
+}
