@@ -1,5 +1,6 @@
 from apps.users.models import Notification, User
 from apps.users.serializers import UserSerializer
+from core.fields import CompressedImageField, CompressedVideoField
 from core.utils.send_email import send_email
 from django.conf import settings
 from drf_spectacular.utils import extend_schema_field
@@ -17,7 +18,7 @@ from .models import (
 
 
 class PropertyImageSerializer(serializers.ModelSerializer):
-    image = serializers.ImageField(write_only=True)
+    image = CompressedImageField(write_only=True)
     image_url = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
@@ -31,7 +32,7 @@ class PropertyImageSerializer(serializers.ModelSerializer):
 
 
 class PropertyVideoSerializer(serializers.ModelSerializer):
-    video = serializers.FileField(write_only=True)
+    video = CompressedVideoField(write_only=True)
     video_url = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
@@ -196,12 +197,12 @@ class AmenityListField(serializers.ListField):
 
 class PropertyCreateSerializer(serializers.ModelSerializer):
     images = serializers.ListField(
-        child=serializers.ImageField(),
+        child=CompressedImageField(),
         write_only=True,
         required=False,
         help_text="Upload up to 5 images for the property",
     )
-    video = serializers.FileField(
+    video = CompressedVideoField(
         write_only=True,
         required=False,
         help_text="Upload a video for the property (optional)",
@@ -529,7 +530,7 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
 
 
 class PropertyUpdateSerializer(serializers.ModelSerializer):
-    video = serializers.FileField(
+    video = CompressedVideoField(
         write_only=True,
         required=False,
         help_text="Upload a video for the property (optional)",

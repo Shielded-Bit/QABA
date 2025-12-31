@@ -251,6 +251,25 @@ CLOUDINARY_FOLDERS = {
     "job_applications": "qaba/jobs/applications",
 }
 
+# Media Compression Settings
+# Compresses images and videos before upload to reduce file sizes
+MEDIA_COMPRESSION = {
+    "IMAGE": {
+        "ENABLED": getenv("IMAGE_COMPRESSION_ENABLED", "True") == "True",
+        "MAX_WIDTH": int(getenv("IMAGE_MAX_WIDTH", "1920")),
+        "MAX_HEIGHT": int(getenv("IMAGE_MAX_HEIGHT", "1080")),
+        "QUALITY": int(getenv("IMAGE_QUALITY", "85")),
+        "OUTPUT_FORMAT": getenv("IMAGE_OUTPUT_FORMAT", "WEBP"),
+    },
+    "VIDEO": {
+        "ENABLED": getenv("VIDEO_COMPRESSION_ENABLED", "True") == "True",
+        "MAX_WIDTH": int(getenv("VIDEO_MAX_WIDTH", "1280")),
+        "MAX_HEIGHT": int(getenv("VIDEO_MAX_HEIGHT", "720")),
+        "TARGET_BITRATE": getenv("VIDEO_TARGET_BITRATE", "1000k"),
+        "AUDIO_BITRATE": getenv("VIDEO_AUDIO_BITRATE", "128k"),
+    },
+}
+
 FLW_SECRET_KEY = getenv("FLW_SECRET_KEY", "your-default-secret-key")
 PAYMENT_REDIRECT_URL = getenv("PAYMENT_REDIRECT_URL", "http://localhost:3000")
 FLUTTERWAVE_SECRET_HASH = getenv("FLUTTERWAVE_SECRET_HASH", "your-default-secret-hash")

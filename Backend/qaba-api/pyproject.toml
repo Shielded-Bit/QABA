@@ -28,6 +28,7 @@ dependencies = [
     "cloudinary>=1.42.2",
     "django-cloudinary-storage>=0.3.0",
     "pillow>=11.0.0",
+    "moviepy>=1.0.3",
 
     # Database
     "psycopg2-binary>=2.9.10",
