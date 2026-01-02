@@ -3,7 +3,7 @@ import Image from 'next/image';
 
 const PasswordInput = ({ id, showPassword, togglePasswordVisibility, value, handleChange, bgpict }) => {
   return (
-    <div className="relative mt-5">
+    <div className="relative mt-1">
       <input
         type={showPassword ? 'text' : 'password'}
         id={id}
