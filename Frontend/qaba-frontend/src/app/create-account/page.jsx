@@ -47,6 +47,7 @@ const Register = () => {
     firstname: "",
     lastname: "",
     email: "",
+    phone: "", 
     password: "",
     confirmPassword: "",
     role: "", // No default role - user must select
@@ -69,6 +70,23 @@ const Register = () => {
   
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [passwordFocused, setPasswordFocused] = useState(false);
+
+  // Format phone number as user types
+  const formatPhoneNumber = (value) => {
+    // Remove all non-digit characters
+    const cleaned = value.replace(/\D/g, '');
+    
+    // Format based on length
+    if (cleaned.length <= 3) {
+      return cleaned;
+    } else if (cleaned.length <= 6) {
+      return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3)}`;
+    } else if (cleaned.length <= 11) {
+      return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
+    } else {
+      return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(7, 11)}`;
+    }
+  };
 
   // Validate password as user types
   useEffect(() => {
@@ -103,10 +121,21 @@ const Register = () => {
 
   // Updates form input state
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.id]: e.target.value,
-    });
+    const { id, value } = e.target;
+    
+    // Format phone number if it's the phone field
+    if (id === 'phone') {
+      const formattedValue = formatPhoneNumber(value);
+      setFormData({
+        ...formData,
+        [id]: formattedValue,
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [e.target.id]: e.target.value,
+      });
+    }
     
     // Clear validation errors when user types
     if (errors[e.target.id]) {
@@ -166,6 +195,11 @@ const Register = () => {
     if (!formData.password) newErrors.password = "Password is required";
     if (!formData.confirmPassword) newErrors.confirmPassword = "Confirm password is required";
     
+    // Optional phone validation - if provided, validate format
+    if (formData.phone && formData.phone.replace(/\D/g, '').length < 11) {
+      newErrors.phone = "Please enter a valid 11-digit phone number";
+    }
+    
     // Add password validation errors
     if (formData.password) {
       if (!passwordValidation.minLength) {
@@ -202,7 +236,10 @@ const Register = () => {
       return;
     }
 
-    setLoading(true); // Start loading
+    setLoading(true); 
+
+    // Clean phone number for API (remove formatting)
+    const cleanedPhone = formData.phone ? formData.phone.replace(/\D/g, '') : '';
 
     const requestData = {
       username: formData.email.split("@")[0], // Generate username from email
@@ -211,6 +248,7 @@ const Register = () => {
       confirmPassword: formData.confirmPassword, // Include confirmPassword field
       first_name: formData.firstname,
       last_name: formData.lastname,
+      phone: cleanedPhone || undefined, // Include phone if provided
     };
 
     try {
@@ -218,7 +256,8 @@ const Register = () => {
       const roleMap = {
         client: 'CLIENT',
         agent: 'AGENT',
-        landlord: 'LANDLORD'
+        landlord: 'LANDLORD',
+        legal: 'LEGAL_PRACTITIONER' 
       };
 
       const payload = {
@@ -385,6 +424,12 @@ const Register = () => {
       label: 'Landlord',
       desc: 'Property owner listing for rent or sale',
       icon: '🔑'
+    },
+    {
+      value: 'legal',
+      label: 'Legal Practitioner',
+      desc: 'Legal professional for property transactions',
+      icon: '⚖️'
     },
   ];
 
@@ -567,21 +612,75 @@ const Register = () => {
             <p className="mt-2 text-sm font-bold text-gray-900">Choose your preferred signup method</p>
             <form className="mt-9" onSubmit={handleSubmit}>
               {errors.general && <p className="text-red-500 mb-4">{errors.general}</p>}
+              
+              {/* First Name with Label */}
               <div className="mb-5 pt-1 flex space-x-4">
                 <div className="w-1/2">
-                  <TextInput type="text" id="firstname" placeholder="First Name" value={formData.firstname} handleChange={handleChange} />
+                  <label htmlFor="firstname" className="block text-sm font-medium text-gray-700 mb-1 ml-2">
+                    First Name <span className="text-red-500">*</span>
+                  </label>
+                  <TextInput 
+                    type="text" 
+                    id="firstname" 
+                    placeholder="Enter your first name" 
+                    value={formData.firstname} 
+                    handleChange={handleChange} 
+                  />
                   {getErrorMessage('firstname')}
                 </div>
+                
+                {/* Last Name with Label */}
                 <div className="w-1/2">
-                  <TextInput type="text" id="lastname" placeholder="Last Name" value={formData.lastname} handleChange={handleChange} />
+                  <label htmlFor="lastname" className="block text-sm font-medium text-gray-700 mb-1 ml-2">
+                    Last Name <span className="text-red-500">*</span>
+                  </label>
+                  <TextInput 
+                    type="text" 
+                    id="lastname" 
+                    placeholder="Enter your last name" 
+                    value={formData.lastname} 
+                    handleChange={handleChange} 
+                  />
                   {getErrorMessage('lastname')}
                 </div>
               </div>
+              
+              {/* Email with Label */}
               <div className="mb-5">
-                <TextInput type="email" id="email" placeholder="Email Address" value={formData.email} handleChange={handleChange} />
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1 ml-2">
+                  Email Address <span className="text-red-500">*</span>
+                </label>
+                <TextInput 
+                  type="email" 
+                  id="email" 
+                  placeholder="Enter your email address" 
+                  value={formData.email} 
+                  handleChange={handleChange} 
+                />
                 {getErrorMessage('email')}
               </div>
-              <div className="mb-2">
+              
+              {/* Phone Number with Label */}
+              <div className="mb-5">
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1 ml-2">
+                  Phone Number <span className="text-gray-500 text-sm">(Optional)</span>
+                </label>
+                <TextInput 
+                  type="tel" 
+                  id="phone" 
+                  placeholder="(123) 456-7890" 
+                  value={formData.phone} 
+                  handleChange={handleChange} 
+                />
+                {getErrorMessage('phone')}
+                
+              </div>
+              
+              {/* Password with Label */}
+              <div className="mb-4">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1 ml-2">
+                  Password <span className="text-red-500">*</span>
+                </label>
                 <PasswordInput 
                   id="password" 
                   showPassword={showPassword} 
@@ -590,12 +689,20 @@ const Register = () => {
                   handleChange={handleChange}
                   onFocus={handlePasswordFocus}
                   onBlur={handlePasswordBlur}
+                  placeholder="Create a strong password"
                   bgpict={bgpict} 
                 />
                 {getErrorMessage('password')}
               </div>
+              
+              {/* Password Criteria */}
               <PasswordCriteria />
+              
+              {/* Confirm Password with Label */}
               <div className="mb-5">
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1 ml-2">
+                  Confirm Password <span className="text-red-500">*</span>
+                </label>
                 <PasswordInput
                   id="confirmPassword"
                   showPassword={showPassword}
@@ -607,6 +714,7 @@ const Register = () => {
                 />
                 {getErrorMessage('confirmPassword')}
               </div>
+              
               <button 
                 type="submit" 
                 className="mt-10 w-full rounded-md bg-gradient-to-r from-[#014d98] to-[#3ab7b1] px-4 py-2 text-white transition-all duration-300 hover:from-[#3ab7b1] hover:to-[#014d98] disabled:opacity-50 disabled:cursor-not-allowed" 
@@ -663,19 +771,72 @@ const Register = () => {
             <p className="mt-2 text-sm font-bold text-gray-900">Choose your preferred signup method</p>
             <form className="mt-9" onSubmit={handleSubmit}>
               {errors.general && <p className="text-red-500 mb-4">{errors.general}</p>}
+              
+              {/* First Name with Label */}
               <div className="mb-5 pt-1">
-                <TextInput type="text" id="firstname" placeholder="First Name" value={formData.firstname} handleChange={handleChange} />
+                <label htmlFor="firstname" className="block text-sm font-medium text-gray-700 mb-1 ml-2">
+                  First Name <span className="text-red-500">*</span>
+                </label>
+                <TextInput 
+                  type="text" 
+                  id="firstname" 
+                  placeholder="Enter your first name" 
+                  value={formData.firstname} 
+                  handleChange={handleChange} 
+                />
                 {getErrorMessage('firstname')}
               </div>
+              
+              {/* Last Name with Label */}
               <div className="mb-5 pt-1">
-                <TextInput type="text" id="lastname" placeholder="Last Name" value={formData.lastname} handleChange={handleChange} />
+                <label htmlFor="lastname" className="block text-sm font-medium text-gray-700 mb-1 ml-2">
+                  Last Name <span className="text-red-500">*</span>
+                </label>
+                <TextInput 
+                  type="text" 
+                  id="lastname" 
+                  placeholder="Enter your last name" 
+                  value={formData.lastname} 
+                  handleChange={handleChange} 
+                />
                 {getErrorMessage('lastname')}
               </div>
+              
+              {/* Email with Label */}
               <div className="mb-5 pt-1">
-                <TextInput type="email" id="email" placeholder="Email Address" value={formData.email} handleChange={handleChange} />
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1 ml-2">
+                  Email Address <span className="text-red-500">*</span>
+                </label>
+                <TextInput 
+                  type="email" 
+                  id="email" 
+                  placeholder="Enter your email address" 
+                  value={formData.email} 
+                  handleChange={handleChange} 
+                />
                 {getErrorMessage('email')}
               </div>
-              <div className="mb-2 pt-1">
+              
+              {/* Phone Number with Label */}
+              <div className="mb-5 pt-1">
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1 ml-2">
+                  Phone Number <span className="text-gray-500 text-sm">(Optional)</span>
+                </label>
+                <TextInput 
+                  type="tel" 
+                  id="phone" 
+                  placeholder="(123) 456-78901" 
+                  value={formData.phone} 
+                  handleChange={handleChange} 
+                />
+                {getErrorMessage('phone')}
+              </div>
+              
+              {/* Password with Label */}
+              <div className="mb-4 pt-1">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1 ml-2">
+                  Password <span className="text-red-500">*</span>
+                </label>
                 <PasswordInput 
                   id="password" 
                   showPassword={showPassword} 
@@ -684,23 +845,32 @@ const Register = () => {
                   handleChange={handleChange} 
                   onFocus={handlePasswordFocus}
                   onBlur={handlePasswordBlur}
+                  // placeholder="Create a strong password"
                   bgpict={bgpict} 
                 />
                 {getErrorMessage('password')}
               </div>
+              
+              {/* Password Criteria */}
               <PasswordCriteria />
+              
+              {/* Confirm Password with Label */}
               <div className="mb-5 pt-1">
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1 ml-2">
+                  Confirm Password <span className="text-red-500">*</span>
+                </label>
                 <PasswordInput
                   id="confirmPassword"
                   showPassword={showPassword}
                   togglePasswordVisibility={togglePasswordVisibility}
                   value={formData.confirmPassword}
                   handleChange={handleChange}
-                  placeholder="Confirm Password"
+                   placeholder="Confirm Password"
                   bgpict={bgpict}
                 />
                 {getErrorMessage('confirmPassword')}
               </div>
+              
               <button 
                 type="submit" 
                 className="mt-10 w-full bg-gradient-to-r from-[#014d98] to-[#3ab7b1] px-4 py-2 rounded-md text-white transition-all duration-300 hover:from-[#3ab7b1] hover:to-[#014d98] disabled:opacity-50 disabled:cursor-not-allowed" 
